@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Espace RH – Pointage | Harmonie-Retrouvailles</title>
+    <meta name="description" content="Gestion du pointage du personnel pour les écoles Harmonie et Retrouvailles." />
+    <script type="module" src="/shared.js"></script>
+  </head>
+  <body class="bg-gray-50 text-dark-paper font-sans h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="w-full md:w-64 bg-primary-950 border-r border-primary-900 flex-shrink-0 flex flex-col shadow-2xl z-20">
+      <!-- Logo -->
+      <div class="h-20 flex items-center px-6 border-b border-primary-900 bg-primary-950">
+        <div class="w-8 h-8 bg-primary-900 border border-gold-500 flex items-center justify-center text-white font-display font-bold shadow-sm mr-3">HR</div>
+        <span class="font-display font-bold text-lg text-white tracking-tight">Espace RH</span>
+      </div>
+
+      <!-- Profil utilisateur -->
+      <div class="p-6">
+        <div class="flex items-center gap-4 mb-2">
+          <div class="w-12 h-12 bg-white border-2 border-gold-400 flex items-center justify-center text-primary-900 font-display font-bold text-xl">M</div>
+          <div>
+            <p class="font-bold text-sm text-white" id="rh-user-name">MBUYI Alain</p>
+            <p class="text-xs text-primary-200 uppercase tracking-widest mt-0.5">Enseignant – C.S. Harmonie</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation latérale -->
+      <nav class="flex-1 px-4 space-y-2 mt-4">
+        <button id="tab-pointage" class="tab-btn w-full flex items-center gap-3 px-4 py-3 bg-primary-900 text-white font-semibold transition-all border-l-4 border-gold-500 shadow-sm">
+          <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          Pointage
+        </button>
+        <button id="tab-historique" class="tab-btn w-full flex items-center gap-3 px-4 py-3 text-primary-200 hover:bg-primary-900 hover:text-white font-semibold transition-all border-l-4 border-transparent hover:border-primary-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+          Historique
+        </button>
+      </nav>
+
+      <!-- Pied de barre -->
+      <div class="p-4 border-t border-primary-900">
+        <a href="/login.html" class="w-full flex items-center gap-3 px-4 py-3 text-secondary-400 hover:bg-secondary-600 hover:text-white rounded-sm font-semibold transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          Déconnexion
+        </a>
+      </div>
+    </aside>
+
+    <!-- ============ CONTENU PRINCIPAL ============ -->
+    <main class="flex-1 relative overflow-y-auto bg-gray-50 p-6 md:p-10">
+
+      <!-- ========== Section Pointage ========== -->
+      <section id="content-pointage" class="tab-content block animate-fade-in">
+        <h1 class="font-display text-3xl font-bold text-primary-900 mb-2">Bonjour, Alain 👋</h1>
+        <p class="text-gray-500 font-medium tracking-wide mb-8" id="date-today"></p>
+
+        <!-- Carte d'état principal -->
+        <div class="bg-white p-8 mb-8 relative overflow-hidden border-t-4 border-primary-900 shadow-premium rounded-sm">
+          <!-- Logo discret en fond -->
+          <div class="absolute top-0 right-0 opacity-5 -translate-y-1/4 translate-x-1/4 pointer-events-none">
+            <svg class="w-64 h-64" viewBox="0 0 100 100" fill="currentColor"><path d="M0 0 L50 100 L100 0 Z"/></svg>
+          </div>
+          
+          <div class="relative z-10">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Statut d'aujourd'hui</p>
+            <div id="status-badge" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold mb-8 bg-gray-100 text-gray-500 border border-gray-200">
+              <span class="w-2 h-2 rounded-full bg-current"></span>
+              <span id="status-text">Non pointé</span>
+            </div>
+
+            <!-- Horloge vivante -->
+            <div class="flex items-baseline gap-2 mb-10">
+              <span id="live-clock" class="font-display text-6xl md:text-7xl font-bold tracking-tight text-primary-900">--:--</span>
+              <span id="live-seconds" class="text-2xl font-bold text-gray-400">:--</span>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="flex flex-wrap gap-4">
+              <button id="btn-arrivee" class="bg-primary-900 text-white px-8 py-4 rounded-sm font-bold text-sm uppercase tracking-wider hover:bg-primary-800 transition-all shadow-premium border-b-4 border-primary-950 active:translate-y-1 active:border-b-0 flex items-center gap-3">
+                <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                Pointer mon arrivée
+              </button>
+              <button id="btn-depart" disabled class="bg-gray-200 text-gray-400 px-8 py-4 rounded-sm font-bold text-sm uppercase tracking-wider cursor-not-allowed flex items-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Pointer mon départ
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modale de motif (caché par défaut) -->
+        <div id="modal-motif" class="hidden fixed inset-0 bg-primary-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-sm shadow-2xl w-full max-w-md p-8 transform transition-all border-t-4 border-secondary-600">
+            <h3 class="font-display text-2xl font-bold text-primary-900 mb-2">Vous êtes en retard</h3>
+            <p class="text-gray-500 text-sm mb-6 font-light">Veuillez indiquer le motif de votre retard (facultatif).</p>
+            <textarea id="motif-input" rows="3" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-sm focus:bg-white focus:ring-2 focus:ring-primary-900 focus:border-primary-900 outline-none transition-all resize-none placeholder-gray-400" placeholder="Ex : Embouteillage, rendez-vous médical…"></textarea>
+            <div class="flex gap-4 mt-8">
+              <button id="modal-confirm" class="flex-1 bg-primary-900 text-white px-4 py-3 rounded-sm font-bold text-sm uppercase tracking-wider hover:bg-primary-800 transition-all border-b-4 border-primary-950 active:translate-y-1 active:border-b-0">Confirmer</button>
+              <button id="modal-cancel" class="px-6 py-3 bg-gray-100 text-gray-600 rounded-sm font-bold text-sm uppercase tracking-wider hover:bg-gray-200 transition-all">Annuler</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Résumé rapide -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div class="bg-white p-6 shadow-card border-t-2 border-gold-500 rounded-sm flex flex-col justify-between">
+            <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Arrivée</p>
+            <p id="info-arrivee" class="font-display text-2xl font-bold text-primary-900">—</p>
+          </div>
+          <div class="bg-white p-6 shadow-card border-t-2 border-gold-500 rounded-sm flex flex-col justify-between">
+            <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Départ</p>
+            <p id="info-depart" class="font-display text-2xl font-bold text-primary-900">—</p>
+          </div>
+          <div class="bg-white p-6 shadow-card border-t-2 border-secondary-600 rounded-sm flex flex-col justify-between">
+            <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Retard</p>
+            <p id="info-retard" class="font-display text-2xl font-bold text-secondary-600">0 min</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== Section Historique ========== -->
+      <section id="content-historique" class="tab-content hidden animate-fade-in">
+        <h2 class="font-display text-2xl font-bold text-primary-900 mb-8 flex items-center gap-3">
+          <span class="w-1.5 h-6 bg-gold-500 block"></span>
+          Historique de Pointage
+        </h2>
+        <div class="bg-white shadow-card border border-gray-200 rounded-sm overflow-hidden">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-primary-900 text-white">
+              <tr>
+                <th class="px-6 py-4 font-bold tracking-wider uppercase text-xs">Date</th>
+                <th class="px-6 py-4 font-bold tracking-wider uppercase text-xs">Arrivée</th>
+                <th class="px-6 py-4 font-bold tracking-wider uppercase text-xs">Départ</th>
+                <th class="px-6 py-4 font-bold tracking-wider uppercase text-xs">Retard</th>
+                <th class="px-6 py-4 font-bold tracking-wider uppercase text-xs">Statut</th>
+              </tr>
+            </thead>
+            <tbody id="historique-tbody" class="divide-y divide-gray-100">
+              <!-- Rempli par JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+    <script type="module" src="/rh.js"></script>
+  </body>
+</html>

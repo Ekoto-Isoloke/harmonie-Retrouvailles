@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Harmonie-Retrouvailles | L'Excellence Éducative</title>
+    <meta name="description" content="Portail éducatif du Complexe Scolaire Harmonie et du Groupe Scolaire Retrouvailles." />
+    <script type="module" src="/shared.js"></script>
+  </head>
+  <body class="bg-primary-50 text-dark-paper font-sans antialiased selection:bg-gold-500 selection:text-white flex flex-col min-h-screen">
+    
+    <!-- Modern Pro Header (Glassmorphism) -->
+    <header class="w-full bg-white/85 backdrop-blur-xl shadow-[0_4px_30px_-10px_rgba(0,0,0,0.1)] fixed top-0 left-0 z-50 font-sans border-b border-white/50 transition-all duration-300" id="header">
+      
+      <!-- Main Navbar Section (Edge to Edge) -->
+      <div class="w-full px-4 sm:px-8 lg:px-12 xl:px-16">
+        <div class="flex justify-between items-center h-[90px]">
+          
+          <!-- Gauche: Identité Visuelle & Logos -->
+          <a href="/" class="flex items-center gap-5 hover:opacity-90 transition-opacity">
+            <!-- C.S. Harmonie -->
+            <div class="flex items-center gap-3">
+              <div class="w-[45px] h-[45px] rounded-full overflow-hidden shadow-md border-2 border-primary-100 hover:border-primary-500 transition-colors bg-white">
+                <img src="https://ui-avatars.com/api/?name=H&background=0A192F&color=fff&rounded=true&bold=true" alt="C.S. Harmonie Logo" class="w-full h-full object-cover">
+              </div>
+              <span class="font-display font-bold text-[16px] text-primary-900 tracking-tight hidden sm:block">C.S. Harmonie</span>
+            </div>
+            
+            <!-- Ligne de séparation verticale (Couleur OR) -->
+            <div class="w-[2px] h-[40px] bg-gold-400 rounded-full shadow-[0_0_10px_rgba(251,191,36,0.5)]"></div>
+            
+            <!-- G.S. Retrouvailles -->
+            <div class="flex items-center gap-3">
+              <div class="w-[45px] h-[45px] rounded-full overflow-hidden shadow-md border-2 border-secondary-100 hover:border-secondary-500 transition-colors bg-white">
+                <img src="https://ui-avatars.com/api/?name=R&background=DC2626&color=fff&rounded=true&bold=true" alt="G.S. Retrouvailles Logo" class="w-full h-full object-cover">
+              </div>
+              <span class="font-display font-bold text-[16px] text-primary-900 tracking-tight hidden sm:block">G.S. Retrouvailles</span>
+            </div>
+          </a>
+
+          <!-- Droite: Menu & Actions (Desktop) -->
+          <div class="hidden lg:flex items-center gap-8">
+            <!-- Menu Horizontal Fluide -->
+            <nav class="flex items-center gap-6">
+              <a href="#accueil" class="font-display font-medium text-[14px] text-gray-600 hover:text-gold-600 transition-colors relative group">
+                Accueil
+                <span class="absolute -bottom-1.5 left-0 w-0 h-[2px] bg-gold-500 transition-all group-hover:w-full rounded-full"></span>
+              </a>
+              <a href="#historique" class="font-display font-medium text-[14px] text-gray-600 hover:text-gold-600 transition-colors relative group">
+                Historique
+                <span class="absolute -bottom-1.5 left-0 w-0 h-[2px] bg-gold-500 transition-all group-hover:w-full rounded-full"></span>
+              </a>
+              <a href="#cs-harmonie" class="font-display font-medium text-[14px] text-gray-600 hover:text-gold-600 transition-colors relative group">
+                C.S. Harmonie
+                <span class="absolute -bottom-1.5 left-0 w-0 h-[2px] bg-gold-500 transition-all group-hover:w-full rounded-full"></span>
+              </a>
+              <a href="#gs-retrouvailles" class="font-display font-medium text-[14px] text-gray-600 hover:text-gold-600 transition-colors relative group">
+                G.S. Retrouvailles
+                <span class="absolute -bottom-1.5 left-0 w-0 h-[2px] bg-gold-500 transition-all group-hover:w-full rounded-full"></span>
+              </a>
+              <a href="#sections" class="font-display font-medium text-[14px] text-gray-600 hover:text-gold-600 transition-colors relative group">
+                Sections Organisées
+                <span class="absolute -bottom-1.5 left-0 w-0 h-[2px] bg-gold-500 transition-all group-hover:w-full rounded-full"></span>
+              </a>
+              
+              <!-- 1. Bouton "S'inscrire" juste après les sections -->
+              <a href="#inscription" class="ml-2 flex items-center justify-center px-6 py-2.5 rounded-xl bg-gradient-to-r from-gold-400 to-gold-500 text-primary-900 font-display font-bold text-[14px] shadow-[0_8px_15px_-5px_rgba(245,158,11,0.4)] hover:shadow-[0_12px_20px_-5px_rgba(245,158,11,0.5)] hover:-translate-y-0.5 transition-all border border-gold-300">
+                S'inscrire
+              </a>
+            </nav>
+            
+            <!-- Zone d'actions spécifiques (Au coin) -->
+            <div class="flex items-center gap-3 pl-6 border-l-2 border-gray-200/60">
+              <!-- 2. Bouton "Direction" -->
+              <a href="#direction" class="btn-direction-trigger flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-50/50 text-primary-900 font-display font-semibold text-[13px] hover:bg-gray-100 border border-gray-200 transition-all shadow-sm backdrop-blur-sm">
+                <svg class="w-4 h-4 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                Direction
+              </a>
+              
+              <!-- 3. Icône unique "Espace Admin" (Tout au coin) -->
+              <a href="/login.html" title="Espace Administration" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/50 text-gray-500 hover:text-gold-600 hover:bg-white hover:shadow-sm transition-all ml-1 border border-transparent hover:border-gold-200 backdrop-blur-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              </a>
+            </div>
+          </div>
+
+          <!-- Mobile Burger Button -->
+          <div class="lg:hidden flex items-center">
+            <button id="mobile-menu-btn" class="text-primary-900 focus:outline-none p-2 bg-gray-50 rounded-lg border border-gray-100">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bande Déroulante Inférieure (Ticker) -->
+      <div class="w-full bg-gradient-to-r from-primary-900 via-primary-800 to-primary-900 text-white overflow-hidden py-2 border-t border-primary-700 relative z-40 group">
+        <div class="flex whitespace-nowrap animate-marquee group-hover:[animation-play-state:paused] transition-all">
+          <div class="flex items-center min-w-full justify-around">
+            <span class="mx-4 text-[13px] font-display font-medium tracking-wide flex items-center gap-3">
+              <span class="text-gold-400 animate-pulse text-base">📢</span> 
+              Inscriptions en cours pour l'année scolaire | Places limitées pour le Complexe Scolaire Harmonie et le Groupe Scolaire Retrouvailles. Contactez le secrétariat.
+            </span>
+          </div>
+          <div class="flex items-center min-w-full justify-around">
+            <span class="mx-4 text-[13px] font-display font-medium tracking-wide flex items-center gap-3">
+              <span class="text-gold-400 animate-pulse text-base">📢</span> 
+              Inscriptions en cours pour l'année scolaire | Places limitées pour le Complexe Scolaire Harmonie et le Groupe Scolaire Retrouvailles. Contactez le secrétariat.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Menu Dropdown -->
+      <div id="mobile-menu" class="hidden lg:hidden bg-white border-t border-gray-100 px-4 py-6 space-y-4 shadow-2xl absolute w-full left-0 origin-top animate-fade-in">
+        <nav class="flex flex-col gap-2">
+          <a href="#accueil" class="font-display font-semibold text-[15px] text-gray-800 p-3 bg-gray-50 rounded-xl hover:bg-gray-100">Accueil</a>
+          <a href="#historique" class="font-display font-semibold text-[15px] text-gray-800 p-3 bg-gray-50 rounded-xl hover:bg-gray-100">Historique</a>
+          <a href="#cs-harmonie" class="font-display font-semibold text-[15px] text-gray-800 p-3 bg-gray-50 rounded-xl hover:bg-gray-100">C.S. Harmonie</a>
+          <a href="#gs-retrouvailles" class="font-display font-semibold text-[15px] text-gray-800 p-3 bg-gray-50 rounded-xl hover:bg-gray-100">G.S. Retrouvailles</a>
+          <a href="#sections" class="font-display font-semibold text-[15px] text-gray-800 p-3 bg-gray-50 rounded-xl hover:bg-gray-100">Sections Organisées</a>
+          <a href="#inscription" class="flex items-center justify-center px-4 py-3.5 mt-2 mb-4 rounded-xl bg-gradient-to-r from-gold-400 to-gold-500 text-primary-900 font-display font-bold text-[15px] shadow-lg border border-gold-300">
+            S'inscrire
+          </a>
+        </nav>
+        
+        <div class="flex flex-col gap-3">
+          <a href="#direction" class="btn-direction-trigger flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-gray-50/80 text-primary-900 font-display font-semibold text-[14px] border border-gray-200 backdrop-blur-sm">
+            <svg class="w-5 h-5 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+            Direction
+          </a>
+          <a href="/login.html" class="flex items-center justify-center px-4 py-3 text-[14px] font-medium text-gray-500 hover:text-gold-600 transition-colors">
+            Accès Administration (Technique)
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main id="accueil" class="relative bg-primary-900 min-h-screen flex items-center justify-center overflow-hidden pt-[140px]">
+      <!-- Background Image -->
+      <div class="absolute inset-0 z-0">
+        <img src="https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=2000&auto=format&fit=crop" alt="Campus prestigieux" class="w-full h-full object-cover opacity-40 mix-blend-overlay" />
+        <div class="absolute inset-0 bg-gradient-to-t from-primary-900/90 via-primary-900/60 to-transparent"></div>
+      </div>
+      
+      <!-- Content -->
+      <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center animate-fade-up">
+        
+        <h1 class="font-display text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-[1.1] tracking-tight">
+          Façonner l'Avenir par <br /> l'Excellence.
+        </h1>
+        
+        <p class="mt-6 text-lg sm:text-xl text-primary-100 max-w-2xl mx-auto font-light leading-relaxed mb-10">
+          Une éducation de classe mondiale, de la maternelle aux humanités. Découvrez le portail unifié pour le Complexe Scolaire Harmonie et le Groupe Scolaire Retrouvailles.
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <a href="/login.html" class="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-primary-900 transition-all bg-white hover:bg-gray-100 rounded-sm shadow-premium border-b-4 border-gray-300 active:translate-y-1 active:border-b-0">
+            Espace Parents
+          </a>
+          <a href="/login.html" class="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white transition-all bg-secondary-600 hover:bg-secondary-700 rounded-sm shadow-premium border-b-4 border-secondary-800 active:translate-y-1 active:border-b-0">
+            Espace Personnel (RH)
+          </a>
+        </div>
+
+        <!-- Stats rapides (from original) -->
+        <div class="grid grid-cols-3 gap-8 pt-8 border-t border-primary-700 max-w-3xl mx-auto">
+          <div>
+            <p class="font-display text-3xl font-bold text-white">2,500+</p>
+            <p class="text-xs font-semibold text-gold-400 uppercase tracking-wider mt-1">Élèves</p>
+          </div>
+          <div>
+            <p class="font-display text-3xl font-bold text-white">98%</p>
+            <p class="text-xs font-semibold text-gold-400 uppercase tracking-wider mt-1">Réussite</p>
+          </div>
+          <div>
+            <p class="font-display text-3xl font-bold text-white">2</p>
+            <p class="text-xs font-semibold text-gold-400 uppercase tracking-wider mt-1">Campus</p>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Info supplementaire hero (original) -->
+    <section class="bg-white py-12 relative z-10 border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="p-6 bg-primary-50 rounded-sm border-l-4 border-gold-500 shadow-sm flex items-center gap-4">
+              <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-primary-900">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              </div>
+              <div>
+                <p class="font-bold text-primary-900 text-lg">Diplôme d'État</p>
+                <p class="text-sm text-gray-600">100% de réussite 2025</p>
+              </div>
+            </div>
+            <div class="p-6 bg-primary-900 rounded-sm border-l-4 border-secondary-600 shadow-sm flex items-center gap-4 text-white">
+              <div class="w-12 h-12 bg-primary-800 rounded-full flex items-center justify-center text-secondary-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              </div>
+              <div>
+                <p class="text-xs text-gold-400 uppercase tracking-widest mb-1">Prochain Événement</p>
+                <p class="font-bold text-lg">Journées Portes Ouvertes</p>
+                <p class="text-sm text-gray-300">15 Juin 2026</p>
+              </div>
+            </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section Écoles -->
+    <section id="ecoles" class="py-24 bg-white relative z-10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-20 animate-fade-up">
+          <h2 class="text-secondary-600 font-bold uppercase tracking-[0.2em] mb-4 text-sm">Nos Institutions</h2>
+          <h3 class="font-display text-4xl font-bold text-primary-900 mb-6">Un parcours éducatif complet et cohérent.</h3>
+          <div class="w-16 h-1 bg-gold-500 mx-auto mb-6"></div>
+          <p class="text-lg text-gray-600 font-light">Nous accompagnons vos enfants depuis leurs premiers pas à l'école jusqu'à l'obtention de leur diplôme d'État.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-12">
+          <!-- Harmonie -->
+          <div class="bg-primary-50 rounded-sm border-t-4 border-primary-800 shadow-card transition-transform hover:-translate-y-1">
+            <div class="h-64 overflow-hidden relative">
+              <img src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1000&auto=format&fit=crop" alt="C.S. Harmonie" class="w-full h-full object-cover" />
+              <div class="absolute inset-0 bg-primary-900/20 mix-blend-multiply"></div>
+            </div>
+            <div class="p-10">
+              <span class="text-gold-600 font-bold text-xs uppercase tracking-widest mb-2 block">Maternelle & Primaire</span>
+              <h3 class="font-display text-2xl font-bold text-primary-900 mb-4">C.S. Harmonie</h3>
+              <p class="text-gray-600 mb-8 font-light leading-relaxed">
+                Une fondation solide pour l'avenir de vos enfants. Notre pédagogie innovante met l'accent sur le développement cognitif, la créativité et l'épanouissement personnel dès le plus jeune âge.
+              </p>
+              <ul class="space-y-3 mb-8">
+                <li class="flex items-start gap-3 text-sm text-gray-700">
+                  <svg class="w-5 h-5 text-secondary-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>Immersion bilingue</span>
+                </li>
+                <li class="flex items-start gap-3 text-sm text-gray-700">
+                  <svg class="w-5 h-5 text-secondary-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>Activités parascolaires enrichissantes</span>
+                </li>
+                <li class="flex items-start gap-3 text-sm text-gray-700">
+                  <svg class="w-5 h-5 text-secondary-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>Suivi psychologique personnalisé</span>
+                </li>
+              </ul>
+              <a href="#" class="inline-flex items-center text-primary-800 font-bold text-sm uppercase tracking-wider hover:text-secondary-600 transition-colors">
+                Découvrir Harmonie <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+              </a>
+            </div>
+          </div>
+
+          <!-- Retrouvailles -->
+          <div class="bg-primary-50 rounded-sm border-t-4 border-secondary-600 shadow-card transition-transform hover:-translate-y-1">
+            <div class="h-64 overflow-hidden relative">
+              <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1000&auto=format&fit=crop" alt="G.S. Retrouvailles" class="w-full h-full object-cover" />
+              <div class="absolute inset-0 bg-primary-900/20 mix-blend-multiply"></div>
+            </div>
+            <div class="p-10">
+              <span class="text-secondary-600 font-bold text-xs uppercase tracking-widest mb-2 block">Éducation de Base & Humanités</span>
+              <h3 class="font-display text-2xl font-bold text-primary-900 mb-4">G.S. Retrouvailles</h3>
+              <p class="text-gray-600 mb-8 font-light leading-relaxed">
+                Préparation rigoureuse à l'excellence académique et professionnelle. Nos filières scientifiques, littéraires et techniques forment les leaders de demain dans un cadre ultra-moderne.
+              </p>
+              <ul class="space-y-3 mb-8">
+                <li class="flex items-start gap-3 text-sm text-gray-700">
+                  <svg class="w-5 h-5 text-primary-800 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>Laboratoires de pointe (Sciences & Info)</span>
+                </li>
+                <li class="flex items-start gap-3 text-sm text-gray-700">
+                  <svg class="w-5 h-5 text-primary-800 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>Préparation intensive aux examens d'État</span>
+                </li>
+                <li class="flex items-start gap-3 text-sm text-gray-700">
+                  <svg class="w-5 h-5 text-primary-800 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>Orientation universitaire et professionnelle</span>
+                </li>
+              </ul>
+              <a href="#" class="inline-flex items-center text-primary-800 font-bold text-sm uppercase tracking-wider hover:text-secondary-600 transition-colors">
+                Découvrir Retrouvailles <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-primary-950 text-gray-300 py-16 mt-auto">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid md:grid-cols-4 gap-12 mb-12">
+          <div class="col-span-2">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 bg-primary-900 border border-gold-500 flex items-center justify-center text-white font-display font-bold text-lg shadow-sm">
+                HR
+              </div>
+              <span class="font-display font-bold text-xl leading-tight text-white tracking-tight">Harmonie<span class="text-gold-500">.Educ</span></span>
+            </div>
+            <p class="text-sm text-gray-400 leading-relaxed max-w-md">
+              Le portail éducatif officiel du Complexe Scolaire Harmonie et du Groupe Scolaire Retrouvailles. L'excellence à votre portée.
+            </p>
+          </div>
+          <div>
+            <h4 class="text-white font-bold text-sm uppercase tracking-widest mb-6 border-b border-gray-800 pb-2">Liens Rapides</h4>
+            <ul class="space-y-3 text-sm">
+              <li><a href="#" class="hover:text-gold-400 transition-colors">Accueil</a></li>
+              <li><a href="#" class="hover:text-gold-400 transition-colors">Notre Projet Éducatif</a></li>
+              <li><a href="#" class="hover:text-gold-400 transition-colors">Inscriptions</a></li>
+              <li><a href="#" class="hover:text-gold-400 transition-colors">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="text-white font-bold text-sm uppercase tracking-widest mb-6 border-b border-gray-800 pb-2">Portail</h4>
+            <ul class="space-y-3 text-sm">
+              <li><a href="/login.html" class="hover:text-gold-400 transition-colors">Espace Parents</a></li>
+              <li><a href="/login.html" class="hover:text-gold-400 transition-colors">Espace RH</a></li>
+              <li><a href="/login.html" class="hover:text-gold-400 transition-colors">Espace Comptabilité</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
+          <p>&copy; 2026 Harmonie-Retrouvailles. Tous droits réservés.</p>
+          <div class="flex gap-4 mt-4 md:mt-0">
+            <a href="#" class="hover:text-white transition-colors">Mentions Légales</a>
+            <span class="text-gray-700">|</span>
+            <a href="#" class="hover:text-white transition-colors">Politique de Confidentialité</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script type="module" src="/main.js"></script>
+    <script>
+      // Simple fade-up animation observer
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-fade-in');
+          }
+        });
+      }, { threshold: 0.1 });
+      
+      document.querySelectorAll('.animate-fade-up').forEach((el) => {
+        observer.observe(el);
+      });
+    </script>
+
+    <!-- Modal Direction Premium -->
+    <div id="direction-auth-modal" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md transition-opacity duration-300" style="display:none; align-items:center; justify-content:center;">
+      
+      <!-- Modal Box -->
+      <div id="direction-modal-box" class="relative bg-white rounded-[24px] shadow-2xl w-[90%] max-w-3xl max-h-[90vh] flex flex-col scale-95 opacity-0 translate-y-4 transition-all duration-300 overflow-hidden border border-white/20">
+        
+        <!-- Header (Close Button) -->
+        <button id="close-direction-modal" class="absolute top-5 right-5 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100/50 hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition-colors z-20">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+
+        <!-- View 1: Dispatcher (School Selection) -->
+        <div id="view-dispatcher" class="flex flex-col p-8 w-full overflow-y-auto transition-opacity duration-300 hide-scrollbar">
+          <div class="text-center mb-6">
+            <h2 class="font-display text-3xl font-bold text-primary-900 tracking-tight">Accès Direction</h2>
+            <p class="text-gray-500 mt-2 text-sm">Veuillez sélectionner l'établissement que vous souhaitez administrer.</p>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-6 justify-center flex-grow items-center">
+            
+            <!-- Card 1: Harmonie -->
+            <button id="card-harmonie" class="group flex flex-col items-center p-8 bg-gradient-to-b from-gray-50 to-white border border-gray-200 rounded-2xl w-full sm:w-1/2 cursor-pointer hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:border-gold-300 transition-all duration-300 relative overflow-hidden">
+              <div class="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-sm border border-primary-100">
+                <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+              </div>
+              <h3 class="font-display font-bold text-lg text-primary-900 group-hover:text-gold-600 transition-colors">C.S. Harmonie</h3>
+              <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest font-semibold">Primaire</p>
+            </button>
+
+            <!-- Card 2: Retrouvailles -->
+            <button id="card-retrouvailles" class="group flex flex-col items-center p-8 bg-gradient-to-b from-indigo-50/50 to-white border border-indigo-100 rounded-2xl w-full sm:w-1/2 cursor-pointer hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(79,70,229,0.15)] hover:border-indigo-400 transition-all duration-300 relative overflow-hidden">
+              <div class="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-sm border border-indigo-200">
+                <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+              </div>
+              <h3 class="font-display font-bold text-lg text-primary-900 group-hover:text-indigo-600 transition-colors">G.S. Retrouvailles</h3>
+              <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest font-semibold">Humanités</p>
+            </button>
+            
+          </div>
+
+          <!-- ===================================================== -->
+          <!-- SECTION INFÉRIEURE : Registre de Présence Biométrique -->
+          <!-- ===================================================== -->
+
+          <!-- Séparateur élégant avec label centré -->
+          <div class="relative my-7" aria-hidden="true">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-dashed border-gray-200"></div>
+            </div>
+            <div class="relative flex justify-center">
+              <span class="bg-white px-4 inline-flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                <svg class="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+                Registre de Présence du Personnel
+                <svg class="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+              </span>
+            </div>
+          </div>
+
+          <!-- Module Biométrique -->
+          <div id="biometric-section" class="w-full pb-6">
+
+            <!-- Étape A : Choix de l'action (Arrivée / Départ) -->
+            <div id="bio-step-a" class="flex flex-col items-center gap-4">
+              <p class="text-xs text-gray-400 font-medium tracking-wide">Sélectionnez votre action de pointage :</p>
+              <div class="flex flex-wrap gap-3 justify-center">
+                <!-- Bouton Arrivée -->
+                <button id="btn-arrivee" data-action="arrivee"
+                  class="group flex items-center gap-2.5 px-5 py-3 rounded-2xl border-2 border-emerald-200 text-emerald-700 bg-gradient-to-br from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 hover:border-emerald-400 font-semibold text-sm transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 font-display">
+                  <svg class="w-4 h-4 text-emerald-500 group-hover:text-emerald-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                  Signaler mon Arrivée
+                </button>
+                <!-- Bouton Départ -->
+                <button id="btn-depart" data-action="depart"
+                  class="group flex items-center gap-2.5 px-5 py-3 rounded-2xl border-2 border-rose-200 text-rose-700 bg-gradient-to-br from-rose-50 to-red-50 hover:from-rose-100 hover:to-red-100 hover:border-rose-400 font-semibold text-sm transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 font-display">
+                  <svg class="w-4 h-4 text-rose-500 group-hover:text-rose-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                  Signaler mon Départ
+                </button>
+              </div>
+            </div>
+
+            <!-- Étape B : Scanner Biométrique (Empreinte digitale) -->
+            <div id="bio-step-b" class="hidden flex-col items-center gap-6 text-center">
+              <!-- Badge action sélectionnée -->
+              <div class="flex items-center gap-3">
+                <span id="bio-action-badge" class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5"></span>
+                <button id="btn-bio-back" class="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2 transition-colors font-medium">Modifier</button>
+              </div>
+
+              <!-- Zone Fingerprint Scanner -->
+              <div class="relative flex items-center justify-center" style="width:140px; height:140px;">
+                <!-- Ping rings -->
+                <span class="absolute rounded-full bg-indigo-400 animate-ping" style="width:100%; height:100%; opacity:0.08;"></span>
+                <span class="absolute rounded-full bg-indigo-400 animate-ping" style="width:78%; height:78%; opacity:0.12; animation-delay:0.5s; animation-duration:1.4s;"></span>
+                <!-- Soft glow halo -->
+                <div class="absolute rounded-full" style="width:90%; height:90%; background:radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%);"></div>
+
+                <!-- Bouton Principal Scanner -->
+                <button id="btn-fingerprint"
+                  class="animate-bio-glow relative z-10 rounded-full flex items-center justify-center group cursor-pointer transition-transform duration-300 hover:scale-105"
+                  style="width:120px; height:120px; background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0c1445 100%); border:2px solid rgba(99,102,241,0.45); flex-shrink:0;"
+                  title="Cliquer pour simuler le scan biométrique">
+
+                  <!-- Fingerprint SVG Icon (detailed) -->
+                  <svg class="transition-all duration-300 group-hover:scale-110" style="width:60px; height:60px; color:#a5b4fc;" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                    <path d="M32 10 C20 10 11 19 11 31"/>
+                    <path d="M32 10 C44 10 53 19 53 31"/>
+                    <path d="M17 45 C19 53 25 58 32 58 C39 58 45 53 47 45"/>
+                    <path d="M20 31 C20 24 25.4 18 32 18 C38.6 18 44 24 44 31 C44 38 40 44 32 47"/>
+                    <path d="M26 31 C26 27.1 28.7 24 32 24 C35.3 24 38 27.1 38 31 C38 35.5 35 41 32 43"/>
+                    <path d="M23 38 C23 23.5 27 16 32 16 C37 16 41 23.5 41 38"/>
+                    <path d="M14 35 C14 19 22 8 32 8 C42 8 50 19 50 35"/>
+                  </svg>
+
+                  <!-- Ligne de scan animée -->
+                  <div class="absolute left-3 right-3 h-px animate-bio-scan" style="background:linear-gradient(90deg, transparent 0%, rgba(165,180,252,0.8) 50%, transparent 100%); pointer-events:none;"></div>
+                </button>
+              </div>
+
+              <div class="space-y-1.5">
+                <p class="text-sm font-bold text-gray-700 font-display">Posez votre doigt sur le capteur</p>
+                <p class="text-xs text-gray-400">ou <span class="font-semibold text-indigo-600">cliquez</span> pour simuler le scan biométrique</p>
+              </div>
+            </div>
+
+            <!-- Étape C : État de Chargement -->
+            <div id="bio-loading" class="hidden flex-col items-center gap-5 text-center py-6">
+              <!-- Spinner animé -->
+              <div class="relative" style="width:72px; height:72px;">
+                <svg class="animate-spin absolute inset-0" viewBox="0 0 72 72" style="width:72px; height:72px;">
+                  <circle cx="36" cy="36" r="30" fill="none" stroke="#e0e7ff" stroke-width="6"/>
+                  <circle cx="36" cy="36" r="30" fill="none" stroke="#6366f1" stroke-width="6" stroke-dasharray="55 135" stroke-linecap="round"/>
+                </svg>
+                <!-- Icône empreinte au centre -->
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <svg style="width:28px; height:28px; color:#4338ca;" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5">
+                    <path d="M32 10 C20 10 11 19 11 31"/>
+                    <path d="M32 10 C44 10 53 19 53 31"/>
+                    <path d="M20 31 C20 24 25.4 18 32 18 C38.6 18 44 24 44 31 C44 38 40 44 32 47"/>
+                    <path d="M26 31 C26 27.1 28.7 24 32 24 C35.3 24 38 27.1 38 31 C38 35.5 35 41 32 43"/>
+                  </svg>
+                </div>
+              </div>
+              <!-- Texte de chargement progressif -->
+              <div class="space-y-2">
+                <p id="bio-loading-text" class="text-sm font-bold text-indigo-700 font-display transition-all duration-300">Lecture biométrique en cours...</p>
+                <div class="flex items-center justify-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-indigo-400 animate-dot-1 inline-block"></span>
+                  <span class="w-2 h-2 rounded-full bg-indigo-400 animate-dot-2 inline-block"></span>
+                  <span class="w-2 h-2 rounded-full bg-indigo-400 animate-dot-3 inline-block"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Étape D : Résultat (Succès / Erreur) —— injecté via JS -->
+            <div id="bio-result" class="hidden w-full"></div>
+
+          </div>
+          <!-- /biometric-section -->
+
+        </div>
+
+        <!-- View 2: Authentication Form -->
+        <div id="view-auth" class="flex flex-col w-full p-0 transition-all duration-300 translate-x-4 opacity-0 flex-grow" style="display:none;">
+          <div class="flex flex-col md:flex-row h-full w-full">
+            
+            <!-- Left Side: Context -->
+            <div class="w-full md:w-[40%] bg-primary-900 p-8 flex flex-col relative overflow-hidden">
+              <!-- Decorative circles -->
+              <div class="absolute -top-10 -left-10 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
+              <div class="absolute bottom-10 -right-10 w-32 h-32 bg-gold-400/10 rounded-full blur-xl"></div>
+              
+              <button id="btn-back-schools" class="flex items-center gap-2 text-white/70 hover:text-white transition-colors text-sm font-medium self-start group relative z-10">
+                <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Retour
+              </button>
+              
+              <div class="mt-auto mb-auto relative z-10">
+                <p class="text-gold-400 text-xs font-bold tracking-widest uppercase mb-2">Portail d'Administration</p>
+                <h2 id="selected-school-name" class="font-display text-2xl font-bold text-white leading-tight">G.S. Retrouvailles</h2>
+                <p class="text-primary-200 text-sm mt-4 font-light">Connectez-vous pour accéder à vos tableaux de bord, gérer les inscriptions et superviser l'établissement.</p>
+              </div>
+            </div>
+
+            <!-- Right Side: Form -->
+            <div class="w-full md:w-[60%] p-8 bg-white flex flex-col justify-center">
+              
+              <!-- Tabs -->
+              <div class="relative flex mb-8 border-b border-gray-100">
+                <button id="tab-login" class="w-1/2 py-3 text-sm font-semibold text-primary-900 transition-colors focus:outline-none">Se connecter</button>
+                <button id="tab-register" class="w-1/2 py-3 text-sm font-medium text-gray-500 transition-colors focus:outline-none">Créer un compte</button>
+                <!-- Animated Active Line -->
+                <div id="tab-indicator" class="absolute bottom-0 left-0 w-1/2 h-[2px] bg-primary-600 transition-transform duration-300"></div>
+              </div>
+
+              <!-- Admin Warning Badge -->
+              <div id="admin-warning-badge" class="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200/50 items-start gap-3 shadow-sm" style="display:none;">
+                <svg class="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <p class="text-xs text-amber-800 leading-relaxed font-medium">Les comptes Direction sont strictement soumis à la validation manuelle du Super-Administrateur après création.</p>
+              </div>
+
+              <!-- The Form -->
+              <form class="space-y-4" onsubmit="event.preventDefault();">
+                
+                <!-- Dynamic Role Select -->
+                <div class="space-y-1">
+                  <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Fonction / Rôle</label>
+                  <select id="auth-role" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all appearance-none cursor-pointer">
+                    <!-- Populated via JS -->
+                  </select>
+                </div>
+
+                <div class="space-y-1">
+                  <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Identifiant (Email)</label>
+                  <input type="email" placeholder="direction@ecole.edu" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all" required>
+                </div>
+
+                <div class="space-y-1">
+                  <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider flex justify-between">
+                    Mot de passe
+                    <a href="#" class="text-primary-600 hover:text-primary-700 capitalize font-medium">Oublié ?</a>
+                  </label>
+                  <input type="password" placeholder="••••••••" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all" required>
+                </div>
+
+                <button id="auth-submit-btn" type="submit" class="w-full py-3.5 mt-2 bg-primary-900 hover:bg-primary-800 text-white text-sm font-bold rounded-xl shadow-lg shadow-primary-900/20 hover:-translate-y-0.5 transition-all">
+                  Accéder à l'Espace
+                </button>
+              </form>
+
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </body>
+</html>
