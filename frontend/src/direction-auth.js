@@ -216,17 +216,41 @@ const initDirectionModal = () => {
       tabIndicator.style.transform = isLogin ? 'translateX(0%)' : 'translateX(100%)';
     }
     if (authSubmitBtn) {
-      authSubmitBtn.textContent = isLogin ? "Accéder à l'Espace" : 'Demander un accès';
+      authSubmitBtn.textContent = isLogin ? "Accéder à l'Espace" : "Créer le compte";
     }
 
-    // Gestion via style inline (l'élément utilise style="display:none" en HTML)
+    // Gestion via style inline
     if (warningBadge) {
       warningBadge.style.display = isLogin ? 'none' : 'flex';
     }
+
+    // Gestion des champs d'inscription Premium
+    const registerFields = document.getElementById('auth-register-fields');
+    const confirmContainer = document.getElementById('auth-confirm-container');
+    const backToLogin = document.getElementById('auth-back-to-login');
+    const forgotLink = document.getElementById('auth-forgot-link');
+    const passwordLabel = document.getElementById('auth-password-label');
+
+    if (registerFields) registerFields.style.display = isLogin ? 'none' : 'block';
+    if (confirmContainer) confirmContainer.style.display = isLogin ? 'none' : 'block';
+    if (backToLogin) backToLogin.style.display = isLogin ? 'none' : 'block';
+    
+    if (forgotLink) forgotLink.style.display = isLogin ? 'inline' : 'none';
+    if (passwordLabel) passwordLabel.textContent = isLogin ? 'Mot de passe' : 'Créer un mot de passe';
+
+    // Gestion des blocs biométriques
+    const bioRegister = document.getElementById('auth-bio-register');
+    const bioLogin = document.getElementById('auth-bio-login');
+    if (bioRegister) bioRegister.style.display = isLogin ? 'none' : 'block';
+    if (bioLogin) bioLogin.style.display = isLogin ? 'grid' : 'none';
   };
 
   tabLogin?.addEventListener('click',    () => switchTab('login'));
   tabRegister?.addEventListener('click', () => switchTab('register'));
+  
+  // Bouton "Se connecter ->" en bas du form d'inscription
+  document.getElementById('auth-switch-to-login-btn')?.addEventListener('click', () => switchTab('login'));
+
   switchTab('login'); // état initial
 
   /* ======================================================================
@@ -307,12 +331,21 @@ const initDirectionModal = () => {
 
     showBioStep('loading');
 
-    const loadingMessages = [
-      'Lecture biométrique en cours...',
-      "Vérification de l'identité...",
-      'Authentification du personnel...',
-      'Enregistrement du pointage...',
-    ];
+    const isRegister = selectedBioAction === 'register';
+
+    const loadingMessages = isRegister 
+      ? [
+          "Initialisation du capteur...",
+          "Lecture de l'empreinte...",
+          "Création de la clé cryptographique...",
+          "Enregistrement sécurisé..."
+        ]
+      : [
+          'Lecture biométrique en cours...',
+          "Vérification de l'identité...",
+          'Authentification du personnel...',
+          'Enregistrement du pointage...',
+        ];
 
     let msgIdx = 0;
     const msgInterval = setInterval(() => {
@@ -351,35 +384,53 @@ const initDirectionModal = () => {
     const isArrivee = selectedBioAction === 'arrivee';
 
     // Palette couleurs selon l'action
-    const palette = isArrivee
-      ? {
-          cardBg:     'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)',
-          cardBorder: '#a7f3d0',
-          dotColor:   '#10b981',
-          dotShadow:  'rgba(16,185,129,0.6)',
-          labelColor: '#065f46',
-          sepColor:   '#a7f3d0',
-          timeBg:     'linear-gradient(90deg, #059669, #10b981)',
-          timeText:   '#ffffff',
-          iconBg:     '#d1fae5',
-          iconColor:  '#065f46',
-          label:      '✓ Arrivée enregistrée',
-          resetColor: '#10b981',
-        }
-      : {
-          cardBg:     'linear-gradient(135deg, #fff1f2 0%, #fef2f2 100%)',
-          cardBorder: '#fecdd3',
-          dotColor:   '#f43f5e',
-          dotShadow:  'rgba(244,63,94,0.6)',
-          labelColor: '#9f1239',
-          sepColor:   '#fecdd3',
-          timeBg:     'linear-gradient(90deg, #be123c, #e11d48)',
-          timeText:   '#ffffff',
-          iconBg:     '#ffe4e6',
-          iconColor:  '#9f1239',
-          label:      '✓ Départ enregistré',
-          resetColor: '#e11d48',
-        };
+    let palette;
+    if (isRegister) {
+      palette = {
+        cardBg:     'linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%)',
+        cardBorder: '#c7d2fe',
+        dotColor:   '#4f46e5',
+        dotShadow:  'rgba(79,70,229,0.6)',
+        labelColor: '#3730a3',
+        sepColor:   '#c7d2fe',
+        timeBg:     'linear-gradient(90deg, #4338ca, #4f46e5)',
+        timeText:   '#ffffff',
+        iconBg:     '#e0e7ff',
+        iconColor:  '#3730a3',
+        label:      '✓ Empreinte enregistrée',
+        resetColor: '#4f46e5',
+      };
+    } else if (isArrivee) {
+      palette = {
+        cardBg:     'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)',
+        cardBorder: '#a7f3d0',
+        dotColor:   '#10b981',
+        dotShadow:  'rgba(16,185,129,0.6)',
+        labelColor: '#065f46',
+        sepColor:   '#a7f3d0',
+        timeBg:     'linear-gradient(90deg, #059669, #10b981)',
+        timeText:   '#ffffff',
+        iconBg:     '#d1fae5',
+        iconColor:  '#065f46',
+        label:      '✓ Arrivée enregistrée',
+        resetColor: '#10b981',
+      };
+    } else {
+      palette = {
+        cardBg:     'linear-gradient(135deg, #fff1f2 0%, #fef2f2 100%)',
+        cardBorder: '#fecdd3',
+        dotColor:   '#f43f5e',
+        dotShadow:  'rgba(244,63,94,0.6)',
+        labelColor: '#9f1239',
+        sepColor:   '#fecdd3',
+        timeBg:     'linear-gradient(90deg, #be123c, #e11d48)',
+        timeText:   '#ffffff',
+        iconBg:     '#ffe4e6',
+        iconColor:  '#9f1239',
+        label:      '✓ Départ enregistré',
+        resetColor: '#e11d48',
+      };
+    }
 
     const initial = personnel.name.charAt(0).toUpperCase();
 
@@ -517,6 +568,26 @@ const initDirectionModal = () => {
   btnDepart?.addEventListener('click',      () => selectBioAction('depart'));
   btnBioBack?.addEventListener('click',     () => showBioStep('a'));
   btnFingerprint?.addEventListener('click', simulateBiometricScan);
+
+  // Boutons d'authentification biométrique premium (dans le formulaire)
+  const btnBioRegister = document.getElementById('auth-bio-scan-register-btn');
+  const btnBioArrivee = document.getElementById('auth-bio-login-arrivee-btn');
+  const btnBioDepart = document.getElementById('auth-bio-login-depart-btn');
+
+  const handleBioClick = async (action) => {
+    const emailInput = document.getElementById('auth-email-input');
+    if (emailInput && !emailInput.value.trim()) {
+      alert("Veuillez d'abord entrer votre Identifiant (Email) pour utiliser la biométrie.");
+      emailInput.focus();
+      return;
+    }
+    selectedBioAction = action;
+    await simulateBiometricScan();
+  };
+
+  btnBioRegister?.addEventListener('click', () => handleBioClick('register'));
+  btnBioArrivee?.addEventListener('click', () => handleBioClick('arrivee'));
+  btnBioDepart?.addEventListener('click', () => handleBioClick('depart'));
 
   // Initialisation : affiche l'étape A (choix d'action)
   showBioStep('a');

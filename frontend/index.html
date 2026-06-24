@@ -511,11 +511,11 @@
         </div>
 
         <!-- View 2: Authentication Form -->
-        <div id="view-auth" class="flex flex-col w-full p-0 transition-all duration-300 translate-x-4 opacity-0 flex-grow" style="display:none;">
-          <div class="flex flex-col md:flex-row h-full w-full">
+        <div id="view-auth" class="flex flex-col w-full flex-1 min-h-0 transition-all duration-300 translate-x-4 opacity-0" style="display:none;">
+          <div class="flex flex-col md:flex-row w-full flex-1 min-h-0">
             
             <!-- Left Side: Context -->
-            <div class="w-full md:w-[40%] bg-primary-900 p-8 flex flex-col relative overflow-hidden">
+            <div class="w-full md:w-[40%] bg-primary-900 p-8 flex flex-col relative overflow-hidden shrink-0">
               <!-- Decorative circles -->
               <div class="absolute -top-10 -left-10 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
               <div class="absolute bottom-10 -right-10 w-32 h-32 bg-gold-400/10 rounded-full blur-xl"></div>
@@ -533,7 +533,7 @@
             </div>
 
             <!-- Right Side: Form -->
-            <div class="w-full md:w-[60%] p-8 bg-white flex flex-col justify-center">
+            <div class="w-full md:w-[60%] p-8 bg-white flex flex-col overflow-y-auto hide-scrollbar flex-1 min-h-0 relative">
               
               <!-- Tabs -->
               <div class="relative flex mb-8 border-b border-gray-100">
@@ -552,30 +552,177 @@
               <!-- The Form -->
               <form class="space-y-4" onsubmit="event.preventDefault();">
                 
-                <!-- Dynamic Role Select -->
+                <!-- Dynamic Role Select (always visible) -->
                 <div class="space-y-1">
                   <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Fonction / Rôle</label>
-                  <select id="auth-role" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all appearance-none cursor-pointer">
-                    <!-- Populated via JS -->
-                  </select>
+                  <div class="relative">
+                    <select id="auth-role" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all appearance-none cursor-pointer">
+                      <!-- Populated via JS -->
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
+                      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                  </div>
                 </div>
 
+                <!-- Email (always visible) -->
                 <div class="space-y-1">
                   <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Identifiant (Email)</label>
-                  <input type="email" placeholder="direction@ecole.edu" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all" required>
+                  <input id="auth-email-input" type="email" placeholder="direction@ecole.edu" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all" required>
                 </div>
 
+                <!-- BLOC INSCRIPTION (caché en mode connexion) -->
+                <div id="auth-register-fields" class="space-y-5" style="display:none;">
+
+                  <!-- Separator: Informations Personnelles -->
+                  <div class="flex items-center gap-3 pt-1">
+                    <div class="h-px flex-grow bg-gradient-to-r from-transparent via-primary-200 to-transparent"></div>
+                    <span class="text-[10px] font-bold text-primary-500 uppercase tracking-widest shrink-0 flex items-center gap-1.5">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+                      Informations Personnelles
+                    </span>
+                    <div class="h-px flex-grow bg-gradient-to-r from-transparent via-primary-200 to-transparent"></div>
+                  </div>
+
+                  <!-- Photo de Profil + Nom & Téléphone -->
+                  <div class="flex items-center gap-4 p-3 bg-gray-50/80 rounded-2xl border border-gray-100">
+                    <div class="relative shrink-0 group cursor-pointer">
+                      <div id="auth-avatar-preview" class="w-16 h-16 rounded-full bg-gradient-to-br from-primary-100 to-indigo-100 border-2 border-white shadow-md overflow-hidden flex items-center justify-center transition-all group-hover:shadow-lg group-hover:scale-105">
+                        <svg class="w-7 h-7 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                      </div>
+                      <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center shadow-sm group-hover:bg-primary-700 transition-colors">
+                        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                      </div>
+                      <input id="auth-photo-input" type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*">
+                    </div>
+                    <div class="flex-1 space-y-2 min-w-0">
+                      <input type="text" placeholder="Nom & Prénom complet" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all">
+                      <input type="tel" placeholder="+243 xxx xxx xxx" class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all">
+                    </div>
+                  </div>
+
+                  <!-- Adresse -->
+                  <div class="space-y-1">
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider flex gap-1.5 items-center">
+                      <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                      Adresse
+                    </label>
+                    <input type="text" placeholder="Quartier, Commune, Ville" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                  </div>
+
+                  <!-- Separator: Informations Académiques -->
+                  <div class="flex items-center gap-3 pt-1">
+                    <div class="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-200 to-transparent"></div>
+                    <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest shrink-0 flex items-center gap-1.5">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5 8.175V11a1 1 0 00.553.894l4 2a1 1 0 00.894 0l4-2A1 1 0 0015 11V8.175l2.394-1.032a1 1 0 000-1.84l-7-3z"/></svg>
+                      Informations Académiques
+                    </span>
+                    <div class="h-px flex-grow bg-gradient-to-r from-transparent via-indigo-200 to-transparent"></div>
+                  </div>
+
+                  <!-- Niveau d'étude & Option -->
+                  <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Niveau d'étude</label>
+                      <div class="relative">
+                        <select class="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all appearance-none cursor-pointer">
+                          <option value="" disabled selected>Sélectionner...</option>
+                          <option value="diplome">Diplômé(e) (D.E)</option>
+                          <option value="licence">Licence / Graduat</option>
+                          <option value="master">Master</option>
+                          <option value="doctorat">Doctorat</option>
+                          <option value="autre">Autre</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                          <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="space-y-1">
+                      <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Option / Faculté</label>
+                      <input type="text" placeholder="Ex: Pédagogie" class="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    </div>
+                  </div>
+
+                  <!-- Cours dispensés -->
+                  <div class="space-y-1">
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider flex gap-1.5 items-center">
+                      <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                      Cours dispensé(s)
+                    </label>
+                    <input type="text" placeholder="Ex: Mathématiques, Physique, Chimie..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                  </div>
+
+                </div>
+
+                <!-- Mot de passe -->
                 <div class="space-y-1">
                   <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider flex justify-between">
-                    Mot de passe
-                    <a href="#" class="text-primary-600 hover:text-primary-700 capitalize font-medium">Oublié ?</a>
+                    <span id="auth-password-label">Mot de passe</span>
+                    <a id="auth-forgot-link" href="#" class="text-primary-600 hover:text-primary-700 capitalize font-medium">Oublié ?</a>
                   </label>
-                  <input type="password" placeholder="••••••••" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all" required>
+                  <input id="auth-password-input" type="password" placeholder="8 caractères minimum" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all" required minlength="8">
                 </div>
 
-                <button id="auth-submit-btn" type="submit" class="w-full py-3.5 mt-2 bg-primary-900 hover:bg-primary-800 text-white text-sm font-bold rounded-xl shadow-lg shadow-primary-900/20 hover:-translate-y-0.5 transition-all">
+                <div id="auth-confirm-container" class="space-y-1" style="display:none;">
+                  <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Confirmer le mot de passe</label>
+                  <input id="auth-confirm-input" type="password" placeholder="Répéter le mot de passe" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                </div>
+
+                <!-- Séparateur Biométrie -->
+                <div class="relative flex items-center py-1">
+                  <div class="flex-grow border-t border-gray-200"></div>
+                  <span class="flex-shrink-0 mx-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">OU BIOMÉTRIE</span>
+                  <div class="flex-grow border-t border-gray-200"></div>
+                </div>
+
+                <!-- Bloc Biométrie Inscription -->
+                <div id="auth-bio-register" class="pb-1" style="display:none;">
+                  <p class="text-[11px] text-center text-gray-500 mb-2 font-medium">Votre empreinte servira uniquement d'identifiant d'accès sécurisé</p>
+                  <button type="button" id="auth-bio-scan-register-btn" class="group relative w-full h-[60px] rounded-xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/50 hover:from-indigo-100/50 hover:to-blue-100/50 flex items-center justify-center gap-4 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+                    <div class="relative z-10 w-9 h-9 rounded-full bg-white shadow-sm border border-indigo-100 flex items-center justify-center group-hover:scale-110 transition-all duration-300">
+                      <svg class="w-5 h-5 text-indigo-600" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5">
+                        <path d="M32 10 C20 10 11 19 11 31"/><path d="M32 10 C44 10 53 19 53 31"/><path d="M17 45 C19 53 25 58 32 58 C39 58 45 53 47 45"/><path d="M20 31 C20 24 25.4 18 32 18 C38.6 18 44 24 44 31 C44 38 40 44 32 47"/><path d="M26 31 C26 27.1 28.7 24 32 24 C35.3 24 38 27.1 38 31 C38 35.5 35 41 32 43"/>
+                      </svg>
+                    </div>
+                    <span class="font-bold text-indigo-950 text-[13px] tracking-wide relative z-10">Enregistrer mon empreinte</span>
+                  </button>
+                </div>
+
+                <!-- Bloc Biométrie Connexion (Arrivée / Départ) -->
+                <div id="auth-bio-login" class="pb-1 grid grid-cols-2 gap-3">
+                  <!-- Bouton Arrivée -->
+                  <button type="button" id="auth-bio-login-arrivee-btn" class="group relative h-[70px] rounded-xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/50 via-white to-teal-50/50 hover:from-emerald-100/50 hover:to-teal-100/50 flex flex-col items-center justify-center overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+                    <span class="font-bold text-emerald-900 text-[10px] uppercase tracking-widest mb-1.5">Heure d'arrivée</span>
+                    <svg class="w-7 h-7 text-emerald-500 group-hover:scale-110 transition-transform duration-300" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5">
+                      <path d="M32 10 C20 10 11 19 11 31"/><path d="M32 10 C44 10 53 19 53 31"/><path d="M17 45 C19 53 25 58 32 58 C39 58 45 53 47 45"/><path d="M20 31 C20 24 25.4 18 32 18 C38.6 18 44 24 44 31 C44 38 40 44 32 47"/><path d="M26 31 C26 27.1 28.7 24 32 24 C35.3 24 38 27.1 38 31 C38 35.5 35 41 32 43"/>
+                    </svg>
+                  </button>
+                  
+                  <!-- Bouton Départ -->
+                  <button type="button" id="auth-bio-login-depart-btn" class="group relative h-[70px] rounded-xl border border-rose-200/80 bg-gradient-to-br from-rose-50/50 via-white to-red-50/50 hover:from-rose-100/50 hover:to-red-100/50 flex flex-col items-center justify-center overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+                    <span class="font-bold text-rose-900 text-[10px] uppercase tracking-widest mb-1.5">Heure de départ</span>
+                    <svg class="w-7 h-7 text-rose-500 group-hover:scale-110 transition-transform duration-300" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5">
+                      <path d="M32 10 C20 10 11 19 11 31"/><path d="M32 10 C44 10 53 19 53 31"/><path d="M17 45 C19 53 25 58 32 58 C39 58 45 53 47 45"/><path d="M20 31 C20 24 25.4 18 32 18 C38.6 18 44 24 44 31 C44 38 40 44 32 47"/><path d="M26 31 C26 27.1 28.7 24 32 24 C35.3 24 38 27.1 38 31 C38 35.5 35 41 32 43"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Bouton principal -->
+                <button id="auth-submit-btn" type="submit" class="w-full py-3.5 bg-primary-900 hover:bg-primary-800 text-white text-sm font-bold rounded-xl shadow-lg shadow-primary-900/20 hover:-translate-y-0.5 transition-all">
                   Accéder à l'Espace
                 </button>
+
+                <!-- Lien retour connexion (visible seulement en mode inscription) -->
+                <div id="auth-back-to-login" class="text-center pt-1" style="display:none;">
+                  <p class="text-xs text-gray-500">
+                    Vous avez déjà un compte ?
+                    <button type="button" id="auth-switch-to-login-btn" class="text-primary-600 hover:text-primary-800 font-bold ml-1 hover:underline transition-colors">
+                      Se connecter →
+                    </button>
+                  </p>
+                </div>
+
               </form>
 
             </div>

@@ -6,11 +6,11 @@ const pool = require('../config/db'); // Fichier de config pg (supposé existant
 exports.pointerArrivee = async (req, res) => {
     try {
         const { utilisateur_id, heure_arrivee, statut, motif } = req.body;
-        
+
         // Calculer les minutes de retard par rapport à 07:30 (par exemple)
         const heureOfficielle = new Date(`1970-01-01T07:30:00Z`);
         const heureReelle = new Date(`1970-01-01T${heure_arrivee}Z`);
-        
+
         let minutes_retard = 0;
         let finalStatut = statut || 'Présent';
 
@@ -32,7 +32,7 @@ exports.pointerArrivee = async (req, res) => {
         const values = [utilisateur_id, heure_arrivee, minutes_retard, finalStatut, motif, justification];
 
         const { rows } = await pool.query(query, values);
-        
+
         res.status(201).json({
             message: 'Pointage d\'arrivée enregistré avec succès',
             pointage: rows[0]

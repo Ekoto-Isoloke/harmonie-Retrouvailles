@@ -103,3 +103,17 @@ CREATE TABLE actualites (
     cible_role VARCHAR(50), -- Optionnel: pour cibler les parents, profs...
     date_publication TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 10. WebAuthn Biométrie
+ALTER TABLE utilisateurs ADD COLUMN webauthn_challenge VARCHAR(255);
+
+CREATE TABLE webauthn_credentials (
+    id VARCHAR(255) PRIMARY KEY,
+    user_id INTEGER REFERENCES utilisateurs(id),
+    public_key BYTEA NOT NULL,
+    counter BIGINT NOT NULL,
+    device_type VARCHAR(255),
+    backed_up BOOLEAN NOT NULL DEFAULT false,
+    transports VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

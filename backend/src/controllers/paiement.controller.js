@@ -8,7 +8,7 @@ const fs = require('fs');
  */
 exports.enregistrerPaiement = async (req, res) => {
     const client = await pool.connect();
-    
+
     try {
         const { eleve_id, frais_scolaire_id, montant_paye, devise_paiement } = req.body;
         const caissier_id = req.user.id; // Supposé provenir d'un middleware JWT
@@ -70,7 +70,7 @@ exports.enregistrerPaiement = async (req, res) => {
         const qrData = JSON.stringify({
             txn: numero_transaction,
             eleve: eleve_id,
-            montant: \`\${montant_paye} \${devise_paiement}\`,
+            montant: `${montant_paye} ${devise_paiement}`,
             date: paiement.date_paiement
         });
         const qrImageBase64 = await QRCode.toDataURL(qrData);
@@ -78,8 +78,8 @@ exports.enregistrerPaiement = async (req, res) => {
         // 7. Générer le PDF
         const doc = new PDFDocument();
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', \`attachment; filename=bordereau-\${numero_transaction}.pdf\`);
-        
+        res.setHeader('Content-Disposition', `attachment; filename=bordereau-${numero_transaction}.pdf`);
+
         doc.pipe(res);
 
         // En-tête
@@ -89,17 +89,17 @@ exports.enregistrerPaiement = async (req, res) => {
         doc.moveDown();
 
         // Détails
-        doc.fontSize(12).text(\`Numéro de Transaction : \${numero_transaction}\`);
-        doc.text(\`Date : \${new Date().toLocaleString()}\`);
-        doc.text(\`Élève ID : \${eleve_id}\`);
-        doc.text(\`Motif : \${frais.nom_frais}\`);
+        doc.fontSize(12).text(`Numéro de Transaction : ${numero_transaction}`);
+        doc.text(`Date : ${new Date().toLocaleString()}`);
+        doc.text(`Élève ID : ${eleve_id}`);
+        doc.text(`Motif : ${frais.nom_frais}`);
         doc.moveDown();
-        
-        doc.text(\`Montant Payé : \${montant_paye} \${devise_paiement}\`, { bold: true });
+
+        doc.text(`Montant Payé : ${montant_paye} ${devise_paiement}`, { bold: true });
         if (taux_applique) {
-            doc.text(\`Taux appliqué : \${taux_applique}\`);
+            doc.text(`Taux appliqué : ${taux_applique}`);
         }
-        doc.text(\`Reste à Payer : \${reste_a_payer.toFixed(2)} \${frais.devise}\`, { bold: true });
+        doc.text(`Reste à Payer : ${reste_a_payer.toFixed(2)} ${frais.devise}`, { bold: true });
         doc.moveDown();
 
         // Ajouter le QR Code
@@ -111,7 +111,7 @@ exports.enregistrerPaiement = async (req, res) => {
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Erreur lors du paiement :', error);
-        res.status(500).json({ message: error.message || 'Erreur serveur lors de l\\'enregistrement du paiement.' });
+        res.status(500).json({ message: error.message || "Erreur serveur lors de l'enregistrement du paiement." });
     } finally {
         client.release();
     }
