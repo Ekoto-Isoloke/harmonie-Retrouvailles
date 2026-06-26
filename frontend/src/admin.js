@@ -5,33 +5,57 @@ import './style.css';
 // ==========================================
 const defaultData = {
     ecoleActive: 'Harmonie',
-    finance: {
-        revenus: 45000,
-        depenses: 12000,
-        fraisScolaires: [
-            { classe: '1ère Primaire', montant: 150, devise: 'USD' },
-            { classe: '7ème EB', montant: 200, devise: 'USD' }
-        ]
+    institutions: {
+        Harmonie: {
+            finance: {
+                revenus: 45000,
+                depenses: 12000,
+                fraisScolaires: [
+                    { classe: '1ère Primaire', montant: 150, devise: 'USD' },
+                    { classe: '7ème EB', montant: 200, devise: 'USD' }
+                ]
+            },
+            pedagogie: {
+                enseignants: ['Kalombo Jean', 'Mutombo Sarah'],
+                classes: ['1ère Primaire', '2ème Primaire', '7ème EB']
+            },
+            comms: {
+                smsEnvoyes: 800,
+                whatsappEnvoyes: 200
+            }
+        },
+        Retrouvailles: {
+            finance: {
+                revenus: 25000,
+                depenses: 8000,
+                fraisScolaires: [
+                    { classe: 'Maternelle', montant: 100, devise: 'USD' },
+                    { classe: '1ère Humanités', montant: 250, devise: 'USD' }
+                ]
+            },
+            pedagogie: {
+                enseignants: ['Kabongo David', 'Ilunga Pierre'],
+                classes: ['Maternelle A', 'Maternelle B', '1ère Humanités']
+            },
+            comms: {
+                smsEnvoyes: 445,
+                whatsappEnvoyes: 140
+            }
+        }
     },
     rh: {
         comptes: [
             { id: 1, nom: 'Kalombo', prenom: 'Jean', role: 'Enseignant', statut: 'Actif', ecole: 'Harmonie' },
             { id: 2, nom: 'Ngalula', prenom: 'Marie', role: 'Parent', statut: 'Actif', ecole: 'Retrouvailles' },
-            { id: 3, nom: 'Tshibangu', prenom: 'Paul', role: 'Agent', statut: 'Suspendu', ecole: 'Harmonie' }
+            { id: 3, nom: 'Tshibangu', prenom: 'Paul', role: 'Agent', statut: 'Suspendu', ecole: 'Harmonie' },
+            { id: 4, nom: 'Ilunga', prenom: 'Pierre', role: 'Enseignant', statut: 'Actif', ecole: 'Retrouvailles' }
         ],
         pointages: [
-            { nom: 'Kalombo Jean', date: '2026-06-26', statut: 'Présent', arrivee: '07:15', depart: '14:30' },
-            { nom: 'Ilunga Pierre', date: '2026-06-26', statut: 'Absent', arrivee: '--:--', depart: '--:--' }
+            { nom: 'Kalombo Jean', date: '2026-06-26', statut: 'Présent', arrivee: '07:15', depart: '14:30', ecole: 'Harmonie' },
+            { nom: 'Ilunga Pierre', date: '2026-06-26', statut: 'Absent', arrivee: '--:--', depart: '--:--', ecole: 'Retrouvailles' }
         ]
     },
-    pedagogie: {
-        enseignants: ['Kalombo Jean', 'Mutombo Sarah', 'Kabongo David'],
-        classes: ['1ère Primaire', '2ème Primaire', '7ème EB', '3ème Humanités Scientifiques'],
-        affectations: {} // { classe: [enseignant1, enseignant2] }
-    },
-    comms: {
-        smsEnvoyes: 1245,
-        whatsappEnvoyes: 340,
+    commsGlobal: {
         autoSmsRetard: true,
         autoWaRappel: false
     }
@@ -51,7 +75,7 @@ const saveDb = () => {
 // GESTION DU THEME ET DE L'INTERFACE
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     // Auth Check
     const user = JSON.parse(localStorage.getItem('hr_user'));
     if (!user || (user.role.toLowerCase() !== 'super-admin' && user.role.toLowerCase() !== 'admin')) {
@@ -64,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeToggle = document.getElementById('theme-toggle');
     const htmlClass = document.documentElement.classList;
     if (localStorage.theme === 'dark') htmlClass.add('dark');
-    
+
     themeToggle.addEventListener('click', () => {
         htmlClass.toggle('dark');
         localStorage.theme = htmlClass.contains('dark') ? 'dark' : 'light';
@@ -108,33 +132,247 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial render
     renderCurrentView();
+    initProFeatures();
+
+    // ==========================================
+    // PRO DASHBOARD FEATURES (New)
+    // ==========================================
+
+    function initProFeatures() {
+        initSpeedDial();
+        initCommandPalette();
+        initLiveActivity();
+        initDraggableWorkspace();
+        initInstitutionSwitcher();
+    }
+
+    function initInstitutionSwitcher() {
+        const btnHarmonie = document.getElementById('switch-harmonie');
+        const btnRetrouvailles = document.getElementById('switch-retrouvailles');
+
+        const updateUI = () => {
+            if (db.ecoleActive === 'Harmonie') {
+                btnHarmonie.className = "px-3 py-1 rounded-md bg-white shadow-sm text-gray-800 dark:bg-gray-600 dark:text-white transition-all";
+                btnRetrouvailles.className = "px-3 py-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all";
+            } else {
+                btnRetrouvailles.className = "px-3 py-1 rounded-md bg-white shadow-sm text-gray-800 dark:bg-gray-600 dark:text-white transition-all";
+                btnHarmonie.className = "px-3 py-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all";
+            }
+        };
+
+        btnHarmonie.addEventListener('click', () => {
+            db.ecoleActive = 'Harmonie';
+            saveDb();
+            updateUI();
+            addLiveActivity('Institution basculée sur C.S. Harmonie', 'info');
+            renderCurrentView();
+        });
+
+        btnRetrouvailles.addEventListener('click', () => {
+            db.ecoleActive = 'Retrouvailles';
+            saveDb();
+            updateUI();
+            addLiveActivity('Institution basculée sur G.S. Retrouvailles', 'info');
+            renderCurrentView();
+        });
+
+        updateUI();
+    }
+
+    function initSpeedDial() {
+        const mainBtn = document.getElementById('speed-dial-main');
+        const menu = document.getElementById('speed-dial-menu');
+
+        mainBtn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+            setTimeout(() => menu.classList.toggle('show'), 10);
+        });
+
+        document.querySelectorAll('.action-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const action = btn.dataset.action;
+                handleQuickAction(action);
+                menu.classList.remove('show');
+                setTimeout(() => menu.classList.add('hidden'), 300);
+            });
+        });
+    }
+
+    function handleQuickAction(action) {
+        switch (action) {
+            case 'new-payment':
+                currentView = 'finance';
+                renderCurrentView();
+                addLiveActivity('Ouverture du simulateur de paiement', 'info');
+                break;
+            case 'quick-attendance':
+                currentView = 'rh';
+                renderCurrentView();
+                addLiveActivity('Accès rapide aux pointages', 'info');
+                break;
+            case 'send-alert':
+                currentView = 'communication';
+                renderCurrentView();
+                addLiveActivity('Préparation d\'une alerte SMS', 'info');
+                break;
+        }
+    }
+
+    function initCommandPalette() {
+        const palette = document.getElementById('command-palette');
+        const searchInput = document.getElementById('palette-search');
+        const box = document.getElementById('palette-box');
+
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                palette.classList.remove('hidden');
+                setTimeout(() => box.classList.add('show'), 10);
+                searchInput.focus();
+            }
+            if (e.key === 'Escape') {
+                closePalette();
+            }
+        });
+
+        palette.addEventListener('click', (e) => {
+            if (e.target === palette) closePalette();
+        });
+
+        function closePalette() {
+            box.classList.remove('show');
+            setTimeout(() => palette.classList.add('hidden'), 300);
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            renderPaletteResults(e.target.value);
+        });
+    }
+
+    const commandList = [
+        { name: 'Payer Frais', role: 'Finance', icon: 'banknote', action: () => { currentView = 'finance'; renderCurrentView(); } },
+        { name: 'Gérer RH', role: 'Personnel', icon: 'users', action: () => { currentView = 'rh'; renderCurrentView(); } },
+        { name: 'Voir Pedagogie', role: 'Scolaire', icon: 'graduation-cap', action: () => { currentView = 'pedagogie'; renderCurrentView(); } },
+        { name: 'Envoyer SMS', role: 'Comms', icon: 'send', action: () => { currentView = 'communication'; renderCurrentView(); } }
+    ];
+
+    function renderPaletteResults(query) {
+        const resultsEl = document.getElementById('palette-results');
+        const filtered = commandList.filter(c => c.name.toLowerCase().includes(query.toLowerCase()));
+
+        resultsEl.innerHTML = filtered.map((c, i) => `
+            <div class="palette-item flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all ${i === 0 ? 'active' : ''}" data-idx="${i}">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="${c.icon}" class="w-4 h-4 text-gray-500"></i>
+                    <span class="text-sm font-medium dark:text-gray-200">${c.name}</span>
+                </div>
+                <span class="text-[10px] bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-500 uppercase">${c.role}</span>
+            </div>
+        `).join('');
+
+        lucide.createIcons();
+
+        document.querySelectorAll('.palette-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const idx = item.dataset.idx;
+                filtered[idx].action();
+                document.getElementById('command-palette').click(); // Close
+            });
+        });
+    }
+
+    function initLiveActivity() {
+        addLiveActivity('Système Harmonie initialisé', 'success');
+        addLiveActivity('Connecté en tant que Super Admin', 'info');
+
+        // Simulate random activity
+        setInterval(() => {
+            const activities = [
+                { msg: 'Pointage: J. Kalombo (07:15)', type: 'info' },
+                { msg: 'Nouveau message WhatsApp envoyé', type: 'success' },
+                { msg: 'Frais payés par Parent ID #2', type: 'success' }
+            ];
+            const rand = activities[Math.floor(Math.random() * activities.length)];
+            addLiveActivity(rand.msg, rand.type);
+        }, 15000);
+    }
+
+    function addLiveActivity(msg, type) {
+        const feed = document.getElementById('live-feed');
+        if (!feed) return;
+
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const item = document.createElement('div');
+        item.className = 'flex items-start gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-700/30 border-l-2 ' +
+            (type === 'success' ? 'border-l-green-500' : 'border-l-blue-500');
+        item.innerHTML = `
+            <div class="flex-1">
+                <p class="text-[10px] text-gray-800 dark:text-gray-200 leading-tight">${msg}</p>
+                <p class="text-[8px] text-gray-400 mt-0.5">${time}</p>
+            </div>
+        `;
+        feed.prepend(item);
+        if (feed.children.length > 5) feed.lastElementChild.remove();
+    }
+
+    function initDraggableWorkspace() {
+        // Dragula logic for dashboard widgets if needed
+    }
+
+    function showProReceipt(data) {
+        const modal = document.getElementById('receipt-modal');
+        const qrcEl = document.getElementById('r-qrcode');
+
+        document.getElementById('r-date').textContent = new Date().toLocaleDateString();
+        document.getElementById('r-id').textContent = '#TXN-' + Math.floor(Math.random() * 90000 + 10000);
+        document.getElementById('r-client').textContent = data.client || 'Client Inconnu';
+        document.getElementById('r-motif').textContent = data.motif || 'Paiement Manuel';
+        document.getElementById('r-amount').textContent = `$${data.amount || '0.00'}`;
+
+        modal.classList.remove('hidden');
+        qrcEl.innerHTML = '';
+        new QRCode(qrcEl, {
+            text: `VALID: ${document.getElementById('r-id').textContent} | AMT: ${data.amount}`,
+            width: 80, height: 80
+        });
+
+        addLiveActivity(`Reçu Pro généré pour ${data.client}`, 'success');
+    }
+
+    window.closeReceipt = () => {
+        document.getElementById('receipt-modal').classList.add('hidden');
+    };
+
+    document.getElementById('close-receipt').addEventListener('click', window.closeReceipt);
+    document.getElementById('print-receipt').addEventListener('click', () => window.print());
 
     // ==========================================
     // RENDERERS DES MODULES
     // ==========================================
 
     function renderDashboard() {
+        const inst = db.institutions[db.ecoleActive];
         mainContent.innerHTML = `
             <div class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Vue d'ensemble</h2>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Vue d'ensemble - ${db.ecoleActive}</h2>
                 <p class="text-gray-500 text-sm mt-1">Performances globales de l'institution.</p>
             </div>
 
-            <!-- KPIs Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                ${createKPICard('Revenus Mensuels', `$${db.finance.revenus.toLocaleString()}`, 'trending-up', 'text-brand-500', 'bg-brand-50')}
-                ${createKPICard('Dépenses / Paie', `$${db.finance.depenses.toLocaleString()}`, 'trending-down', 'text-red-500', 'bg-red-50')}
-                ${createKPICard('Comptes Actifs', db.rh.comptes.length, 'users', 'text-blue-500', 'bg-blue-50')}
-                ${createKPICard('Messages Envoyés', db.comms.smsEnvoyes + db.comms.whatsappEnvoyes, 'message-circle', 'text-purple-500', 'bg-purple-50')}
+            <!-- KPIs Cards (Now Draggable & Filtered) -->
+            <div id="dashboard-widgets" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                ${createKPICard('Revenus Mensuels', `$${inst.finance.revenus.toLocaleString()}`, 'trending-up', 'text-brand-500', 'bg-brand-50')}
+                ${createKPICard('Dépenses / Paie', `$${inst.finance.depenses.toLocaleString()}`, 'trending-down', 'text-red-500', 'bg-red-50')}
+                ${createKPICard('Comptes Actifs', db.rh.comptes.filter(u => u.ecole === db.ecoleActive).length, 'users', 'text-blue-500', 'bg-blue-50')}
+                ${createKPICard('Messages Envoyés', inst.comms.smsEnvoyes + inst.comms.whatsappEnvoyes, 'message-circle', 'text-purple-500', 'bg-purple-50')}
             </div>
 
             <!-- Charts Area -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                <div class="glass-panel p-6 rounded-2xl shadow-sm border-t-4 border-t-brand-500">
                     <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Flux Financier (Derniers mois)</h3>
                     <div id="financeChart" class="h-72 w-full"></div>
                 </div>
-                <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                <div class="glass-panel p-6 rounded-2xl shadow-sm border-t-4 border-t-gold-500">
                     <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Démographie par Section</h3>
                     <div id="demoChart" class="h-72 w-full flex justify-center"></div>
                 </div>
@@ -142,13 +380,21 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         setTimeout(initCharts, 100);
+        setTimeout(() => {
+            const container = document.getElementById('dashboard-widgets');
+            if (container) {
+                if (window.dashDrag) window.dashDrag.destroy();
+                window.dashDrag = dragula([container]);
+            }
+        }, 200);
     }
 
     function renderPedagogie() {
+        const inst = db.institutions[db.ecoleActive];
         mainContent.innerHTML = `
             <div class="flex justify-between items-center mb-8">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Gestion Pédagogique</h2>
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Gestion Pédagogique - ${db.ecoleActive}</h2>
                     <p class="text-gray-500 text-sm mt-1">Affectations et Palmarès EPST.</p>
                 </div>
                 <button class="px-4 py-2 bg-gold-500 hover:bg-gold-600 text-white rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2">
@@ -162,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="glass-panel p-4 rounded-xl shadow-sm col-span-1">
                     <h3 class="text-md font-semibold mb-4 text-gray-800 dark:text-gray-200 border-b dark:border-gray-700 pb-2">Enseignants Disponibles</h3>
                     <div id="pool-enseignants" class="min-h-[200px] flex flex-col gap-2">
-                        ${db.pedagogie.enseignants.map(e => `
+                        ${inst.pedagogie.enseignants.map(e => `
                             <div class="p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded cursor-grab shadow-sm flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">${e.charAt(0)}</div>
                                 <span class="text-sm font-medium dark:text-gray-200">${e}</span>
@@ -173,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 <!-- Classes -->
                 <div class="col-span-2 grid grid-cols-2 gap-4">
-                    ${db.pedagogie.classes.map(c => `
+                    ${inst.pedagogie.classes.map(c => `
                         <div class="glass-panel p-4 rounded-xl shadow-sm">
                             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 bg-gray-100 dark:bg-gray-800 p-2 rounded">${c}</h3>
                             <div class="drag-container min-h-[100px] bg-gray-50/50 dark:bg-gray-800/50 rounded-lg p-2 border-2 border-dashed border-gray-200 dark:border-gray-700" data-class="${c}">
@@ -194,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 accepts: function (el, target) {
                     return target !== document.getElementById('pool-enseignants');
                 }
-            }).on('drop', function(el, target, source, sibling) {
+            }).on('drop', function (el, target, source, sibling) {
                 // Here we would normally save state to DB
                 console.log('Affectation mise à jour');
             });
@@ -230,7 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                        ${db.rh.comptes.map(u => `
+                        ${db.rh.comptes.filter(u => u.ecole === db.ecoleActive).map(u => `
                             <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                                 <td class="p-4">
                                     <div class="flex items-center gap-3">
@@ -256,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Pointages du jour (Biométrie)</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                ${db.rh.pointages.map(p => `
+                ${db.rh.pointages.filter(p => p.ecole === db.ecoleActive).map(p => `
                     <div class="glass-panel p-4 rounded-xl border-l-4 ${p.statut === 'Présent' ? 'border-l-green-500' : 'border-l-red-500'}">
                         <p class="font-semibold text-gray-800 dark:text-gray-200">${p.nom}</p>
                         <p class="text-xs text-gray-500 mt-1">Arrivée: ${p.arrivee} | Départ: ${p.depart}</p>
@@ -268,9 +514,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderFinance() {
+        const inst = db.institutions[db.ecoleActive];
         mainContent.innerHTML = `
             <div class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Finances & Paie</h2>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Finances & Paie - ${db.ecoleActive}</h2>
                 <p class="text-gray-500 text-sm mt-1">Smart Accounting, Mobile Money et Calcul de Paie.</p>
             </div>
 
@@ -280,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="glass-panel p-6 rounded-2xl shadow-sm">
                     <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Grille Tarifaire (Frais Scolaires)</h3>
                     <div class="space-y-3">
-                        ${db.finance.fraisScolaires.map(f => `
+                        ${inst.finance.fraisScolaires.map(f => `
                             <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <span class="font-medium text-gray-700 dark:text-gray-300">${f.classe}</span>
                                 <span class="font-bold text-gold-600">${f.montant} ${f.devise}</span>
@@ -361,18 +608,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setTimeout(() => {
             const btn = document.getElementById('btn-simulate-pay');
-            if(btn) {
+            if (btn) {
                 btn.addEventListener('click', () => {
                     const originalText = btn.innerHTML;
                     btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Traitement...';
+
+                    const amountInput = document.querySelector('input[placeholder="ex: 50"]');
+                    const amount = amountInput ? amountInput.value : '0.00';
+                    const netSelect = document.querySelector('select');
+                    const net = netSelect ? netSelect.value : 'Paiement Direct';
+
                     setTimeout(() => {
                         btn.innerHTML = originalText;
-                        document.getElementById('receipt-area').classList.remove('hidden');
-                        document.getElementById('qrcode').innerHTML = '';
-                        new QRCode(document.getElementById('qrcode'), {
-                            text: "Reçu OFFICIEL - TXN-" + Math.floor(Math.random()*100000),
-                            width: 100,
-                            height: 100
+                        showProReceipt({
+                            client: 'Parent ' + db.rh.comptes[1].nom,
+                            motif: 'Frais Scolaires via ' + net,
+                            amount: amount
                         });
                         lucide.createIcons();
                     }, 1500);
@@ -382,9 +633,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCommunication() {
+        const inst = db.institutions[db.ecoleActive];
         mainContent.innerHTML = `
             <div class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Communication Hybride</h2>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Communication Hybride - ${db.ecoleActive}</h2>
                 <p class="text-gray-500 text-sm mt-1">SMS Low-Cost et WhatsApp Business API.</p>
             </div>
 
@@ -400,7 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-xs text-gray-500 mt-1">Envoi auto aux parents lors d'un pointage manquant.</p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" ${db.comms.autoSmsRetard ? 'checked' : ''} onchange="updateCommState('autoSmsRetard', this.checked)">
+                            <input type="checkbox" class="sr-only peer" ${db.commsGlobal.autoSmsRetard ? 'checked' : ''} onchange="updateCommState('autoSmsRetard', this.checked)">
                             <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-500"></div>
                         </label>
                     </div>
@@ -411,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-xs text-gray-500 mt-1">Envoi du PDF du bulletin si solde payé, sinon rappel.</p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" ${db.comms.autoWaRappel ? 'checked' : ''} onchange="updateCommState('autoWaRappel', this.checked)">
+                            <input type="checkbox" class="sr-only peer" ${db.commsGlobal.autoWaRappel ? 'checked' : ''} onchange="updateCommState('autoWaRappel', this.checked)">
                             <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
                         </label>
                     </div>
@@ -458,8 +710,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // HELPERS & CHARTS
     // ==========================================
 
-    window.updateCommState = function(key, val) {
-        db.comms[key] = val;
+    window.updateCommState = function (key, val) {
+        db.commsGlobal[key] = val;
         saveDb();
     };
 
@@ -480,14 +732,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function initCharts() {
         const isDark = document.documentElement.classList.contains('dark');
         const textColor = isDark ? '#9ca3af' : '#6b7280';
-        
-        // Destroy existing instances if any to prevent duplicates on tab switch
-        if(window.finChart) window.finChart.destroy();
-        if(window.demChart) window.demChart.destroy();
 
-        // Finance Chart
+        // Destroy existing instances if any to prevent duplicates on tab switch
+        if (window.finChart) window.finChart.destroy();
+        if (window.demChart) window.demChart.destroy();
+
+        // Finance Chart (Mocked difference per school)
+        const finData = db.ecoleActive === 'Harmonie'
+            ? { rev: [31, 40, 28, 51, 42, 109, 100], dep: [11, 32, 45, 32, 34, 52, 41] }
+            : { rev: [20, 30, 25, 40, 35, 80, 70], dep: [5, 15, 20, 15, 18, 30, 25] };
+
         const finOptions = {
-            series: [{ name: 'Revenus', data: [31, 40, 28, 51, 42, 109, 100] }, { name: 'Dépenses', data: [11, 32, 45, 32, 34, 52, 41] }],
+            series: [{ name: 'Revenus', data: finData.rev }, { name: 'Dépenses', data: finData.dep }],
             chart: { type: 'area', height: 280, toolbar: { show: false }, background: 'transparent' },
             colors: ['#22c55e', '#ef4444'],
             fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 90, 100] } },
@@ -499,7 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
             theme: { mode: isDark ? 'dark' : 'light' }
         };
         const finEl = document.querySelector("#financeChart");
-        if(finEl) {
+        if (finEl) {
             window.finChart = new ApexCharts(finEl, finOptions);
             window.finChart.render();
         }
@@ -515,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
             theme: { mode: isDark ? 'dark' : 'light' }
         };
         const demEl = document.querySelector("#demoChart");
-        if(demEl) {
+        if (demEl) {
             window.demChart = new ApexCharts(demEl, demOptions);
             window.demChart.render();
         }

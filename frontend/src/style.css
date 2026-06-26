@@ -143,3 +143,42 @@
   .animate-dot-2 { animation: dot-bounce 1.2s ease-in-out infinite; animation-delay: 0.2s; }
   .animate-dot-3 { animation: dot-bounce 1.2s ease-in-out infinite; animation-delay: 0.4s; }
 }
+
+/* ===== PRO DASHBOARD ENHANCEMENTS ===== */
+
+/* Speed Dial Animations */
+#speed-dial-menu.show {
+    display: flex;
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* Command Palette Animation */
+#command-palette #palette-box.show {
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* Result Item Hover */
+.palette-item.active {
+    background-color: rgba(199, 136, 44, 0.1);
+    border-left: 4px solid var(--color-gold-500);
+}
+
+/* Receipt Print Optimization */
+@media print {
+    body * { visibility: hidden; }
+    #receipt-modal, #receipt-modal *, #receipt-print-zone, #receipt-print-zone * { visibility: visible; }
+    #receipt-modal { position: absolute; left: 0; top: 0; background: white; margin: 0; padding: 0; width: 100%; height: auto; }
+    .no-print { display: none !important; }
+    #receipt-content { box-shadow: none !important; border: none !important; width: 100% !important; max-width: none !important; }
+}
+
+/* Sparkline Concept */
+.sparkline-bar {
+    transition: height 0.5s ease;
+}
+
+/* Draggable Grabbing Cursor */
+.gu-transit { opacity: 0.2; }
+.gu-mirror { cursor: grabbing !important; }
