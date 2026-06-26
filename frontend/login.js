@@ -37,8 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/compta-dashboard.html';
       } else if (role === 'enseignant' || role === 'agent') {
         window.location.href = '/rh-dashboard.html';
+      } else if (role === 'super-admin' || role === 'admin') {
+        window.location.href = '/admin-dashboard.html';
       } else {
-        // Fallback for admins or others
         window.location.href = '/'; 
       }
     } catch (error) {
