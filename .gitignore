@@ -1,5 +1,9 @@
 node_modules/
 .env
+*.log
+*.txt
+check_db_diag.js
+create_admin.js
 .DS_Store
 dist/
 build/

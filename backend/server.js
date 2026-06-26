@@ -50,5 +50,5 @@ app.post('/api/comptabilite/paiement', verifyToken, requireRole(['Comptable', 'S
 
 // Lancement du serveur
 app.listen(PORT, () => {
-    console.log('Serveur demarre sur le port ' + PORT);
+    console.log(`Serveur demarre sur le port ${PORT}`);
 });
