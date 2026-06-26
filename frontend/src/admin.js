@@ -61,15 +61,6 @@ const defaultData = {
     }
 };
 
-// Initialize DB
-if (!localStorage.getItem('admin_db')) {
-    localStorage.setItem('admin_db', JSON.stringify(defaultData));
-}
-let db = JSON.parse(localStorage.getItem('admin_db'));
-
-const saveDb = () => {
-    localStorage.setItem('admin_db', JSON.stringify(db));
-};
 
 // ==========================================
 // GESTION DU THEME ET DE L'INTERFACE
