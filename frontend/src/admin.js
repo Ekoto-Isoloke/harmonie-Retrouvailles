@@ -13,6 +13,10 @@ const defaultData = {
                 fraisScolaires: [
                     { classe: '1ère Primaire', montant: 150, devise: 'USD' },
                     { classe: '7ème EB', montant: 200, devise: 'USD' }
+                ],
+                recentPayments: [
+                    { id: 'TX-101', student: 'Leki Marc', amount: 150, date: '2026-06-25', motif: 'Frais Juin' },
+                    { id: 'TX-102', student: 'Kabea Sarah', amount: 50, date: '2026-06-26', motif: 'Reliquat' }
                 ]
             },
             pedagogie: {
@@ -31,6 +35,9 @@ const defaultData = {
                 fraisScolaires: [
                     { classe: 'Maternelle', montant: 100, devise: 'USD' },
                     { classe: '1ère Humanités', montant: 250, devise: 'USD' }
+                ],
+                recentPayments: [
+                    { id: 'TX-201', student: 'Baya Paul', amount: 100, date: '2026-06-24', motif: 'Inscription' }
                 ]
             },
             pedagogie: {
@@ -68,7 +75,7 @@ let db;
 try {
     db = storedDb ? JSON.parse(storedDb) : defaultData;
     // Migration check: if institutions is missing or old structure, reset
-    if (!db.institutions || !db.commsGlobal) {
+    if (!db.institutions || !db.commsGlobal || !db.institutions.Harmonie.finance.recentPayments) {
         console.warn('Old database structure detected. Resetting to default.');
         db = defaultData;
         localStorage.setItem('admin_db', JSON.stringify(db));
@@ -584,9 +591,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
 
-                <!-- Calcul de Paie -->
+                <!-- Historique des Paiements (Isolated) -->
                 <div class="glass-panel p-6 rounded-2xl shadow-sm lg:col-span-2">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Moteur de Paie & Pénalités</h3>
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Historique des Paiements Récents</h3>
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
+                                <th class="pb-2">Transaction ID</th>
+                                <th class="pb-2">Elève</th>
+                                <th class="pb-2">Date</th>
+                                <th class="pb-2">Motif</th>
+                                <th class="pb-2 font-bold text-right">Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            ${inst.finance.recentPayments.map(p => `
+                                <tr class="text-gray-800 dark:text-gray-200">
+                                    <td class="py-3 font-mono text-xs">${p.id}</td>
+                                    <td>${p.student}</td>
+                                    <td>${p.date}</td>
+                                    <td>${p.motif}</td>
+                                    <td class="font-bold text-right text-brand-600">$${p.amount}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Calcul de Paie (Dynamic) -->
+                <div class="glass-panel p-6 rounded-2xl shadow-sm lg:col-span-2">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Moteur de Paie (Enseignants - ${db.ecoleActive})</h3>
                     <table class="w-full text-left text-sm">
                         <thead>
                             <tr class="text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
@@ -598,20 +632,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                            <tr class="text-gray-800 dark:text-gray-200">
-                                <td class="py-3">Kalombo Jean</td>
-                                <td>$300</td>
-                                <td class="text-red-500">2</td>
-                                <td class="text-red-500">-$20</td>
-                                <td class="font-bold text-brand-600 dark:text-brand-400">$280</td>
-                            </tr>
-                            <tr class="text-gray-800 dark:text-gray-200">
-                                <td class="py-3">Mutombo Sarah</td>
-                                <td>$300</td>
-                                <td class="text-green-500">0</td>
-                                <td class="text-gray-400">$0</td>
-                                <td class="font-bold text-brand-600 dark:text-brand-400">$300</td>
-                            </tr>
+                            ${inst.pedagogie.enseignants.map(e => `
+                                <tr class="text-gray-800 dark:text-gray-200">
+                                    <td class="py-3 font-medium">${e}</td>
+                                    <td>$300</td>
+                                    <td class="text-green-500">0</td>
+                                    <td class="text-gray-400">$0</td>
+                                    <td class="font-bold text-brand-600 dark:text-brand-400">$300</td>
+                                </tr>
+                            `).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -633,7 +662,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => {
                         btn.innerHTML = originalText;
                         showProReceipt({
-                            client: 'Parent ' + db.rh.comptes[1].nom,
+                            client: 'Elève ' + (inst.pedagogie.enseignants[0] || 'Inconnu'),
                             motif: 'Frais Scolaires via ' + net,
                             amount: amount
                         });
