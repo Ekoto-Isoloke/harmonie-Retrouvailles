@@ -4,7 +4,7 @@ import './style.css';
 // ETAT GLOBAL (Mocked Database in LocalStorage)
 // ==========================================
 // DB VERSION: Increment this to force a reset on user browsers
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 const defaultData = {
     version: DB_VERSION,
@@ -20,13 +20,14 @@ const defaultData = {
                     { classe: 'Maternelle', montant: 100, devise: 'USD' }
                 ],
                 recentPayments: [
-                    { id: 'TX-101', student: 'Leki Marc', amount: 150, date: '2026-06-25', motif: 'Frais Juin' },
-                    { id: 'TX-102', student: 'Kabea Sarah', amount: 50, date: '2026-06-26', motif: 'Reliquat' }
+                    { id: 'TX-101', student: 'Leki Marc', amount: 150, date: '2026-06-25', motif: 'Frais Juin', mode: 'Mobile' },
+                    { id: 'TX-102', student: 'Kabea Sarah', amount: 50, date: '2026-06-26', motif: 'Reliquat', mode: 'Caisse' }
                 ]
             },
             pedagogie: {
                 enseignants: ['Kalombo Jean', 'Mutombo Sarah'],
-                classes: ['Maternelle', '1ère Primaire', '2ème Primaire']
+                classes: ['Maternelle', '1ère Primaire', '2ème Primaire'],
+                eleves: ['Leki Marc', 'Kabea Sarah', 'Mbuyi Paul', 'Ngalula Rose']
             },
             comms: {
                 smsEnvoyes: 800,
@@ -42,12 +43,13 @@ const defaultData = {
                     { classe: '1ère Humanités', montant: 250, devise: 'USD' }
                 ],
                 recentPayments: [
-                    { id: 'TX-201', student: 'Baya Paul', amount: 100, date: '2026-06-24', motif: 'Inscription' }
+                    { id: 'TX-201', student: 'Baya Paul', amount: 100, date: '2026-06-24', motif: 'Inscription', mode: 'Mobile' }
                 ]
             },
             pedagogie: {
                 enseignants: ['Kabongo David', 'Ilunga Pierre'],
-                classes: ['7ème EB', '1ère Humanités']
+                classes: ['7ème EB', '1ère Humanités'],
+                eleves: ['Baya Paul', 'Tshilanda Alice', 'Kasongo Joel']
             },
             comms: {
                 smsEnvoyes: 445,
@@ -79,9 +81,9 @@ let db;
 
 try {
     db = storedDb ? JSON.parse(storedDb) : defaultData;
-    // Migration/Version check: force reset if version mismatch or old structure
+    // Migration/Version check: force reset if version mismatch
     if (!db.version || db.version < DB_VERSION || !db.institutions) {
-        console.warn('Database version mismatch. Resetting to default mapping.');
+        console.warn('Database version mismatch. Resetting to default schema.');
         db = defaultData;
         localStorage.setItem('admin_db', JSON.stringify(db));
     }
@@ -352,11 +354,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('r-client').textContent = data.client || 'Client Inconnu';
         document.getElementById('r-motif').textContent = data.motif || 'Paiement Manuel';
         document.getElementById('r-amount').textContent = `$${data.amount || '0.00'}`;
+        document.getElementById('r-mode').textContent = data.mode || 'N/A';
 
         modal.classList.remove('hidden');
         qrcEl.innerHTML = '';
         new QRCode(qrcEl, {
-            text: `VALID: ${document.getElementById('r-id').textContent} | AMT: ${data.amount}`,
+            text: `VALID: ${document.getElementById('r-id').textContent} | AMT: ${data.amount} | MODE: ${data.mode}`,
             width: 80, height: 80
         });
 
@@ -382,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="text-gray-500 text-sm mt-1">Performances globales de l'institution.</p>
             </div>
 
-            <!-- KPIs Cards (Now Draggable & Filtered) -->
+            <!-- KPIs Cards -->
             <div id="dashboard-widgets" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 ${createKPICard('Revenus Mensuels', `$${inst.finance.revenus.toLocaleString()}`, 'trending-up', 'text-brand-500', 'bg-brand-50')}
                 ${createKPICard('Dépenses / Paie', `$${inst.finance.depenses.toLocaleString()}`, 'trending-down', 'text-red-500', 'bg-red-50')}
@@ -465,7 +468,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     return target !== document.getElementById('pool-enseignants');
                 }
             }).on('drop', function (el, target, source, sibling) {
-                // Here we would normally save state to DB
                 console.log('Affectation mise à jour');
             });
         }, 100);
@@ -477,14 +479,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div>
                     <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Ressources Humaines</h2>
                     <p class="text-gray-500 text-sm mt-1">Gestion des comptes et suivi des présences.</p>
-                </div>
-                <div class="flex gap-2">
-                    <select class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none dark:text-gray-200">
-                        <option>Tous les rôles</option>
-                        <option>Enseignants</option>
-                        <option>Parents</option>
-                        <option>Agents</option>
-                    </select>
                 </div>
             </div>
 
@@ -542,11 +536,71 @@ document.addEventListener('DOMContentLoaded', () => {
         mainContent.innerHTML = `
             <div class="mb-8">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Finances & Paie - ${db.ecoleActive}</h2>
-                <p class="text-gray-500 text-sm mt-1">Smart Accounting, Mobile Money et Calcul de Paie.</p>
+                <p class="text-gray-500 text-sm mt-1">Encaissement Mobile Money et Paiement en Caisse.</p>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
+                <!-- Terminal de Paiement (Switchable) -->
+                <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                    <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl mb-6">
+                        <button id="tab-momo" class="flex-1 py-2 text-sm font-semibold rounded-lg bg-white dark:bg-gray-700 shadow-sm text-brand-600 transition-all">Mobile Money</button>
+                        <button id="tab-caisse" class="flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 transition-all">Paiement Caisse</button>
+                    </div>
+
+                    <!-- Formulaire Mobile Money -->
+                    <div id="form-momo" class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Elève concerné</label>
+                            <select id="momo-student" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 dark:text-white text-sm">
+                                ${inst.pedagogie.eleves.map(e => `<option>${e}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Réseau</label>
+                                <select class="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 dark:text-white text-sm">
+                                    <option>M-Pesa</option><option>Airtel Money</option><option>Orange Money</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Téléphone</label>
+                                <input type="text" placeholder="+243..." class="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 dark:text-white text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Montant (USD)</label>
+                            <input id="momo-amount" type="number" placeholder="0.00" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 dark:text-white text-sm font-bold text-brand-600">
+                        </div>
+                        <button id="btn-pay-momo" class="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-bold shadow-lg shadow-brand-500/20 transition-all flex items-center justify-center gap-2">
+                            <i data-lucide="smartphone-nfc" class="w-5 h-5"></i> Lancer l'encaissement
+                        </button>
+                    </div>
+
+                    <!-- Formulaire Caisse (Hidden initially) -->
+                    <div id="form-caisse" class="space-y-4 hidden animate-fade-in">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Nom de l'élève (Caisse)</label>
+                            <select id="caisse-student" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 dark:text-white text-sm">
+                                ${inst.pedagogie.eleves.map(e => `<option>${e}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Type de Paiement</label>
+                            <select id="caisse-motif" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 dark:text-white text-sm">
+                                <option>Minerval</option><option>Frais d'Examen</option><option>Uniforme</option><option>Autre</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Montant Reçu (Cash)</label>
+                            <input id="caisse-amount" type="number" placeholder="0.00" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 dark:text-white text-sm font-bold text-gold-600">
+                        </div>
+                        <button id="btn-pay-caisse" class="w-full py-3 bg-gold-500 hover:bg-gold-600 text-white rounded-xl font-bold shadow-lg shadow-gold-500/20 transition-all flex items-center justify-center gap-2">
+                            <i data-lucide="banknote" class="w-5 h-5"></i> Valider & Imprimer Reçu
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Grille Tarifaire -->
                 <div class="glass-panel p-6 rounded-2xl shadow-sm">
                     <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Grille Tarifaire (Frais Scolaires)</h3>
@@ -554,128 +608,105 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${inst.finance.fraisScolaires.map(f => `
                             <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <span class="font-medium text-gray-700 dark:text-gray-300">${f.classe}</span>
-                                <span class="font-bold text-gold-600">${f.montant} ${f.devise}</span>
+                                <span class="font-bold text-gold-600 text-lg">${f.montant} ${f.devise}</span>
                             </div>
                         `).join('')}
                     </div>
-                    <button class="mt-4 w-full py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium transition-colors">
-                        + Ajouter un tarif
-                    </button>
+                    <button class="mt-4 w-full py-2 border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-500 rounded-lg text-xs font-bold hover:bg-gray-50 transition-all">+ AJOUTER UN TARIF</button>
                 </div>
 
-                <!-- Simulateur Mobile Money & Reçu -->
-                <div class="glass-panel p-6 rounded-2xl shadow-sm">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Simulateur Mobile Money</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Réseau</label>
-                            <select class="w-full p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 dark:text-white text-sm">
-                                <option>M-Pesa (Vodacom)</option>
-                                <option>Airtel Money</option>
-                                <option>Orange Money</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Numéro de téléphone</label>
-                            <input type="text" value="+243" class="w-full p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 dark:text-white text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Montant (USD)</label>
-                            <input type="number" placeholder="ex: 50" class="w-full p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 dark:text-white text-sm">
-                        </div>
-                        <button id="btn-simulate-pay" class="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2">
-                            <i data-lucide="smartphone-nfc" class="w-4 h-4"></i> Lancer le paiement
-                        </button>
-                    </div>
-
-                    <!-- Zone de reçu QR -->
-                    <div id="receipt-area" class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 hidden text-center">
-                        <p class="text-sm font-bold text-green-600 mb-3">Paiement validé !</p>
-                        <div id="qrcode" class="flex justify-center mb-3 p-2 bg-white rounded inline-block"></div>
-                        <p class="text-xs text-gray-500">Scan QR pour vérification d'authenticité</p>
-                    </div>
-                </div>
-
-                <!-- Historique des Paiements (Isolated) -->
+                <!-- Historique des Paiements -->
                 <div class="glass-panel p-6 rounded-2xl shadow-sm lg:col-span-2">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Historique des Paiements Récents</h3>
-                    <table class="w-full text-left text-sm">
-                        <thead>
-                            <tr class="text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
-                                <th class="pb-2">Transaction ID</th>
-                                <th class="pb-2">Elève</th>
-                                <th class="pb-2">Date</th>
-                                <th class="pb-2">Motif</th>
-                                <th class="pb-2 font-bold text-right">Montant</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                            ${inst.finance.recentPayments.map(p => `
-                                <tr class="text-gray-800 dark:text-gray-200">
-                                    <td class="py-3 font-mono text-xs">${p.id}</td>
-                                    <td>${p.student}</td>
-                                    <td>${p.date}</td>
-                                    <td>${p.motif}</td>
-                                    <td class="font-bold text-right text-brand-600">$${p.amount}</td>
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200 underline decoration-brand-500 underline-offset-8">Historique des Transactions - ${db.ecoleActive}</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="text-gray-400 uppercase text-[10px] tracking-widest border-b dark:border-gray-700">
+                                    <th class="pb-3 px-2">ID</th>
+                                    <th class="pb-3">Elève</th>
+                                    <th class="pb-3 text-center">Mode</th>
+                                    <th class="pb-3">Motif</th>
+                                    <th class="pb-3 font-bold text-right">Montant</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Calcul de Paie (Dynamic) -->
-                <div class="glass-panel p-6 rounded-2xl shadow-sm lg:col-span-2">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Moteur de Paie (Enseignants - ${db.ecoleActive})</h3>
-                    <table class="w-full text-left text-sm">
-                        <thead>
-                            <tr class="text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
-                                <th class="pb-2">Enseignant</th>
-                                <th class="pb-2">Salaire Base</th>
-                                <th class="pb-2">Absences (Jours)</th>
-                                <th class="pb-2">Pénalité</th>
-                                <th class="pb-2 font-bold">Net à payer</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                            ${inst.pedagogie.enseignants.map(e => `
-                                <tr class="text-gray-800 dark:text-gray-200">
-                                    <td class="py-3 font-medium">${e}</td>
-                                    <td>$300</td>
-                                    <td class="text-green-500">0</td>
-                                    <td class="text-gray-400">$0</td>
-                                    <td class="font-bold text-brand-600 dark:text-brand-400">$300</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                ${inst.finance.recentPayments.map(p => `
+                                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                                        <td class="py-4 px-2 font-mono text-[10px] text-gray-400">${p.id}</td>
+                                        <td class="font-medium text-gray-800 dark:text-gray-200">${p.student}</td>
+                                        <td class="text-center">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.mode === 'Mobile' ? 'bg-blue-50 text-blue-600' : 'bg-gold-50 text-gold-600'}">${p.mode || 'N/A'}</span>
+                                        </td>
+                                        <td class="text-gray-500">${p.motif}</td>
+                                        <td class="font-bold text-right text-brand-600">$${p.amount}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         `;
 
-        setTimeout(() => {
-            const btn = document.getElementById('btn-simulate-pay');
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    const originalText = btn.innerHTML;
-                    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Traitement...';
+        setupFinanceLogic();
+    }
 
-                    const amountInput = document.querySelector('input[placeholder="ex: 50"]');
-                    const amount = amountInput ? amountInput.value : '0.00';
-                    const netSelect = document.querySelector('select');
-                    const net = netSelect ? netSelect.value : 'Paiement Direct';
+    function setupFinanceLogic() {
+        const tabMomo = document.getElementById('tab-momo');
+        const tabCaisse = document.getElementById('tab-caisse');
+        const formMomo = document.getElementById('form-momo');
+        const formCaisse = document.getElementById('form-caisse');
 
-                    setTimeout(() => {
-                        btn.innerHTML = originalText;
-                        showProReceipt({
-                            client: 'Elève ' + (inst.pedagogie.enseignants[0] || 'Inconnu'),
-                            motif: 'Frais Scolaires via ' + net,
-                            amount: amount
-                        });
-                        lucide.createIcons();
-                    }, 1500);
-                });
-            }
-        }, 100);
+        tabMomo.addEventListener('click', () => {
+            tabMomo.className = "flex-1 py-2 text-sm font-semibold rounded-lg bg-white dark:bg-gray-700 shadow-sm text-brand-600 transition-all";
+            tabCaisse.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 transition-all";
+            formMomo.classList.remove('hidden');
+            formCaisse.classList.add('hidden');
+        });
+
+        tabCaisse.addEventListener('click', () => {
+            tabCaisse.className = "flex-1 py-2 text-sm font-semibold rounded-lg bg-white dark:bg-gray-700 shadow-sm text-gold-600 transition-all";
+            tabMomo.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-gray-500 transition-all";
+            formCaisse.classList.remove('hidden');
+            formMomo.classList.add('hidden');
+        });
+
+        // Pay MoMo
+        const btnMomo = document.getElementById('btn-pay-momo');
+        btnMomo.addEventListener('click', () => {
+            const amount = document.getElementById('momo-amount').value;
+            const student = document.getElementById('momo-student').value;
+            if (!amount) return alert('Veuillez entrer un montant');
+
+            btnMomo.disabled = true;
+            btnMomo.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Traitement...';
+            lucide.createIcons();
+
+            setTimeout(() => {
+                const tx = { id: 'TX-' + Math.floor(Math.random() * 899 + 100), student, amount: parseFloat(amount), date: new Date().toISOString().split('T')[0], motif: 'Frais MoMo', mode: 'Mobile' };
+                db.institutions[db.ecoleActive].finance.recentPayments.unshift(tx);
+                db.institutions[db.ecoleActive].finance.revenus += parseFloat(amount);
+                saveDb();
+                renderFinance();
+                showProReceipt({ client: student, amount, motif: 'Frais via Mobile Money', mode: 'Mobile' });
+            }, 2000);
+        });
+
+        // Pay Cash
+        const btnCaisse = document.getElementById('btn-pay-caisse');
+        btnCaisse.addEventListener('click', () => {
+            const amount = document.getElementById('caisse-amount').value;
+            const student = document.getElementById('caisse-student').value;
+            const motif = document.getElementById('caisse-motif').value;
+            if (!amount) return alert('Veuillez entrer un montant');
+
+            const tx = { id: 'TX-' + Math.floor(Math.random() * 899 + 100), student, amount: parseFloat(amount), date: new Date().toISOString().split('T')[0], motif, mode: 'Caisse' };
+            db.institutions[db.ecoleActive].finance.recentPayments.unshift(tx);
+            db.institutions[db.ecoleActive].finance.revenus += parseFloat(amount);
+            saveDb();
+            renderFinance();
+            showProReceipt({ client: student, amount, motif, mode: 'Caisse' });
+        });
     }
 
     function renderCommunication() {
@@ -685,76 +716,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Communication Hybride - ${db.ecoleActive}</h2>
                 <p class="text-gray-500 text-sm mt-1">SMS Low-Cost et WhatsApp Business API.</p>
             </div>
-
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
-                <!-- Automatisations -->
                 <div class="glass-panel p-6 rounded-2xl shadow-sm">
-                    <h3 class="text-lg font-semibold mb-6 text-gray-800 dark:text-gray-200">Règles d'Automatisation</h3>
-                    
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl mb-4">
-                        <div>
-                            <p class="font-semibold text-gray-800 dark:text-gray-200">Alerte Absence/Retard (SMS)</p>
-                            <p class="text-xs text-gray-500 mt-1">Envoi auto aux parents lors d'un pointage manquant.</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" ${db.commsGlobal.autoSmsRetard ? 'checked' : ''} onchange="updateCommState('autoSmsRetard', this.checked)">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-500"></div>
-                        </label>
-                    </div>
-
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                        <div>
-                            <p class="font-semibold text-gray-800 dark:text-gray-200">Rappel Frais (WhatsApp)</p>
-                            <p class="text-xs text-gray-500 mt-1">Envoi du PDF du bulletin si solde payé, sinon rappel.</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" ${db.commsGlobal.autoWaRappel ? 'checked' : ''} onchange="updateCommState('autoWaRappel', this.checked)">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
-                        </label>
+                    <h3 class="text-lg font-semibold mb-6 text-gray-800 dark:text-gray-200">Automatisations</h3>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl mb-4 text-sm font-medium">
+                        <span>Alerte Absence/Retard (SMS)</span>
+                        <input type="checkbox" ${db.commsGlobal.autoSmsRetard ? 'checked' : ''} onchange="updateCommState('autoSmsRetard', this.checked)">
                     </div>
                 </div>
-
-                <!-- Envoi Manuel -->
-                <div class="glass-panel p-6 rounded-2xl shadow-sm flex flex-col">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Envoi Manuel Rapide</h3>
-                    <div class="flex gap-2 mb-4">
-                        <button class="flex-1 py-2 rounded-lg bg-blue-50 text-blue-600 font-medium text-sm border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400"><i data-lucide="message-square" class="w-4 h-4 inline mr-1"></i> SMS</button>
-                        <button class="flex-1 py-2 rounded-lg bg-green-50 text-green-600 font-medium text-sm border border-green-200 dark:bg-green-900/30 dark:border-green-800 dark:text-green-400"><i data-lucide="message-circle" class="w-4 h-4 inline mr-1"></i> WhatsApp</button>
-                    </div>
-                    <textarea class="w-full flex-1 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-gold-400" placeholder="Rédigez votre message ici..."></textarea>
-                    <button class="mt-4 w-full py-3 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-lg font-medium shadow-sm hover:opacity-90 transition-opacity">
-                        Envoyer le message
-                    </button>
-                </div>
-
             </div>
         `;
     }
 
     function renderCoffreFort() {
         mainContent.innerHTML = `
-            <div class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Coffre-fort Numérique</h2>
-                <p class="text-gray-500 text-sm mt-1">Archivage sécurisé des documents obligatoires.</p>
-            </div>
-            
-            <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-12 flex flex-col items-center justify-center text-center bg-gray-50/50 dark:bg-gray-800/30">
-                <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-full flex items-center justify-center mb-4">
-                    <i data-lucide="upload-cloud" class="w-8 h-8"></i>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">Glissez vos fichiers ici</h3>
-                <p class="text-sm text-gray-500 mb-6">Extraits de naissance, Bulletins d'origine (PDF, JPG - Max 10MB)</p>
-                <button class="px-6 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg shadow-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                    Parcourir les fichiers
-                </button>
+            <div class="mb-8"><h2 class="text-2xl font-bold dark:text-white">Coffre-fort</h2></div>
+            <div class="border-2 border-dashed border-gray-300 dark:border-gray-700 p-12 text-center rounded-2xl">
+                <i data-lucide="upload-cloud" class="w-12 h-12 mx-auto text-gray-400 mb-4"></i>
+                <p class="text-gray-500">Uploadez les documents obligatoires ici</p>
             </div>
         `;
     }
-
-    // ==========================================
-    // HELPERS & CHARTS
-    // ==========================================
 
     window.updateCommState = function (key, val) {
         db.commsGlobal[key] = val;
@@ -763,13 +745,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createKPICard(title, value, icon, iconColor, iconBg) {
         return `
-            <div class="glass-panel p-5 rounded-2xl flex items-center gap-4">
+            <div class="glass-panel p-5 rounded-2xl flex items-center gap-4 hover:translate-y-[-2px] transition-all cursor-move">
                 <div class="w-12 h-12 rounded-full ${iconBg} ${iconColor} flex items-center justify-center">
                     <i data-lucide="${icon}"></i>
                 </div>
                 <div>
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">${title}</p>
-                    <h4 class="text-2xl font-bold text-gray-900 dark:text-white">${value}</h4>
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">${title}</p>
+                    <h4 class="text-xl font-black text-gray-900 dark:text-white">${value}</h4>
                 </div>
             </div>
         `;
@@ -778,48 +760,30 @@ document.addEventListener('DOMContentLoaded', () => {
     function initCharts() {
         const isDark = document.documentElement.classList.contains('dark');
         const textColor = isDark ? '#9ca3af' : '#6b7280';
-
-        // Destroy existing instances if any to prevent duplicates on tab switch
         if (window.finChart) window.finChart.destroy();
         if (window.demChart) window.demChart.destroy();
-
-        // Finance Chart (Mocked difference per school)
         const finData = db.ecoleActive === 'Harmonie'
             ? { rev: [31, 40, 28, 51, 42, 109, 100], dep: [11, 32, 45, 32, 34, 52, 41] }
             : { rev: [20, 30, 25, 40, 35, 80, 70], dep: [5, 15, 20, 15, 18, 30, 25] };
-
         const finOptions = {
             series: [{ name: 'Revenus', data: finData.rev }, { name: 'Dépenses', data: finData.dep }],
             chart: { type: 'area', height: 280, toolbar: { show: false }, background: 'transparent' },
             colors: ['#22c55e', '#ef4444'],
-            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 90, 100] } },
-            dataLabels: { enabled: false },
             stroke: { curve: 'smooth', width: 2 },
             xaxis: { categories: ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil'], labels: { style: { colors: textColor } } },
             yaxis: { labels: { style: { colors: textColor } } },
-            legend: { labels: { colors: textColor } },
             theme: { mode: isDark ? 'dark' : 'light' }
         };
         const finEl = document.querySelector("#financeChart");
-        if (finEl) {
-            window.finChart = new ApexCharts(finEl, finOptions);
-            window.finChart.render();
-        }
-
-        // Demographic Chart
+        if (finEl) { window.finChart = new ApexCharts(finEl, finOptions); window.finChart.render(); }
         const demOptions = {
             series: [44, 55, 13, 43],
             chart: { type: 'donut', height: 280, background: 'transparent' },
             labels: ['Maternelle', 'Primaire', 'CTEB', 'Humanités'],
             colors: ['#c7882c', '#16a34a', '#3b82f6', '#8b5cf6'],
-            stroke: { show: false },
-            legend: { position: 'bottom', labels: { colors: textColor } },
             theme: { mode: isDark ? 'dark' : 'light' }
         };
         const demEl = document.querySelector("#demoChart");
-        if (demEl) {
-            window.demChart = new ApexCharts(demEl, demOptions);
-            window.demChart.render();
-        }
+        if (demEl) { window.demChart = new ApexCharts(demEl, demOptions); window.demChart.render(); }
     }
 });
