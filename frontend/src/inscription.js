@@ -17,9 +17,71 @@ document.addEventListener('DOMContentLoaded', function () {
   var currentDemarche = 'nouvelle';
 
   // -----------------------------------------------
-  // HTML Templates (plain strings, no nested backticks)
+  // Bloc photo partagé (identique Harmonie & Retrouvailles)
+  // -----------------------------------------------
+  var tplPhoto = ''
+    + '<div class="space-y-4">'
+    +   '<h3 class="text-sm font-bold uppercase tracking-wider text-gray-500 border-b border-gray-200 pb-2">Photo du Candidat</h3>'
+    +   '<div class="flex items-start gap-6 p-5 bg-gray-50 rounded-2xl border border-dashed border-gray-300">'
+    +     '<div id="photo-preview-wrap" class="shrink-0">'
+    +       '<div id="photo-preview" class="w-28 h-32 rounded-xl bg-white border-2 border-gray-200 flex flex-col items-center justify-center overflow-hidden shadow-sm">'
+    +         '<svg class="w-10 h-10 text-gray-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>'
+    +         '<span class="text-[10px] text-gray-400 font-medium">Aperçu</span>'
+    +       '</div>'
+    +     '</div>'
+    +     '<div class="flex-1 space-y-2">'
+    +       '<label class="block text-sm font-semibold text-gray-700">Photo d\'identité du candidat</label>'
+    +       '<p class="text-xs text-gray-500">Format accepté : JPG, PNG, WEBP. Taille maximale : <strong>5 Mo</strong>.</p>'
+    +       '<label class="inline-flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-xl bg-white border border-gray-300 hover:border-gray-400 shadow-sm transition-all">'
+    +         '<svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
+    +         '<span class="text-sm text-gray-600 font-medium">Choisir une photo</span>'
+    +         '<input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp" class="sr-only">'
+    +       '</label>'
+    +       '<p id="photo-error" class="hidden text-xs text-red-500 font-medium">La photo dépasse 5 Mo. Veuillez choisir un fichier plus léger.</p>'
+    +       '<p id="photo-name" class="text-xs text-emerald-600 font-medium hidden"></p>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>';
+
+  // -----------------------------------------------
+  // Bloc Filiation Père + Mère partagé
+  // -----------------------------------------------
+  var tplFiliation = function (colorClass) {
+    return ''
+      + '<div class="space-y-4">'
+      +   '<h3 class="text-sm font-bold uppercase tracking-wider ' + colorClass + ' border-b border-gray-200 pb-2">Filiation (Parents)</h3>'
+      +   '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">'
+      +     '<div class="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">'
+      +       '<h4 class="text-xs font-bold text-gray-700 flex items-center gap-1.5">'
+      +         '<span class="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-[10px] font-bold">P</span>'
+      +         'Informations du Père'
+      +       '</h4>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nom du Père *</label><input type="text" required class="input-field"></div>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Profession</label><input type="text" class="input-field"></div>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Téléphone *</label><input type="tel" placeholder="+243..." required class="input-field phone-input"></div>'
+      +     '</div>'
+      +     '<div class="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">'
+      +       '<h4 class="text-xs font-bold text-gray-700 flex items-center gap-1.5">'
+      +         '<span class="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 text-[10px] font-bold">M</span>'
+      +         'Informations de la Mère'
+      +       '</h4>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nom de la Mère *</label><input type="text" required class="input-field"></div>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Profession</label><input type="text" class="input-field"></div>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Téléphone *</label><input type="tel" placeholder="+243..." required class="input-field phone-input"></div>'
+      +     '</div>'
+      +   '</div>'
+      +   '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Adresse e-mail des parents</label><input type="email" class="input-field"></div>'
+      + '</div>';
+  };
+
+  // -----------------------------------------------
+  // Template HARMONIE
   // -----------------------------------------------
   var tplHarmonie = ''
+    // Photo
+    + tplPhoto
+
+    // Identité
     + '<div class="space-y-4">'
     +   '<h3 class="text-sm font-bold uppercase tracking-wider text-primary-800 border-b border-gray-200 pb-2">Identité de l\'Élève</h3>'
     +   '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">'
@@ -34,8 +96,9 @@ document.addEventListener('DOMContentLoaded', function () {
     +   '</div>'
     + '</div>'
 
+    // Origine & Adresse
     + '<div class="space-y-4">'
-    +   '<h3 class="text-sm font-bold uppercase tracking-wider text-primary-800 border-b border-gray-200 pb-2">Origine &amp; Nationalité</h3>'
+    +   '<h3 class="text-sm font-bold uppercase tracking-wider text-primary-800 border-b border-gray-200 pb-2">Origine &amp; Adresse</h3>'
     +   '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">'
     +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nationalité *</label><input type="text" value="Congolaise (RDC)" required class="input-field"></div>'
     +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Province d\'origine *</label><input type="text" required class="input-field"></div>'
@@ -49,25 +112,10 @@ document.addEventListener('DOMContentLoaded', function () {
     +   '</div>'
     + '</div>'
 
-    + '<div class="space-y-4">'
-    +   '<h3 class="text-sm font-bold uppercase tracking-wider text-primary-800 border-b border-gray-200 pb-2">Filiation (Parents)</h3>'
-    +   '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">'
-    +     '<div class="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">'
-    +       '<h4 class="text-xs font-bold text-gray-700">Père</h4>'
-    +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nom du Père *</label><input type="text" required class="input-field"></div>'
-    +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Profession</label><input type="text" class="input-field"></div>'
-    +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Téléphone *</label><input type="tel" placeholder="+243..." required class="input-field phone-input"></div>'
-    +     '</div>'
-    +     '<div class="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">'
-    +       '<h4 class="text-xs font-bold text-gray-700">Mère</h4>'
-    +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nom de la Mère *</label><input type="text" required class="input-field"></div>'
-    +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Profession</label><input type="text" class="input-field"></div>'
-    +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Téléphone *</label><input type="tel" placeholder="+243..." required class="input-field phone-input"></div>'
-    +     '</div>'
-    +   '</div>'
-    +   '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Adresse e-mail des parents</label><input type="email" class="input-field"></div>'
-    + '</div>'
+    // Filiation
+    + tplFiliation('text-primary-800')
 
+    // Cursus
     + '<div class="space-y-4">'
     +   '<h3 class="text-sm font-bold uppercase tracking-wider text-primary-800 border-b border-gray-200 pb-2">Cursus Scolaire</h3>'
     +   '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">'
@@ -77,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
     +   '</div>'
     +   '<div class="p-5 bg-primary-50 border border-primary-200 rounded-xl">'
     +     '<label class="block text-sm font-bold text-primary-900 mb-2">Classe Sollicitée *</label>'
-    +     '<select required class="w-full px-4 py-3 bg-white border border-primary-300 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none">'
+    +     '<select required class="w-full px-4 py-3 bg-white border border-primary-300 rounded-xl text-sm outline-none">'
     +       '<option value="">-- Sélectionnez une classe --</option>'
     +       '<optgroup label="Maternelle">'
     +         '<option value="accueil">Accueil</option>'
@@ -97,7 +145,14 @@ document.addEventListener('DOMContentLoaded', function () {
     +   '</div>'
     + '</div>';
 
+  // -----------------------------------------------
+  // Template RETROUVAILLES
+  // -----------------------------------------------
   var tplRetrouvailles = ''
+    // Photo
+    + tplPhoto
+
+    // Identité
     + '<div class="space-y-4">'
     +   '<h3 class="text-sm font-bold uppercase tracking-wider text-secondary-600 border-b border-gray-200 pb-2">Identité de l\'Élève</h3>'
     +   '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">'
@@ -112,8 +167,9 @@ document.addEventListener('DOMContentLoaded', function () {
     +   '</div>'
     + '</div>'
 
+    // Origine & Adresse
     + '<div class="space-y-4">'
-    +   '<h3 class="text-sm font-bold uppercase tracking-wider text-secondary-600 border-b border-gray-200 pb-2">Origine &amp; Nationalité</h3>'
+    +   '<h3 class="text-sm font-bold uppercase tracking-wider text-secondary-600 border-b border-gray-200 pb-2">Origine &amp; Adresse</h3>'
     +   '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">'
     +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nationalité *</label><input type="text" value="Congolaise (RDC)" required class="input-field"></div>'
     +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Province d\'origine *</label><input type="text" required class="input-field"></div>'
@@ -126,16 +182,10 @@ document.addEventListener('DOMContentLoaded', function () {
     +   '</div>'
     + '</div>'
 
-    + '<div class="space-y-4">'
-    +   '<h3 class="text-sm font-bold uppercase tracking-wider text-secondary-600 border-b border-gray-200 pb-2">Parents ou Tuteur</h3>'
-    +   '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">'
-    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nom complet *</label><input type="text" required class="input-field"></div>'
-    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Profession</label><input type="text" class="input-field"></div>'
-    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Téléphone *</label><input type="tel" placeholder="+243..." required class="input-field phone-input"></div>'
-    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Adresse e-mail</label><input type="email" class="input-field"></div>'
-    +   '</div>'
-    + '</div>'
+    // Filiation identique à Harmonie
+    + tplFiliation('text-secondary-600')
 
+    // Cursus
     + '<div class="space-y-4">'
     +   '<h3 class="text-sm font-bold uppercase tracking-wider text-secondary-600 border-b border-gray-200 pb-2">Cursus Scolaire</h3>'
     +   '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">'
@@ -143,17 +193,18 @@ document.addEventListener('DOMContentLoaded', function () {
     +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Code de l\'école d\'origine</label><input type="text" class="input-field"></div>'
     +   '</div>'
     +   '<div class="p-4 bg-gray-50 border border-dashed border-gray-300 rounded-xl">'
-    +     '<label class="block text-xs font-semibold text-gray-700 mb-2">Pièces jointes (Bulletins, Attestation)</label>'
+    +     '<label class="block text-xs font-semibold text-gray-700 mb-2">Pièces jointes (Bulletins, Attestation de passation)</label>'
     +     '<input type="file" multiple class="block w-full text-sm text-gray-500 cursor-pointer">'
     +   '</div>'
     + '</div>'
 
+    // Orientation Scolaire
     + '<div class="space-y-4">'
     +   '<h3 class="text-sm font-bold uppercase tracking-wider text-secondary-600 border-b border-gray-200 pb-2">Orientation Scolaire</h3>'
     +   '<div class="p-5 bg-red-50 border border-red-200 rounded-xl space-y-4">'
     +     '<div>'
     +       '<label class="block text-sm font-bold text-red-900 mb-2">Classe Sollicitée *</label>'
-    +       '<select id="select-classe-humanite" required class="w-full px-4 py-3 bg-white border border-red-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none">'
+    +       '<select id="select-classe-humanite" required class="w-full px-4 py-3 bg-white border border-red-300 rounded-xl text-sm outline-none">'
     +         '<option value="">-- Sélectionnez une classe --</option>'
     +         '<optgroup label="Éducation de Base">'
     +           '<option value="7-eb">7ème Année de l\'Éducation de Base (7ème CTEB)</option>'
@@ -169,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
     +     '</div>'
     +     '<div id="container-section" class="hidden">'
     +       '<label class="block text-sm font-bold text-red-900 mb-2">Section *</label>'
-    +       '<select id="select-section" class="w-full px-4 py-3 bg-white border border-red-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none">'
+    +       '<select id="select-section" class="w-full px-4 py-3 bg-white border border-red-300 rounded-xl text-sm outline-none">'
     +         '<option value="">-- Sélectionnez la section --</option>'
     +         '<option value="sciences">Sciences</option>'
     +         '<option value="litteraire">Littéraire</option>'
@@ -179,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function () {
     +     '</div>'
     +     '<div id="container-option" class="hidden">'
     +       '<label class="block text-sm font-bold text-red-900 mb-2">Option *</label>'
-    +       '<select id="select-option" class="w-full px-4 py-3 bg-white border border-red-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none">'
+    +       '<select id="select-option" class="w-full px-4 py-3 bg-white border border-red-300 rounded-xl text-sm outline-none">'
     +         '<option value="">-- Sélectionnez l\'option --</option>'
     +       '</select>'
     +     '</div>'
@@ -204,28 +255,61 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   // -----------------------------------------------
-  // Setup inputs after injection
+  // Setup photo upload (5 Mo max)
+  // -----------------------------------------------
+  function setupPhotoUpload() {
+    var photoInput   = document.getElementById('photo-input');
+    var photoPreview = document.getElementById('photo-preview');
+    var photoError   = document.getElementById('photo-error');
+    var photoName    = document.getElementById('photo-name');
+
+    if (!photoInput) return;
+
+    photoInput.addEventListener('change', function () {
+      photoError.classList.add('hidden');
+      photoName.classList.add('hidden');
+
+      var file = photoInput.files[0];
+      if (!file) return;
+
+      // Vérification taille 5 Mo
+      if (file.size > 5 * 1024 * 1024) {
+        photoError.classList.remove('hidden');
+        photoInput.value = '';
+        return;
+      }
+
+      // Aperçu
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        photoPreview.innerHTML = '<img src="' + ev.target.result + '" class="w-full h-full object-cover" alt="Photo candidat">';
+      };
+      reader.readAsDataURL(file);
+
+      photoName.textContent = '✔ ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' Ko)';
+      photoName.classList.remove('hidden');
+    });
+  }
+
+  // -----------------------------------------------
+  // Setup inputs après injection
   // -----------------------------------------------
   function setupInputs() {
-    // Style .input-field elements
     document.querySelectorAll('.input-field').forEach(function (el) {
       el.classList.add(
         'w-full', 'px-4', 'py-3', 'bg-gray-50', 'border', 'border-gray-200',
         'rounded-xl', 'text-sm', 'transition-all', 'outline-none'
       );
-      el.style.cssText += 'focus-outline:none;';
     });
 
-    // Phone inputs: enforce +243 prefix
+    // Téléphone : préfixe +243
     document.querySelectorAll('.phone-input').forEach(function (input) {
       input.addEventListener('focus', function () {
         if (!input.value) input.value = '+243';
       });
       input.addEventListener('input', function () {
-        var raw = input.value;
-        if (!raw.startsWith('+243')) {
-          var digits = raw.replace(/[^0-9]/g, '');
-          input.value = '+243' + digits;
+        if (!input.value.startsWith('+243')) {
+          input.value = '+243' + input.value.replace(/[^0-9]/g, '');
         }
       });
       input.addEventListener('keypress', function (e) {
@@ -233,17 +317,16 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
 
-    // Humanités cascading selects
-    var selectClasse   = document.getElementById('select-classe-humanite');
-    var selectSection  = document.getElementById('select-section');
-    var selectOption   = document.getElementById('select-option');
-    var ctnSection     = document.getElementById('container-section');
-    var ctnOption      = document.getElementById('container-option');
+    // Cascades Humanités
+    var selectClasse  = document.getElementById('select-classe-humanite');
+    var selectSection = document.getElementById('select-section');
+    var selectOption  = document.getElementById('select-option');
+    var ctnSection    = document.getElementById('container-section');
+    var ctnOption     = document.getElementById('container-option');
 
     if (selectClasse) {
       selectClasse.addEventListener('change', function () {
-        var val = selectClasse.value;
-        if (val.indexOf('hum') !== -1) {
+        if (selectClasse.value.indexOf('hum') !== -1) {
           ctnSection.classList.remove('hidden');
           selectSection.setAttribute('required', 'required');
         } else {
@@ -252,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function () {
           selectSection.removeAttribute('required');
           selectOption.removeAttribute('required');
           selectSection.value = '';
-          selectOption.value = '';
+          selectOption.value  = '';
         }
       });
     }
@@ -266,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function () {
           selectOption.innerHTML = '<option value="">-- Sélectionnez l\'option --</option>';
           optionsMap[val].forEach(function (opt) {
             var o = document.createElement('option');
-            o.value = opt.val;
+            o.value       = opt.val;
             o.textContent = opt.text;
             selectOption.appendChild(o);
           });
@@ -277,10 +360,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       });
     }
+
+    // Photo
+    setupPhotoUpload();
   }
 
   // -----------------------------------------------
-  // Institution selection
+  // Choix institution
   // -----------------------------------------------
   institutionRadios.forEach(function (radio) {
     radio.addEventListener('change', function (e) {
@@ -293,24 +379,24 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // -----------------------------------------------
-  // Démarche toggle
+  // Toggle Démarche
   // -----------------------------------------------
   demarcheRadios.forEach(function (radio) {
     radio.addEventListener('change', function (e) {
       currentDemarche = e.target.value;
-      var matriculeInput = document.getElementById('matricule');
+      var mat = document.getElementById('matricule');
       if (currentDemarche === 'reinscription') {
         matriculeContainer.classList.remove('hidden');
-        if (matriculeInput) matriculeInput.setAttribute('required', 'required');
+        if (mat) mat.setAttribute('required', 'required');
       } else {
         matriculeContainer.classList.add('hidden');
-        if (matriculeInput) matriculeInput.removeAttribute('required');
+        if (mat) mat.removeAttribute('required');
       }
     });
   });
 
   // -----------------------------------------------
-  // Submit
+  // Soumission
   // -----------------------------------------------
   form.addEventListener('submit', function (e) {
     e.preventDefault();
@@ -333,7 +419,6 @@ document.addEventListener('DOMContentLoaded', function () {
       btnSubmitSpinner.classList.add('hidden');
       btnSubmitText.textContent = "Soumettre le dossier d'inscription";
 
-      // Reset
       alert('Félicitations ! Votre dossier a été soumis avec succès.');
       form.reset();
       stepDemarche.classList.add('hidden');
