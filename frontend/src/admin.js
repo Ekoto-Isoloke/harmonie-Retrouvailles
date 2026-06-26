@@ -3,7 +3,11 @@ import './style.css';
 // ==========================================
 // ETAT GLOBAL (Mocked Database in LocalStorage)
 // ==========================================
+// DB VERSION: Increment this to force a reset on user browsers
+const DB_VERSION = 5;
+
 const defaultData = {
+    version: DB_VERSION,
     ecoleActive: 'Harmonie',
     institutions: {
         Harmonie: {
@@ -12,7 +16,8 @@ const defaultData = {
                 depenses: 12000,
                 fraisScolaires: [
                     { classe: '1ère Primaire', montant: 150, devise: 'USD' },
-                    { classe: '7ème EB', montant: 200, devise: 'USD' }
+                    { classe: '2ème Primaire', montant: 150, devise: 'USD' },
+                    { classe: 'Maternelle', montant: 100, devise: 'USD' }
                 ],
                 recentPayments: [
                     { id: 'TX-101', student: 'Leki Marc', amount: 150, date: '2026-06-25', motif: 'Frais Juin' },
@@ -21,7 +26,7 @@ const defaultData = {
             },
             pedagogie: {
                 enseignants: ['Kalombo Jean', 'Mutombo Sarah'],
-                classes: ['1ère Primaire', '2ème Primaire', '7ème EB']
+                classes: ['Maternelle', '1ère Primaire', '2ème Primaire']
             },
             comms: {
                 smsEnvoyes: 800,
@@ -33,7 +38,7 @@ const defaultData = {
                 revenus: 25000,
                 depenses: 8000,
                 fraisScolaires: [
-                    { classe: 'Maternelle', montant: 100, devise: 'USD' },
+                    { classe: '7ème EB', montant: 200, devise: 'USD' },
                     { classe: '1ère Humanités', montant: 250, devise: 'USD' }
                 ],
                 recentPayments: [
@@ -42,7 +47,7 @@ const defaultData = {
             },
             pedagogie: {
                 enseignants: ['Kabongo David', 'Ilunga Pierre'],
-                classes: ['Maternelle A', 'Maternelle B', '1ère Humanités']
+                classes: ['7ème EB', '1ère Humanités']
             },
             comms: {
                 smsEnvoyes: 445,
@@ -74,9 +79,9 @@ let db;
 
 try {
     db = storedDb ? JSON.parse(storedDb) : defaultData;
-    // Migration check: if institutions is missing or old structure, reset
-    if (!db.institutions || !db.commsGlobal || !db.institutions.Harmonie.finance.recentPayments) {
-        console.warn('Old database structure detected. Resetting to default.');
+    // Migration/Version check: force reset if version mismatch or old structure
+    if (!db.version || db.version < DB_VERSION || !db.institutions) {
+        console.warn('Database version mismatch. Resetting to default mapping.');
         db = defaultData;
         localStorage.setItem('admin_db', JSON.stringify(db));
     }
