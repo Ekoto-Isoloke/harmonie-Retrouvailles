@@ -61,6 +61,27 @@ const defaultData = {
     }
 };
 
+// Initialize DB
+let storedDb = localStorage.getItem('admin_db');
+let db;
+
+try {
+    db = storedDb ? JSON.parse(storedDb) : defaultData;
+    // Migration check: if institutions is missing or old structure, reset
+    if (!db.institutions || !db.commsGlobal) {
+        console.warn('Old database structure detected. Resetting to default.');
+        db = defaultData;
+        localStorage.setItem('admin_db', JSON.stringify(db));
+    }
+} catch (e) {
+    console.error('Database corruption. Resetting.', e);
+    db = defaultData;
+    localStorage.setItem('admin_db', JSON.stringify(db));
+}
+
+const saveDb = () => {
+    localStorage.setItem('admin_db', JSON.stringify(db));
+};
 
 // ==========================================
 // GESTION DU THEME ET DE L'INTERFACE
