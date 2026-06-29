@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" class="light">
+<html lang="fr" class="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -123,35 +123,39 @@
 
         /* Thermal Print Styles (POS 80mm) */
         @media print {
-            body * {
-                visibility: hidden;
+
+            /* Hide all dashboard chrome */
+            #sidebar,
+            #topbar,
+            .no-print,
+            #view-container>*:not(#print-frame) {
+                display: none !important;
             }
 
-            #receipt-modal,
-            #receipt-modal * {
-                visibility: visible;
-            }
-
-            #receipt-modal {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 80mm;
-                /* Standards POS paper width */
-                margin: 0;
-                padding: 0;
-            }
-
+            /* Show only the receipt area */
             #receipt-print-zone {
+                display: block !important;
+                visibility: visible !important;
                 width: 80mm;
                 padding: 5mm;
                 font-family: 'Courier New', Courier, monospace;
-                /* Monospaced for receipt */
                 color: #000;
+                margin: 0 auto;
             }
 
-            .no-print {
-                display: none !important;
+            /* Ensure receipt modal is visible when printing */
+            #receipt-modal {
+                position: static !important;
+                background: none !important;
+                display: block !important;
+                visibility: visible !important;
+            }
+
+            #receipt-content {
+                box-shadow: none !important;
+                border: none !important;
+                width: 80mm !important;
+                margin: 0 auto;
             }
         }
     </style>
