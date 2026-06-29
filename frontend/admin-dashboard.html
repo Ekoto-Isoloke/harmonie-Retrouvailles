@@ -115,11 +115,44 @@
             scrollbar-width: none;
         }
 
-        /* Dragula styling overrides */
         .gu-mirror {
             opacity: 0.8;
             cursor: grabbing;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Thermal Print Styles (POS 80mm) */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #receipt-modal,
+            #receipt-modal * {
+                visibility: visible;
+            }
+
+            #receipt-modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 80mm;
+                /* Standards POS paper width */
+                margin: 0;
+                padding: 0;
+            }
+
+            #receipt-print-zone {
+                width: 80mm;
+                padding: 5mm;
+                font-family: 'Courier New', Courier, monospace;
+                /* Monospaced for receipt */
+                color: #000;
+            }
+
+            .no-print {
+                display: none !important;
+            }
         }
     </style>
 </head>
@@ -320,30 +353,30 @@
         <div id="receipt-modal" class="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center hidden p-4">
             <div class="bg-white dark:bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden relative"
                 id="receipt-content">
-                <!-- Receipt designed to look like a pro physical slip -->
-                <div class="p-8 text-gray-900" id="receipt-print-zone">
-                    <div class="text-center border-b-2 border-dashed border-gray-200 pb-4 mb-4">
-                        <div class="text-xl font-bold uppercase">Harmonie & Retrouvailles</div>
-                        <div class="text-xs text-gray-500">Complexe Scolaire & Groupe Scolaire</div>
-                        <div class="text-[10px] italic">"L'excellence au service de l'éducation"</div>
+                <!-- Thermal Receipt Layout -->
+                <div class="p-6 bg-white text-black font-mono" id="receipt-print-zone"
+                    style="max-width: 80mm; margin: 0 auto; color: black !important;">
+                    <div class="text-center border-b-2 border-dashed border-black pb-3 mb-3">
+                        <div class="text-lg font-black uppercase leading-tight text-black">HARMONIE</div>
+                        <div class="text-lg font-black uppercase leading-tight text-black pb-1">& RETROUVAILLES</div>
+                        <div class="text-[10px] text-black">C.S. & G.S.</div>
+                        <div class="text-[10px] text-black italic">Excellence Educative</div>
                     </div>
 
-                    <div class="flex justify-between items-center mb-6">
-                        <div>
-                            <div class="text-[10px] uppercase text-gray-400">Date du paiement</div>
-                            <div class="text-sm font-semibold" id="r-date">26/06/2026</div>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-[10px] uppercase text-gray-400">N° de Reçu</div>
-                            <div class="text-sm font-mono font-bold" id="r-id">#TXN-88291</div>
-                        </div>
+                    <div class="mb-4">
+                        <div class="text-[12px] font-bold text-black" id="r-date">26/06/2026</div>
+                        <div class="text-[12px] font-bold text-black" id="r-id">#TXN-88291</div>
                     </div>
 
+                    <div
+                        class="text-[12px] border-t border-b border-dotted border-black py-2 mb-4 text-black receipt-body">
+                        <!-- Dynamic content injected here -->
+                    </div>
 
-                    <div class="flex flex-col items-center gap-2">
-                        <div id="r-qrcode" class="p-2 border border-gray-100 rounded bg-white"></div>
-                        <div class="text-[8px] text-gray-400 text-center">
-                            Scan pour vérification de conformité numérique<br>Document officiel Harmonie & Retrouvailles
+                    <div class="flex flex-col items-center gap-1 mt-4">
+                        <div id="r-qrcode" class="p-1 border border-black bg-white inline-block"></div>
+                        <div class="text-[8px] text-black text-center mt-1 uppercase font-bold">
+                            Document Officiel<br>Gardez precieusement
                         </div>
                     </div>
                 </div>
