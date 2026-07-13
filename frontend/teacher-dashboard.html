@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Espace Enseignant | Harmonie-Retrouvailles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0a192f; }
+    .font-display { font-family: 'Playfair Display', serif; }
+    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+    .glass-light { background: rgba(255,255,255,0.07); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-link { display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;font-size:14px;font-weight:600;color:rgba(255,255,255,0.6);transition:all .2s;cursor:pointer; }
+    .sidebar-link:hover, .sidebar-link.active { background:rgba(255,255,255,0.08);color:#fff; }
+    .sidebar-link.active { border-left: 3px solid #f59e0b; padding-left: 13px; }
+    .tab-active { background: #f59e0b; color: #0a192f; }
+    .tab-inactive { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6); }
+    .badge-green { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+    .badge-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .badge-amber { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+    .kpi-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 24px; transition: all .3s; }
+    .kpi-card:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
+    ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+  </style>
+</head>
+<body class="text-white min-h-screen flex">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 min-h-screen glass flex flex-col py-6 px-4 flex-shrink-0 fixed left-0 top-0 bottom-0 z-40">
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-2 mb-8">
+      <div class="w-10 h-10 bg-[#0a192f] border-2 border-amber-500 flex items-center justify-center font-display font-bold text-base rounded-lg">HR</div>
+      <div>
+        <p class="font-black text-sm leading-tight">Espace</p>
+        <p class="text-amber-400 text-xs font-bold">Enseignant</p>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="space-y-1 flex-1">
+      <div class="sidebar-link active" onclick="showView('accueil')">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Vue d'ensemble
+      </div>
+      <div class="sidebar-link" onclick="showView('presences')">
+        <i data-lucide="user-check" class="w-5 h-5"></i> Présences Élèves
+      </div>
+      <div class="sidebar-link" onclick="showView('cahier')">
+        <i data-lucide="book-open" class="w-5 h-5"></i> Cahier de Texte
+      </div>
+      <div class="sidebar-link" onclick="showView('notes')">
+        <i data-lucide="bar-chart-2" class="w-5 h-5"></i> Saisie des Notes
+      </div>
+      <div class="sidebar-link" onclick="showView('planning')">
+        <i data-lucide="calendar" class="w-5 h-5"></i> Mon Planning
+      </div>
+      <div class="sidebar-link" onclick="showView('messagerie')">
+        <i data-lucide="message-circle" class="w-5 h-5"></i> Messagerie Direction
+        <span class="ml-auto bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">2</span>
+      </div>
+    </nav>
+
+    <!-- User -->
+    <div class="mt-auto">
+      <div class="glass-light p-4 rounded-2xl mb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-sm" id="teacher-avatar">PB</div>
+          <div>
+            <p class="font-bold text-sm" id="teacher-name">Prof. Baya</p>
+            <p class="text-[11px] text-gray-400" id="teacher-role">Enseignant</p>
+          </div>
+        </div>
+      </div>
+      <button onclick="localStorage.clear(); window.location.href='/login.html'" class="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-red-400 hover:bg-red-500/10 transition text-sm font-bold">
+        <i data-lucide="log-out" class="w-4 h-4"></i> Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="ml-64 flex-1 p-8 overflow-y-auto" id="main-content">
+    <!-- Views dynamically injected -->
+  </main>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem('hr_user')) || { nom: 'Baya', prenom: 'Paul', role: 'Enseignant' };
+    document.getElementById('teacher-name').textContent = `${user.prenom} ${user.nom}`;
+    document.getElementById('teacher-role').textContent = user.role || 'Enseignant';
+    const initials = (user.prenom[0] || '') + (user.nom[0] || '');
+    document.getElementById('teacher-avatar').textContent = initials.toUpperCase();
+
+    const mockClasses = ['3ème Humanités — Math-Physique', '2ème Humanités — Chimie-Bio', '1ère Primaire'];
+    const mockEleves = [
+      { nom: 'MUKENDI KABUYA', statut: 'present' },
+      { nom: 'BAYA PAUL JR', statut: 'absent' },
+      { nom: 'TSHILANDA ALICE', statut: 'present' },
+      { nom: 'KABONGO MERVEILLE', statut: 'retard' },
+      { nom: 'LEKI MARC', statut: 'present' },
+    ];
+
+    function setActiveLink(viewName) {
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      const links = document.querySelectorAll('.sidebar-link');
+      const map = { accueil:0, presences:1, cahier:2, notes:3, planning:4, messagerie:5 };
+      if (links[map[viewName]]) links[map[viewName]].classList.add('active');
+    }
+
+    function showView(name) {
+      setActiveLink(name);
+      const c = document.getElementById('main-content');
+      switch(name) {
+        case 'accueil': c.innerHTML = viewAccueil(); break;
+        case 'presences': c.innerHTML = viewPresences(); break;
+        case 'cahier': c.innerHTML = viewCahier(); break;
+        case 'notes': c.innerHTML = viewNotes(); break;
+        case 'planning': c.innerHTML = viewPlanning(); break;
+        case 'messagerie': c.innerHTML = viewMessagerie(); break;
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function viewAccueil() {
+      return `
+        <div class="mb-8">
+          <h2 class="text-3xl font-black uppercase tracking-tighter">Bonjour, ${user.prenom} 👋</h2>
+          <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">Tableau de bord — ${new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'})}</p>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div class="kpi-card">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mb-3"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i></div>
+            <div class="text-2xl font-black">3</div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Classes</div>
+          </div>
+          <div class="kpi-card">
+            <div class="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center mb-3"><i data-lucide="user-check" class="w-5 h-5 text-green-400"></i></div>
+            <div class="text-2xl font-black">87<span class="text-sm font-normal text-gray-400">%</span></div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Présence moy.</div>
+          </div>
+          <div class="kpi-card">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mb-3"><i data-lucide="book-open" class="w-5 h-5 text-amber-400"></i></div>
+            <div class="text-2xl font-black">12</div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Devoirs envoyés</div>
+          </div>
+          <div class="kpi-card">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-3"><i data-lucide="bar-chart-2" class="w-5 h-5 text-purple-400"></i></div>
+            <div class="text-2xl font-black">14.2</div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Moyenne générale</div>
+          </div>
+        </div>
+
+        <!-- Classes + Cours du jour -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="glass p-6 rounded-2xl">
+            <h3 class="font-black text-base uppercase tracking-wider mb-4 flex items-center gap-2"><i data-lucide="layers" class="w-5 h-5 text-amber-400"></i> Mes Classes</h3>
+            <div class="space-y-3">
+              ${mockClasses.map((cls, i) => `
+                <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition cursor-pointer" onclick="showView('presences')">
+                  <div>
+                    <p class="font-bold text-sm">${cls}</p>
+                    <p class="text-xs text-gray-400">${[32,28,35][i]} élèves</p>
+                  </div>
+                  <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="glass p-6 rounded-2xl">
+            <h3 class="font-black text-base uppercase tracking-wider mb-4 flex items-center gap-2"><i data-lucide="clock" class="w-5 h-5 text-blue-400"></i> Prochains Cours Aujourd'hui</h3>
+            <div class="space-y-3">
+              ${[
+                { heure: '08h00 – 09h30', classe: '3ème Humanités', salle: 'B12', statut: 'terminé' },
+                { heure: '10h00 – 11h30', classe: '2ème Humanités', salle: 'A07', statut: 'en cours' },
+                { heure: '14h00 – 15h30', classe: '1ère Primaire', salle: 'C03', statut: 'à venir' },
+              ].map(c => `
+                <div class="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+                  <div class="text-xs font-mono text-gray-400 w-28 flex-shrink-0">${c.heure}</div>
+                  <div class="flex-1">
+                    <p class="font-bold text-sm">${c.classe}</p>
+                    <p class="text-[11px] text-gray-500">Salle ${c.salle}</p>
+                  </div>
+                  <span class="px-2 py-1 rounded-full text-[10px] font-black uppercase ${c.statut==='terminé'?'badge-green':c.statut==='en cours'?'badge-amber':'badge-red'}">${c.statut}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function viewPresences() {
+      return `
+        <div class="mb-8 flex items-end justify-between">
+          <div>
+            <h2 class="text-3xl font-black uppercase tracking-tighter">Présences Élèves</h2>
+            <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">Pointage journalier par classe</p>
+          </div>
+          <button onclick="alert('Présences sauvegardées !')" class="px-6 py-3 bg-amber-500 text-[#0a192f] font-black rounded-xl hover:bg-amber-400 transition shadow-lg flex items-center gap-2">
+            <i data-lucide="save" class="w-4 h-4"></i> Enregistrer
+          </button>
+        </div>
+
+        <div class="glass p-2 rounded-2xl flex gap-2 mb-6 w-fit">
+          ${mockClasses.map((cls, i) => `<button class="px-5 py-2.5 rounded-xl text-sm font-black transition ${i===0?'tab-active':'tab-inactive'}">${cls.split('—')[0].trim()}</button>`).join('')}
+        </div>
+
+        <div class="glass p-6 rounded-2xl">
+          <table class="w-full">
+            <thead class="text-[10px] text-gray-400 uppercase tracking-widest border-b border-white/10">
+              <tr><th class="pb-4 text-left">Élève</th><th class="pb-4 text-center">Présent</th><th class="pb-4 text-center">Absent</th><th class="pb-4 text-center">Retard</th><th class="pb-4 text-left">Note</th></tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              ${mockEleves.map(e => `
+                <tr class="hover:bg-white/3 transition">
+                  <td class="py-4 font-bold">${e.nom}</td>
+                  <td class="py-4 text-center"><input type="radio" name="statut-${e.nom}" value="present" ${e.statut==='present'?'checked':''} class="accent-green-500 w-4 h-4"></td>
+                  <td class="py-4 text-center"><input type="radio" name="statut-${e.nom}" value="absent" ${e.statut==='absent'?'checked':''} class="accent-red-500 w-4 h-4"></td>
+                  <td class="py-4 text-center"><input type="radio" name="statut-${e.nom}" value="retard" ${e.statut==='retard'?'checked':''} class="accent-amber-500 w-4 h-4"></td>
+                  <td class="py-4"><input type="text" placeholder="Observation..." class="text-xs px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white outline-none focus:ring-1 focus:ring-amber-500 w-48"></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    function viewCahier() {
+      return `
+        <div class="mb-8 flex items-end justify-between">
+          <div>
+            <h2 class="text-3xl font-black uppercase tracking-tighter">Cahier de Texte</h2>
+            <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">Devoirs, leçons et ressources envoyés aux parents</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <!-- Form -->
+          <div class="lg:col-span-2 glass p-6 rounded-2xl space-y-4">
+            <h3 class="font-black uppercase tracking-wider text-sm mb-4">Nouveau Devoir / Leçon</h3>
+            <div>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Classe cible</label>
+              <select class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+                ${mockClasses.map(c => `<option>${c}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Type</label>
+              <select class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+                <option>Devoir à rendre</option><option>Leçon à apprendre</option><option>Exercice de préparation</option><option>Avis important</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Date limite</label>
+              <input type="date" class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Description</label>
+              <textarea rows="3" placeholder="Détaillez le devoir..." class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
+            </div>
+            <button onclick="alert('Devoir publié sur le portail des parents !')" class="w-full py-3 bg-amber-500 text-[#0a192f] font-black rounded-xl hover:bg-amber-400 transition flex items-center justify-center gap-2">
+              <i data-lucide="send" class="w-4 h-4"></i> Publier aux Parents
+            </button>
+          </div>
+          <!-- History -->
+          <div class="lg:col-span-3 glass p-6 rounded-2xl">
+            <h3 class="font-black uppercase tracking-wider text-sm mb-6">Historique des Publications</h3>
+            <div class="space-y-4">
+              ${[
+                { type: 'Devoir', titre: 'Exercices p.45-47 — Algèbre', classe: '3ème Humanités', date: 'Il y a 1h', icon: 'book', color: 'amber' },
+                { type: 'Leçon', titre: 'Chapitre 6 — Réactions chimiques', classe: '2ème Humanités', date: 'Hier', icon: 'flask-conical', color: 'blue' },
+                { type: 'Devoir', titre: 'Calcul mental — Tables', classe: '1ère Primaire', date: '10 Juil.', icon: 'calculator', color: 'green' },
+              ].map(d => `
+                <div class="flex items-start gap-4 p-4 bg-white/5 rounded-xl hover:bg-white/8 transition">
+                  <div class="p-2.5 rounded-xl bg-${d.color}-500/20 text-${d.color}-400 flex-shrink-0"><i data-lucide="${d.icon}" class="w-5 h-5"></i></div>
+                  <div class="flex-1">
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="font-bold text-sm">${d.titre}</p>
+                      <span class="text-[10px] text-gray-500 whitespace-nowrap font-mono">${d.date}</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">${d.classe} • <span class="badge-amber px-1.5 py-0.5 rounded text-[10px] font-black">${d.type}</span></p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function viewNotes() {
+      return `
+        <div class="mb-8">
+          <h2 class="text-3xl font-black uppercase tracking-tighter">Saisie des Notes</h2>
+          <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">Entrez les résultats d'évaluations par classe</p>
+        </div>
+        <div class="glass p-6 rounded-2xl mb-6 flex flex-wrap gap-4 items-end">
+          <div class="flex-1 min-w-40">
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Classe</label>
+            <select class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+              ${mockClasses.map(c => `<option>${c}</option>`).join('')}
+            </select>
+          </div>
+          <div class="flex-1 min-w-40">
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Type d'évaluation</label>
+            <select class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+              <option>Interrogation (10 pts)</option><option>Devoir (20 pts)</option><option>Examen mi-trimestre (20 pts)</option><option>Examen final (100 pts)</option>
+            </select>
+          </div>
+          <div class="flex-1 min-w-40">
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Date</label>
+            <input type="date" class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+          </div>
+        </div>
+        <div class="glass p-6 rounded-2xl">
+          <table class="w-full">
+            <thead class="text-[10px] text-gray-400 uppercase tracking-widest border-b border-white/10">
+              <tr><th class="pb-4 text-left">Élève</th><th class="pb-4 text-center">Note /20</th><th class="pb-4 text-center">Appréciation</th></tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              ${mockEleves.map((e, i) => `
+                <tr class="hover:bg-white/3 transition">
+                  <td class="py-4 font-bold">${e.nom}</td>
+                  <td class="py-4 text-center"><input type="number" min="0" max="20" value="${[15,8,18,12,14][i]}" class="w-20 text-center px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500 font-black text-lg"></td>
+                  <td class="py-4 text-center"><span class="px-3 py-1 rounded-full text-[10px] font-black ${[15,8,18,12,14][i]>=14?'badge-green':[15,8,18,12,14][i]>=10?'badge-amber':'badge-red'}">${[15,8,18,12,14][i]>=14?'Bien':[15,8,18,12,14][i]>=10?'Passable':'Insuffisant'}</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <button onclick="alert('Notes sauvegardées et visibles sur le portail des parents !')" class="mt-6 px-8 py-3 bg-amber-500 text-[#0a192f] font-black rounded-xl hover:bg-amber-400 transition shadow-lg flex items-center gap-2">
+            <i data-lucide="upload-cloud" class="w-4 h-4"></i> Publier les notes
+          </button>
+        </div>`;
+    }
+
+    function viewPlanning() {
+      const jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
+      const heures = ['07h30', '08h00', '09h30', '10h00', '11h30', '14h00', '15h30'];
+      return `
+        <div class="mb-8">
+          <h2 class="text-3xl font-black uppercase tracking-tighter">Mon Planning</h2>
+          <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">Semaine du 7 au 11 Juillet 2026</p>
+        </div>
+        <div class="glass p-6 rounded-2xl overflow-x-auto">
+          <table class="w-full min-w-[700px]">
+            <thead class="text-[10px] text-gray-400 uppercase tracking-widest">
+              <tr>
+                <th class="pb-4 text-left w-20">Heure</th>
+                ${jours.map(j => `<th class="pb-4 text-center font-black">${j}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              ${heures.map((h, hi) => `
+                <tr>
+                  <td class="py-3 text-xs font-mono text-gray-500">${h}</td>
+                  ${jours.map((j, ji) => {
+                    const cours = [
+                      { ji:0,hi:1, label:'3ème Hum.', color:'amber' },
+                      { ji:1,hi:3, label:'2ème Hum.', color:'blue' },
+                      { ji:2,hi:5, label:'1ère Prim.', color:'green' },
+                      { ji:3,hi:1, label:'3ème Hum.', color:'amber' },
+                      { ji:4,hi:3, label:'2ème Hum.', color:'blue' },
+                    ].find(c => c.ji===ji && c.hi===hi);
+                    return cours
+                      ? `<td class="py-2 px-1"><div class="bg-${cours.color}-500/20 border border-${cours.color}-500/30 text-${cours.color}-400 rounded-xl px-2 py-2 text-center text-xs font-black">${cours.label}</div></td>`
+                      : `<td class="py-2"></td>`;
+                  }).join('')}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    function viewMessagerie() {
+      return `
+        <div class="mb-8">
+          <h2 class="text-3xl font-black uppercase tracking-tighter">Messagerie Direction</h2>
+          <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">Communication interne avec la hiérarchie</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+          <!-- Conversations -->
+          <div class="glass p-4 rounded-2xl flex flex-col gap-2 overflow-y-auto">
+            <h3 class="font-black text-xs uppercase tracking-widest text-gray-400 px-2 mb-2">Conversations</h3>
+            ${[
+              { nom: 'Direction Générale', msg: 'Votre rapport est bien reçu.', heure: '09:14', unread: 2, color: 'amber' },
+              { nom: 'Préfet de Discipline', msg: 'Merci pour le signalement.', heure: 'Hier', unread: 0, color: 'blue' },
+            ].map((c, i) => `
+              <div class="flex items-center gap-3 p-3 ${i===0?'bg-amber-500/10 border border-amber-500/20':'bg-white/5'} rounded-xl cursor-pointer hover:bg-white/10 transition">
+                <div class="w-10 h-10 rounded-xl bg-${c.color}-500/20 border border-${c.color}-500/30 flex items-center justify-center text-${c.color}-400 font-black text-sm flex-shrink-0">${c.nom[0]}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-center">
+                    <p class="font-bold text-sm">${c.nom}</p>
+                    <span class="text-[10px] text-gray-500">${c.heure}</span>
+                  </div>
+                  <p class="text-xs text-gray-400 truncate">${c.msg}</p>
+                </div>
+                ${c.unread ? `<span class="w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-black flex items-center justify-center flex-shrink-0">${c.unread}</span>` : ''}
+              </div>
+            `).join('')}
+          </div>
+          <!-- Chat -->
+          <div class="lg:col-span-2 glass p-4 rounded-2xl flex flex-col">
+            <div class="border-b border-white/10 pb-4 mb-4 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 font-black">D</div>
+              <div><p class="font-bold">Direction Générale</p><p class="text-xs text-green-400">● En ligne</p></div>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-4 mb-4">
+              <div class="flex justify-end"><div class="bg-amber-500/20 border border-amber-500/20 rounded-2xl rounded-tr-sm px-4 py-3 max-w-xs"><p class="text-sm">Bonjour, j'ai soumis le rapport de présences du jour.</p><p class="text-[10px] text-gray-500 mt-1 text-right">08:30</p></div></div>
+              <div class="flex justify-start"><div class="bg-white/8 rounded-2xl rounded-tl-sm px-4 py-3 max-w-xs"><p class="text-sm">Votre rapport est bien reçu. Merci pour la ponctualité.</p><p class="text-[10px] text-gray-500 mt-1">09:14</p></div></div>
+            </div>
+            <div class="flex gap-3">
+              <input type="text" placeholder="Votre message..." class="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm">
+              <button onclick="alert('Message envoyé !')" class="px-5 py-3 bg-amber-500 text-[#0a192f] font-black rounded-xl hover:bg-amber-400 transition"><i data-lucide="send" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // Init
+    showView('accueil');
+  </script>
+</body>
+</html>

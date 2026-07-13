@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Activation Espace Parents | Harmonie-Retrouvailles</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap');
+      body { font-family: 'Inter', sans-serif; }
+      .font-display { font-family: 'Playfair Display', serif; }
+      .shadow-glass { box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5); }
+      .bg-glass { background-color: rgba(10, 25, 47, 0.8); backdrop-filter: blur(16px); }
+      .hide { display: none !important; }
+    </style>
+  </head>
+  <body class="bg-[#112240] text-white antialiased min-h-screen flex items-center justify-center relative overflow-hidden">
+    
+    <!-- Background Decor -->
+    <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[120px]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-amber-500/10 blur-[120px]"></div>
+
+    <div class="w-full max-w-4xl p-6 relative z-10">
+      <div class="bg-glass border border-white/10 shadow-glass rounded-2xl overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- Left Panel: Branding -->
+        <div class="md:w-1/3 bg-blue-900/40 p-8 flex flex-col justify-between border-r border-white/5">
+          <div>
+            <div class="w-12 h-12 bg-blue-950 border-2 border-amber-500 flex items-center justify-center text-white font-display font-bold text-xl mb-6">HR</div>
+            <h2 class="font-display text-2xl font-bold text-white mb-2">Espace Parents</h2>
+            <p class="text-gray-400 text-sm">Le suivi d'excellence pour l'avenir de vos enfants.</p>
+          </div>
+          
+          <div class="mt-12">
+            <div class="flex items-center gap-3 mb-4">
+              <div id="step1-indicator" class="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-sm font-bold">1</div>
+              <span id="step1-text" class="text-sm font-medium text-white">Sécurité</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <div id="step2-indicator" class="w-8 h-8 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-sm font-bold">2</div>
+              <span id="step2-text" class="text-sm font-medium text-gray-400">Dossier Élève</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Forms -->
+        <div class="md:w-2/3 p-8 md:p-12">
+          
+          <!-- STEP 1: Security -->
+          <div id="step-1-container">
+            <!-- Creation Form -->
+            <div id="view-creation">
+              <h3 class="text-xl font-bold mb-2">Création de votre code d'accès</h3>
+              <div class="mb-6">
+                <p class="text-sm text-gray-400">Pour sécuriser le dossier de votre enfant.</p>
+              </div>
+              
+              <form id="form-step-1-create" class="space-y-5">
+                <div>
+                  <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest mb-2">Nouveau Mot de passe</label>
+                  <input type="password" id="pwd" class="w-full px-4 py-3 bg-[#112240]/60 border border-white/10 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none transition-all placeholder-gray-500 text-white" placeholder="••••••••" required>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest mb-2">Confirmer le Mot de passe</label>
+                  <input type="password" id="pwd-confirm" class="w-full px-4 py-3 bg-[#112240]/60 border border-white/10 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none transition-all placeholder-gray-500 text-white" placeholder="••••••••" required>
+                  <p id="pwd-error" class="text-red-400 text-xs mt-2 hide">Les mots de passe ne correspondent pas.</p>
+                </div>
+                <button type="button" id="btn-next-create" class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg font-bold text-sm tracking-wider uppercase hover:bg-blue-500 transition-all mt-6">
+                  Suivant : Lier mon enfant &rarr;
+                </button>
+                
+                <div class="mt-6 text-center border-t border-white/10 pt-6">
+                  <p class="text-sm text-gray-400 mb-3">Vous avez déjà créé votre espace ?</p>
+                  <button type="button" id="btn-switch-to-login" class="inline-block px-6 py-2 border border-amber-500/50 text-amber-500 rounded-lg font-bold text-sm hover:bg-amber-500/10 transition-all">
+                    Se connecter
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Login Form -->
+            <div id="view-login" class="hide">
+              <h3 class="text-xl font-bold mb-2">Connexion à votre espace</h3>
+              <div class="mb-6">
+                <p class="text-sm text-gray-400">Saisissez votre code d'accès pour continuer.</p>
+              </div>
+              
+              <form id="form-step-1-login" class="space-y-5">
+                <div>
+                  <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest mb-2">Votre Mot de passe</label>
+                  <input type="password" id="pwd-login" class="w-full px-4 py-3 bg-[#112240]/60 border border-white/10 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none transition-all placeholder-gray-500 text-white" placeholder="••••••••" required>
+                  <p id="pwd-login-error" class="text-red-400 text-xs mt-2 hide">Veuillez entrer votre mot de passe.</p>
+                </div>
+                <button type="button" id="btn-next-login" class="w-full bg-amber-500 text-blue-950 px-4 py-3 rounded-lg font-bold text-sm tracking-wider uppercase hover:bg-amber-400 transition-all mt-6 shadow-lg">
+                  Se connecter &rarr;
+                </button>
+                
+                <div class="mt-6 text-center border-t border-white/10 pt-6">
+                  <p class="text-sm text-gray-400 mb-3">Première visite ?</p>
+                  <button type="button" id="btn-switch-to-create" class="inline-block px-6 py-2 border border-blue-500/50 text-blue-500 rounded-lg font-bold text-sm hover:bg-blue-500/10 transition-all">
+                    Créer mon code d'accès
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- STEP 2: Child Linkage -->
+          <div id="step-2-container" class="hide">
+            <h3 class="text-xl font-bold mb-2">Recherche de l'enfant</h3>
+            <p class="text-sm text-gray-400 mb-6">Saisissez le nom de votre enfant pour l'identifier dans le système.</p>
+            
+            <form id="form-step-2" class="space-y-5">
+              <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest mb-2">Rechercher par Nom et Post-nom</label>
+                <div class="relative">
+                  <svg class="absolute left-4 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                  <input type="text" class="w-full pl-12 pr-4 py-3 bg-[#112240]/60 border border-white/10 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none transition-all placeholder-gray-500 text-white" placeholder="Ex: MUKENDI KABUYA" required>
+                </div>
+              </div>
+              
+              <div class="flex gap-4 mt-6">
+                <button type="button" id="btn-back" class="px-6 py-3 border border-white/10 text-white rounded-lg font-bold text-sm hover:bg-white/5 transition-all">
+                  Retour
+                </button>
+                <button type="button" id="btn-submit" class="flex-1 bg-amber-500 text-blue-950 px-4 py-3 rounded-lg font-bold text-sm tracking-wider uppercase hover:bg-amber-400 transition-all shadow-lg">
+                  Voir la situation de l'enfant
+                </button>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+      
+      <p class="text-center mt-6 text-xs text-gray-500">
+        &copy; 2026 Harmonie-Retrouvailles.educ | Sécurité & Confidentialité garantie.
+      </p>
+    </div>
+
+    <script>
+      // Navigation Logic
+      const step1 = document.getElementById('step1-indicator');
+      const step2 = document.getElementById('step2-indicator');
+      const container1 = document.getElementById('step-1-container');
+      const container2 = document.getElementById('step-2-container');
+      
+      const viewCreation = document.getElementById('view-creation');
+      const viewLogin = document.getElementById('view-login');
+      const btnSwitchToLogin = document.getElementById('btn-switch-to-login');
+      const btnSwitchToCreate = document.getElementById('btn-switch-to-create');
+
+      const pwd = document.getElementById('pwd');
+      const pwdConfirm = document.getElementById('pwd-confirm');
+      const pwdError = document.getElementById('pwd-error');
+      
+      const pwdLogin = document.getElementById('pwd-login');
+      const pwdLoginError = document.getElementById('pwd-login-error');
+      
+      const btnNextCreate = document.getElementById('btn-next-create');
+      const btnNextLogin = document.getElementById('btn-next-login');
+      const btnBack = document.getElementById('btn-back');
+      const btnSubmit = document.getElementById('btn-submit');
+
+      // View switching logic
+      btnSwitchToLogin.addEventListener('click', () => {
+        viewCreation.classList.add('hide');
+        viewLogin.classList.remove('hide');
+      });
+
+      btnSwitchToCreate.addEventListener('click', () => {
+        viewLogin.classList.add('hide');
+        viewCreation.classList.remove('hide');
+      });
+
+      function goToStep2() {
+        step1.classList.remove('bg-amber-500');
+        step1.classList.add('bg-green-500');
+        step1.innerHTML = '✓';
+        
+        step2.classList.remove('bg-white/10', 'text-gray-400');
+        step2.classList.add('bg-amber-500', 'text-white');
+        document.getElementById('step2-text').classList.replace('text-gray-400', 'text-white');
+
+        container1.classList.add('hide');
+        container2.classList.remove('hide');
+      }
+
+      btnNextCreate.addEventListener('click', () => {
+        if(pwd.value && pwd.value === pwdConfirm.value) {
+          pwdError.classList.add('hide');
+          goToStep2();
+        } else {
+          pwdError.classList.remove('hide');
+        }
+      });
+
+      btnNextLogin.addEventListener('click', () => {
+        if(pwdLogin.value) {
+          pwdLoginError.classList.add('hide');
+          goToStep2();
+        } else {
+          pwdLoginError.classList.remove('hide');
+        }
+      });
+
+      btnBack.addEventListener('click', () => {
+        container2.classList.add('hide');
+        container1.classList.remove('hide');
+        
+        step1.className = "w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-sm font-bold";
+        step1.innerHTML = "1";
+        step2.className = "w-8 h-8 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-sm font-bold";
+        document.getElementById('step2-text').className = "text-sm font-medium text-gray-400";
+      });
+
+      btnSubmit.addEventListener('click', () => {
+        // Mock submission -> redirect to parent dashboard
+        btnSubmit.innerHTML = "Recherche et Création en cours...";
+        setTimeout(() => {
+          window.location.href = '/parent-dashboard.html';
+        }, 1500);
+      });
+    </script>
+  </body>
+</html>

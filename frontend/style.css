@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&family=Roboto+Slab:wght@400;600;700&display=swap');
+
+@theme {
+  /* ===== COLOR PALETTE ===== */
+  /* Primary: Deep Navy Blue */
+  --color-primary-50: #F0F4F8;
+  --color-primary-100: #D9E2EC;
+  --color-primary-200: #BCCCDC;
+  --color-primary-300: #9FB3C8;
+  --color-primary-400: #829AB1;
+  --color-primary-500: #627D98;
+  --color-primary-600: #486581;
+  --color-primary-700: #334E68;
+  --color-primary-800: #243B53;
+  --color-primary-900: #102A43;
+  --color-primary-950: #0B1E31;
+
+  /* Secondary: Rich Burgundy */
+  --color-secondary-50: #FDF3F3;
+  --color-secondary-100: #FCE0E0;
+  --color-secondary-200: #F8B5B5;
+  --color-secondary-300: #F48A8A;
+  --color-secondary-400: #EE5555;
+  --color-secondary-500: #E22C2C;
+  --color-secondary-600: #C71B1B;
+  --color-secondary-700: #A41515;
+  --color-secondary-800: #861212;
+  --color-secondary-900: #6A1010;
+
+  /* Gold: Classic Academic Gold */
+  --color-gold-300: #F3D27F;
+  --color-gold-400: #ECC050;
+  --color-gold-500: #D4A017;
+  --color-gold-600: #B0840A;
+
+  /* Dark Tones */
+  --color-dark-DEFAULT: #111827;
+  --color-dark-paper: #1F2937;
+  --color-dark-card: #374151;
+
+  /* ===== TYPOGRAPHY ===== */
+  --font-family-sans: 'Inter', system-ui, sans-serif;
+  --font-family-display: 'Roboto Slab', 'Playfair Display', Georgia, serif;
+
+  /* ===== BOX SHADOWS ===== */
+  --shadow-premium: 0 10px 30px -10px rgba(0,0,0,0.15);
+  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+  --shadow-glass: 0 8px 32px 0 rgba(16, 42, 67, 0.2);
+
+  /* ===== ANIMATIONS ===== */
+  --animate-fade-up: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-fade-in: fadeIn 1s ease-out forwards;
+  --keyframes-fadeUp: {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  };
+  --keyframes-fadeIn: {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  };
+}
+
+/* ===== BASE STYLES ===== */
+@layer base {
+  body {
+    font-family: var(--font-family-sans);
+    background: linear-gradient(135deg, var(--color-primary-900), var(--color-primary-950));
+    color: var(--color-primary-50);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-family-display);
+  }
+
+  ::selection {
+    background-color: var(--color-gold-500);
+    color: white;
+  }
+}
+
+/* ===== UTILITY CLASSES ===== */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-family-display);
+  }
+
+  .font-sans {
+    font-family: var(--font-family-sans);
+  }
+
+  .shadow-premium {
+    box-shadow: var(--shadow-premium);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-glass {
+    box-shadow: var(--shadow-glass);
+  }
+
+  .animate-fade-up {
+    animation: var(--animate-fade-up);
+  }
+
+  .animate-fade-in {
+    animation: var(--animate-fade-in);
+  }
+
+  /* Hide scrollbar for clean horizontal scrolls */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .tab-content {
+    display: none;
+  }
+  .tab-content.block {
+    display: block;
+  }
+}
+
+/* ===== KEYFRAMES ===== */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

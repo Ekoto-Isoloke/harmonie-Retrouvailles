@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tableau de Bord Parent | Harmonie-Retrouvailles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .font-display { font-family: 'Playfair Display', serif; }
+    
+    /* Premium Glassmorphism */
+    .glass-panel {
+      background: rgba(10, 25, 47, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      border-radius: 1rem;
+    }
+    
+    .glass-card:hover {
+      background: rgba(10, 25, 47, 0.8);
+      transform: translateY(-2px);
+      transition: all 0.3s ease;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-[#0B1528] text-gray-200 antialiased h-screen overflow-hidden flex">
+
+  <!-- Sidebar -->
+  <aside class="w-64 glass-panel border-r-0 rounded-none rounded-r-2xl flex flex-col justify-between h-full relative z-20">
+    <div>
+      <div class="p-6 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-950 border border-amber-500 flex items-center justify-center text-white font-display font-bold text-lg rounded-lg">HR</div>
+          <div>
+            <h1 class="font-display font-bold text-white leading-tight">Espace Parent</h1>
+            <p class="text-xs text-amber-500">Premium Access</p>
+          </div>
+        </div>
+      </div>
+      <nav class="p-4 space-y-2 mt-4">
+        <a href="#" class="flex items-center gap-3 px-4 py-3 bg-blue-600/20 text-white rounded-xl border border-blue-500/30 font-medium">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+          Vue 360° (Élève)
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl font-medium transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          Finances
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl font-medium transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Bulletins (PDF)
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl font-medium transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          Calendrier
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl font-medium transition-all relative">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+          Messagerie
+          <span class="absolute right-4 w-2 h-2 bg-red-500 rounded-full"></span>
+        </a>
+      </nav>
+    </div>
+    
+    <div class="p-6">
+      <a href="/index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl font-medium transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        Déconnexion
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-y-auto hide-scrollbar p-8 relative">
+    
+    <!-- Header -->
+    <header class="flex justify-between items-center mb-8">
+      <div>
+        <h2 class="text-3xl font-bold text-white mb-1">Dossier de l'Enfant</h2>
+        <p class="text-gray-400 text-sm">Vue globale : Académique, Financier & Comportemental</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-right hidden sm:block">
+          <p class="text-sm font-bold text-white">Mme. KABUYA</p>
+          <p class="text-xs text-gray-400">Parent Associé</p>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-blue-900 border-2 border-white/20 flex items-center justify-center text-white font-bold">K</div>
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Top Left: Identity Card -->
+      <div class="lg:col-span-2 glass-panel p-6 flex flex-col md:flex-row gap-6 items-center">
+        <div class="w-32 h-32 rounded-2xl bg-gray-800 overflow-hidden border-2 border-amber-500/50 shadow-lg flex-shrink-0">
+          <img src="https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=400&q=80" alt="Eleve" class="w-full h-full object-cover">
+        </div>
+        <div class="flex-1">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="text-2xl font-bold text-white">MUKENDI KABUYA <span class="text-amber-500">David</span></h3>
+              <p class="text-blue-400 font-medium">3ème Humanité (Scientifique) - G.S. Retrouvailles</p>
+            </div>
+            <span class="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-bold rounded-full border border-green-500/30">Actif</span>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4 mt-6">
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-widest">Titulaire</p>
+              <p class="font-medium text-gray-200">Mr. TSHIBANGU</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-widest">Matricule</p>
+              <p class="font-medium text-gray-200">HR-2026-0451</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Right: Finance Gauge -->
+      <div class="glass-panel p-6 flex flex-col items-center justify-center relative">
+        <h3 class="text-sm font-bold text-gray-300 uppercase tracking-widest absolute top-6 left-6">Situation Financière</h3>
+        <button class="absolute top-6 right-6 text-blue-400 text-xs hover:underline">Détails</button>
+        
+        <div class="relative w-36 h-36 mt-6">
+          <!-- Circular Progress (SVG) -->
+          <svg class="w-full h-full" viewBox="0 0 100 100">
+            <circle class="text-gray-800 stroke-current" stroke-width="8" cx="50" cy="50" r="40" fill="transparent"></circle>
+            <circle class="text-amber-500 progress-ring stroke-current" stroke-width="8" stroke-linecap="round" cx="50" cy="50" r="40" fill="transparent" stroke-dasharray="251.2" stroke-dashoffset="62.8"></circle>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-2xl font-bold text-white">75%</span>
+            <span class="text-xs text-gray-400">Payé</span>
+          </div>
+        </div>
+        <p class="mt-4 text-center text-sm font-medium">Reste à payer : <span class="text-red-400 font-bold">$120.00</span></p>
+      </div>
+
+      <!-- Middle: Evolution Graph -->
+      <div class="lg:col-span-2 glass-panel p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-sm font-bold text-gray-300 uppercase tracking-widest">Évolution Académique (Sur 20)</h3>
+          <select class="bg-[#112240] border border-white/10 rounded px-2 py-1 text-xs text-gray-300 outline-none">
+            <option>1er Trimestre</option>
+            <option>2ème Trimestre</option>
+          </select>
+        </div>
+        <div class="h-64 w-full">
+          <canvas id="evolutionChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Middle Right: Assiduité & Conduite -->
+      <div class="glass-panel p-6 flex flex-col gap-4">
+        <h3 class="text-sm font-bold text-gray-300 uppercase tracking-widest mb-2">Assiduité & Conduite</h3>
+        
+        <div class="glass-card p-4 rounded-xl flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400">Absences (Non justifiées)</p>
+              <p class="font-bold text-white">2 Jours</p>
+            </div>
+          </div>
+          <button class="text-xs text-blue-400 hover:underline">Justifier</button>
+        </div>
+
+        <div class="glass-card p-4 rounded-xl flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400">Retards</p>
+            <p class="font-bold text-white">45 Minutes (Cumulé)</p>
+          </div>
+        </div>
+
+        <div class="glass-card p-4 rounded-xl flex items-center justify-between border border-green-500/30 bg-green-500/10 mt-auto">
+          <div>
+            <p class="text-xs text-green-400 uppercase tracking-widest">Points de Conduite</p>
+            <p class="font-bold text-2xl text-white">18<span class="text-sm text-gray-400">/20</span></p>
+          </div>
+          <div class="text-green-400">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom: Devoirs / Cahier de texte -->
+      <div class="lg:col-span-3 glass-panel p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-sm font-bold text-gray-300 uppercase tracking-widest">Cahier de Texte (Devoirs)</h3>
+          <button class="text-xs text-blue-400 hover:underline">Voir tout</button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+          <div class="glass-card p-4 rounded-xl border border-amber-500/30 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-xs font-bold px-2 py-1 bg-amber-500/20 text-amber-400 rounded">Mathématiques</span>
+              <span class="text-xs text-gray-400">Pour Demain</span>
+            </div>
+            <h4 class="font-bold text-white mb-1">Exercices d'Algèbre</h4>
+            <p class="text-xs text-gray-400 mb-4 line-clamp-2">Résoudre les équations du second degré page 45, numéros 1 à 10.</p>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" class="w-4 h-4 rounded bg-[#112240] border-gray-600 text-amber-500 focus:ring-amber-500">
+              <span class="text-xs font-medium">Marquer comme fait</span>
+            </label>
+          </div>
+
+          <div class="glass-card p-4 rounded-xl border border-blue-500/30 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-xs font-bold px-2 py-1 bg-blue-500/20 text-blue-400 rounded">Physique</span>
+              <span class="text-xs text-gray-400">Lun 18 Juin</span>
+            </div>
+            <h4 class="font-bold text-white mb-1">Rapport de Laboratoire</h4>
+            <p class="text-xs text-gray-400 mb-4 line-clamp-2">Rédiger le rapport sur l'expérience de cinématique (Chute libre).</p>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" class="w-4 h-4 rounded bg-[#112240] border-gray-600 text-blue-500 focus:ring-blue-500">
+              <span class="text-xs font-medium">Marquer comme fait</span>
+            </label>
+          </div>
+
+          <div class="glass-card p-4 rounded-xl border border-green-500/30 relative overflow-hidden opacity-60">
+            <div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-xs font-bold px-2 py-1 bg-gray-700 text-gray-300 rounded">Français</span>
+              <span class="text-xs text-green-400 font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Terminé</span>
+            </div>
+            <h4 class="font-bold text-gray-400 mb-1 line-through">Dissertation</h4>
+            <p class="text-xs text-gray-500 mb-4">Sujet : Le romantisme littéraire au 19e siècle.</p>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" checked disabled class="w-4 h-4 rounded text-green-500">
+              <span class="text-xs font-medium text-gray-500">Fait</span>
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // Chart.js Configuration for Evolution
+    const ctx = document.getElementById('evolutionChart').getContext('2d');
+    
+    // Gradient fill
+    let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); // Blue
+    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Interro 1', 'Devoir 1', 'Interro 2', 'Examen Mi-Trim', 'Devoir 2', 'Interro 3', 'Synthèse'],
+        datasets: [{
+          label: 'Moyenne Générale',
+          data: [12.5, 14, 13.5, 16, 15, 17.5, 16.8],
+          borderColor: '#3B82F6',
+          backgroundColor: gradient,
+          borderWidth: 3,
+          pointBackgroundColor: '#F59E0B',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Moyenne de la Classe',
+          data: [11, 12, 11.5, 13, 12.5, 13, 13.5],
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { color: '#9CA3AF', font: { family: 'Inter' } }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(10, 25, 47, 0.9)',
+            titleColor: '#fff',
+            bodyColor: '#D1D5DB',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 10,
+            displayColors: false,
+            callbacks: {
+              label: function(context) { return context.parsed.y + ' / 20'; }
+            }
+          }
+        },
+        scales: {
+          y: {
+            min: 0, max: 20,
+            grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+            ticks: { color: '#9CA3AF', stepSize: 5 }
+          },
+          x: {
+            grid: { display: false, drawBorder: false },
+            ticks: { color: '#9CA3AF' }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

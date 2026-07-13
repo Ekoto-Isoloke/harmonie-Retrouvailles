@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super-Administration | Harmonie & Retrouvailles</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            50: '#fbf9f1',
+                            100: '#f5f0db',
+                            200: '#eadcb3',
+                            300: '#dec282',
+                            400: '#d2a353',
+                            500: '#c7882c',
+                            600: '#b06b22',
+                            700: '#924f1e',
+                            800: '#78401d',
+                            900: '#623519',
+                        },
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- Dragula (Drag & Drop) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Smooth Scrolling & Transitions */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .transition-all-300 {
+            transition: all 0.3s ease;
+        }
+
+        /* Sidebar active state */
+        .nav-item.active {
+            background: linear-gradient(to right, #f5f0db, transparent);
+            border-left: 4px solid #c7882c;
+            color: #b06b22;
+        }
+
+        .dark .nav-item.active {
+            background: linear-gradient(to right, rgba(199, 136, 44, 0.2), transparent);
+            border-left: 4px solid #c7882c;
+            color: #dec282;
+        }
+
+        /* Glassmorphism for panels */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(229, 231, 235, 0.5);
+        }
+
+        .dark .glass-panel {
+            background: rgba(31, 41, 55, 0.95);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(55, 65, 81, 0.5);
+        }
+
+        /* Hide scrollbar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .gu-mirror {
+            opacity: 0.8;
+            cursor: grabbing;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Thermal Print Styles (POS 80mm) */
+        @media print {
+
+            /* Hide all dashboard chrome */
+            #sidebar,
+            #topbar,
+            .no-print,
+            #view-container>*:not(#print-frame) {
+                display: none !important;
+            }
+
+            /* Show only the receipt area */
+            #receipt-print-zone {
+                display: block !important;
+                visibility: visible !important;
+                width: 80mm;
+                padding: 5mm;
+                font-family: 'Courier New', Courier, monospace;
+                color: #000;
+                margin: 0 auto;
+            }
+
+            /* Ensure receipt modal is visible when printing */
+            #receipt-modal {
+                position: static !important;
+                background: none !important;
+                display: block !important;
+                visibility: visible !important;
+            }
+
+            #receipt-content {
+                box-shadow: none !important;
+                border: none !important;
+                width: 80mm !important;
+                margin: 0 auto;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-[#112240]/60 border border-white/5 text-gray-100 dark:bg-gray-900 dark:text-gray-200 antialiased h-screen overflow-hidden flex">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white dark:bg-gray-800 shadow-xl flex flex-col transition-all-300 z-20">
+        <!-- Logo Area -->
+        <div class="h-20 flex items-center justify-center border-b border-white/5 dark:border-gray-700 px-6">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                    HR
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm leading-tight text-gray-900 dark:text-white uppercase tracking-wider">
+                        Harmonie</h1>
+                    <h2 class="text-xs text-gray-400 dark:text-gray-400 uppercase tracking-widest">Retrouvailles</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto py-6 flex flex-col gap-2 px-3 no-scrollbar" id="sidebar-nav">
+            <p class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Modules ERP</p>
+
+            <a href="#" data-target="dashboard"
+                class="nav-item active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                <span class="font-medium">Vue d'ensemble</span>
+            </a>
+
+            <a href="#" data-target="pedagogie"
+                class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+                <span class="font-medium">Pédagogie & Palmarès</span>
+            </a>
+
+            <a href="#" data-target="rh"
+                class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="users" class="w-5 h-5"></i>
+                <span class="font-medium">RH & Pointages</span>
+            </a>
+
+            <a href="#" data-target="finance"
+                class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="wallet" class="w-5 h-5"></i>
+                <span class="font-medium">Finances & Paie</span>
+            </a>
+
+            <a href="#" data-target="communication"
+                class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="message-square" class="w-5 h-5"></i>
+                <span class="font-medium">Communication (SMS)</span>
+            </a>
+
+            <a href="#" data-target="dossier360"
+                class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="scan-face" class="w-5 h-5"></i>
+                <span class="font-medium">Dossier 360° (Parents)</span>
+            </a>
+
+            <a href="#" data-target="coffrefort"
+                class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors mt-4">
+                <i data-lucide="shield-check" class="w-5 h-5"></i>
+                <span class="font-medium">Coffre-fort</span>
+            </a>
+
+            <a href="#" data-target="suivi-direction"
+                class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors mt-1 bg-amber-500/10 border border-amber-500/20 text-amber-500">
+                <i data-lucide="activity" class="w-5 h-5"></i>
+                <span class="font-bold text-amber-400">Suivi Direction</span>
+            </a>
+
+            <!-- Live Activity Section (Pro Feature) -->
+            <div class="mt-8 px-4">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    Activité Live
+                </p>
+                <div id="live-feed" class="space-y-3 max-h-48 overflow-y-auto no-scrollbar">
+                    <!-- Feed items injected by JS -->
+                </div>
+            </div>
+        </nav>
+
+        <!-- User Area -->
+        <div class="p-4 border-t border-white/5 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <img src="https://ui-avatars.com/api/?name=Admin+General&background=0D8ABC&color=fff" alt="User"
+                        class="w-10 h-10 rounded-full shadow-sm">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white" id="admin-name">Super Admin</p>
+                        <p class="text-xs text-gold-600 font-medium">Direction</p>
+                    </div>
+                </div>
+            </div>
+            <button id="logout-btn"
+                class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                Déconnexion
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-[#112240]/60 border border-white/5/50 dark:bg-gray-900 relative">
+
+        <!-- Header -->
+        <header
+            class="h-20 bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-white/10 dark:border-gray-700 flex items-center justify-between px-8 z-10 sticky top-0">
+            <!-- Search & Context -->
+            <div class="flex items-center gap-6 w-1/2">
+                <div class="relative w-full max-w-md">
+                    <i data-lucide="search"
+                        class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                    <input type="text" placeholder="Rechercher un élève, enseignant, facture..."
+                        class="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border-none rounded-full text-sm focus:ring-2 focus:ring-gold-400 outline-none transition-all dark:text-white">
+                </div>
+            </div>
+
+            <!-- Actions & Toggles -->
+            <div class="flex items-center gap-5">
+                <!-- Institution Switcher -->
+                <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex text-sm font-medium">
+                    <button
+                        class="px-3 py-1 rounded-md bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white shadow-sm text-gray-100 dark:bg-gray-600 dark:text-white transition-all"
+                        id="switch-harmonie">C.S. Harmonie</button>
+                    <button
+                        class="px-3 py-1 rounded-md text-gray-400 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all"
+                        id="switch-retrouvailles">G.S. Retrouvailles</button>
+                </div>
+
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" title="Changer de thème" aria-label="Changer de thème"
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 transition-colors">
+                    <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
+                    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                </button>
+
+                <!-- Notifications -->
+                <button title="Notifications" aria-label="Notifications"
+                    class="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 transition-colors">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-y-auto p-8" id="main-content">
+            <!-- Dynamic content injected here by JS -->
+            <div class="flex items-center justify-center h-full">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gold-500"></div>
+            </div>
+        </div>
+
+        <!-- Floating Quick Action Speed Dial -->
+        <div class="fixed bottom-8 right-8 z-50 group">
+            <div id="speed-dial-menu"
+                class="flex flex-col items-center mb-4 gap-3 hidden transition-all duration-300 transform translate-y-10 opacity-0">
+                <button title="Nouveau Paiement"
+                    class="p-3 bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white dark:bg-gray-800 text-gold-600 rounded-full shadow-lg hover:scale-110 transition-transform border border-white/5 dark:border-gray-700 action-btn"
+                    data-action="new-payment">
+                    <i data-lucide="banknote"></i>
+                </button>
+                <button title="Pointage Manuel"
+                    class="p-3 bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white dark:bg-gray-800 text-brand-600 rounded-full shadow-lg hover:scale-110 transition-transform border border-white/5 dark:border-gray-700 action-btn"
+                    data-action="quick-attendance">
+                    <i data-lucide="user-check"></i>
+                </button>
+                <button title="Alerte SMS"
+                    class="p-3 bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white dark:bg-gray-800 text-blue-600 rounded-full shadow-lg hover:scale-110 transition-transform border border-white/5 dark:border-gray-700 action-btn"
+                    data-action="send-alert">
+                    <i data-lucide="send"></i>
+                </button>
+            </div>
+            <button id="speed-dial-main"
+                class="w-14 h-14 bg-gradient-to-br from-gold-500 to-gold-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:rotate-90 transition-all duration-300">
+                <i data-lucide="plus" class="w-8 h-8"></i>
+            </button>
+        </div>
+
+        <!-- Command Palette Modal (Ctrl + K) -->
+        <div id="command-palette"
+            class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] flex items-start justify-center pt-20 hidden">
+            <div class="w-full max-w-xl bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-white/10 dark:border-gray-700 overflow-hidden transform transition-all scale-95 opacity-0"
+                id="palette-box">
+                <div class="p-4 border-b dark:border-gray-700 flex items-center gap-3">
+                    <i data-lucide="search" class="text-gray-400 w-5 h-5"></i>
+                    <input type="text" id="palette-search"
+                        placeholder="Taper une commande (ex: 'Payer', 'RH', 'Jean'...)"
+                        class="flex-1 bg-transparent border-none outline-none text-lg text-gray-100 dark:text-gray-100">
+                    <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-400">ESC</kbd>
+                </div>
+                <div id="palette-results" class="max-h-96 overflow-y-auto p-2 space-y-1">
+                    <!-- Results injected by JS -->
+                </div>
+                <div
+                    class="p-3 bg-[#112240]/60 border border-white/5 dark:bg-gray-700/50 border-t dark:border-gray-700 flex justify-between text-[10px] text-gray-400">
+                    <span>↑↓ Naviguer</span>
+                    <span>ENTER Sélectionner</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for Professional Receipt (Hidden by default) -->
+        <div id="receipt-modal" class="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center hidden p-4">
+            <div class="bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white dark:bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden relative"
+                id="receipt-content">
+                <!-- Thermal Receipt Layout -->
+                <div class="p-6 bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white text-black font-mono" id="receipt-print-zone"
+                    style="max-width: 80mm; margin: 0 auto; color: black !important;">
+                    <div class="text-center border-b-2 border-dashed border-black pb-3 mb-3">
+                        <div class="text-lg font-black uppercase leading-tight text-black">HARMONIE</div>
+                        <div class="text-lg font-black uppercase leading-tight text-black pb-1">& RETROUVAILLES</div>
+                        <div class="text-[10px] text-black">C.S. & G.S.</div>
+                        <div class="text-[10px] text-black italic">Excellence Educative</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="text-[12px] font-bold text-black" id="r-date">26/06/2026</div>
+                        <div class="text-[12px] font-bold text-black" id="r-id">#TXN-88291</div>
+                    </div>
+
+                    <div
+                        class="text-[12px] border-t border-b border-dotted border-black py-2 mb-4 text-black receipt-body">
+                        <!-- Dynamic content injected here -->
+                    </div>
+
+                    <div class="flex flex-col items-center gap-1 mt-4">
+                        <div id="r-qrcode" class="p-1 border border-black bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white inline-block"></div>
+                        <div class="text-[8px] text-black text-center mt-1 uppercase font-bold">
+                            Document Officiel<br>Gardez precieusement
+                        </div>
+                    </div>
+                </div>
+                <!-- Action bar (non-printable usually) -->
+                <div class="bg-[#112240]/60 border border-white/5 p-4 flex gap-3 no-print">
+                    <button id="close-receipt"
+                        class="flex-1 py-2 text-sm font-medium text-gray-400 hover:text-gray-700">Fermer</button>
+                    <button id="print-receipt"
+                        class="flex-1 py-2 bg-gray-900 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimer le Reçu
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script type="module" src="/src/admin.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
