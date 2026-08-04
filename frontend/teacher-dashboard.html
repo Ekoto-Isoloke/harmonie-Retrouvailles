@@ -27,10 +27,10 @@
     ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
   </style>
 </head>
-<body class="text-white min-h-screen flex">
+<body class="text-white min-h-screen flex flex-col md:flex-row overflow-x-hidden">
 
   <!-- SIDEBAR -->
-  <aside class="w-64 min-h-screen glass flex flex-col py-6 px-4 flex-shrink-0 fixed left-0 top-0 bottom-0 z-40">
+  <aside class="w-full md:w-64 md:min-h-screen glass flex flex-col py-6 px-4 shrink-0 md:fixed md:left-0 md:top-0 md:bottom-0 z-40">
     <!-- Logo -->
     <div class="flex items-center gap-3 px-2 mb-8">
       <div class="w-10 h-10 bg-[#0a192f] border-2 border-amber-500 flex items-center justify-center font-display font-bold text-base rounded-lg">HR</div>
@@ -67,30 +67,42 @@
     <div class="mt-auto">
       <div class="glass-light p-4 rounded-2xl mb-3">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-sm" id="teacher-avatar">PB</div>
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-sm" id="teacher-avatar">--</div>
           <div>
-            <p class="font-bold text-sm" id="teacher-name">Prof. Baya</p>
+            <p class="font-bold text-sm" id="teacher-name">---</p>
             <p class="text-[11px] text-gray-400" id="teacher-role">Enseignant</p>
           </div>
         </div>
       </div>
-      <button onclick="localStorage.clear(); window.location.href='/login.html'" class="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-red-400 hover:bg-red-500/10 transition text-sm font-bold">
+      <button onclick="localStorage.removeItem('hr_user'); localStorage.removeItem('hr_token'); window.location.href='/login.html'" class="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-red-400 hover:bg-red-500/10 transition text-sm font-bold">
         <i data-lucide="log-out" class="w-4 h-4"></i> Déconnexion
       </button>
     </div>
   </aside>
 
   <!-- MAIN -->
-  <main class="ml-64 flex-1 p-8 overflow-y-auto" id="main-content">
+  <main class="md:ml-64 flex-1 p-4 md:p-8" id="main-content">
     <!-- Views dynamically injected -->
   </main>
 
   <script>
-    const user = JSON.parse(localStorage.getItem('hr_user')) || { nom: 'Baya', prenom: 'Paul', role: 'Enseignant' };
-    document.getElementById('teacher-name').textContent = `${user.prenom} ${user.nom}`;
-    document.getElementById('teacher-role').textContent = user.role || 'Enseignant';
-    const initials = (user.prenom[0] || '') + (user.nom[0] || '');
-    document.getElementById('teacher-avatar').textContent = initials.toUpperCase();
+    const userStr = localStorage.getItem('hr_user');
+    if (!userStr) {
+      window.location.href = '/login.html';
+      throw new Error('Non connecté');
+    }
+    const user = JSON.parse(userStr);
+    if (!user) {
+      window.location.href = '/login.html';
+      throw new Error('Session invalide');
+    }
+
+    // Affichage du nom complet et du rôle exact choisi lors de l'inscription
+    const fullName = [user.prenom, user.nom].filter(Boolean).join(' ');
+    document.getElementById('teacher-name').textContent = fullName || 'Inconnu';
+    document.getElementById('teacher-role').textContent = user.role || 'Agent';
+    const initials = ((user.prenom || '')[0] || '') + ((user.nom || '')[0] || '');
+    document.getElementById('teacher-avatar').textContent = initials.toUpperCase() || '?';
 
     const mockClasses = ['3ème Humanités — Math-Physique', '2ème Humanités — Chimie-Bio', '1ère Primaire'];
     const mockEleves = [
@@ -159,7 +171,7 @@
             <h3 class="font-black text-base uppercase tracking-wider mb-4 flex items-center gap-2"><i data-lucide="layers" class="w-5 h-5 text-amber-400"></i> Mes Classes</h3>
             <div class="space-y-3">
               ${mockClasses.map((cls, i) => `
-                <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition cursor-pointer" onclick="showView('presences')">
+                <div class="flex items-center justify-between p-3 bg-[#112240]/80/5 rounded-xl hover:bg-[#112240]/80/10 transition cursor-pointer" onclick="showView('presences')">
                   <div>
                     <p class="font-bold text-sm">${cls}</p>
                     <p class="text-xs text-gray-400">${[32,28,35][i]} élèves</p>
@@ -178,7 +190,7 @@
                 { heure: '10h00 – 11h30', classe: '2ème Humanités', salle: 'A07', statut: 'en cours' },
                 { heure: '14h00 – 15h30', classe: '1ère Primaire', salle: 'C03', statut: 'à venir' },
               ].map(c => `
-                <div class="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+                <div class="flex items-center gap-3 p-3 bg-[#112240]/80/5 rounded-xl">
                   <div class="text-xs font-mono text-gray-400 w-28 flex-shrink-0">${c.heure}</div>
                   <div class="flex-1">
                     <p class="font-bold text-sm">${c.classe}</p>
@@ -215,12 +227,12 @@
             </thead>
             <tbody class="divide-y divide-white/5">
               ${mockEleves.map(e => `
-                <tr class="hover:bg-white/3 transition">
+                <tr class="hover:bg-[#112240]/80/3 transition">
                   <td class="py-4 font-bold">${e.nom}</td>
                   <td class="py-4 text-center"><input type="radio" name="statut-${e.nom}" value="present" ${e.statut==='present'?'checked':''} class="accent-green-500 w-4 h-4"></td>
                   <td class="py-4 text-center"><input type="radio" name="statut-${e.nom}" value="absent" ${e.statut==='absent'?'checked':''} class="accent-red-500 w-4 h-4"></td>
                   <td class="py-4 text-center"><input type="radio" name="statut-${e.nom}" value="retard" ${e.statut==='retard'?'checked':''} class="accent-amber-500 w-4 h-4"></td>
-                  <td class="py-4"><input type="text" placeholder="Observation..." class="text-xs px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white outline-none focus:ring-1 focus:ring-amber-500 w-48"></td>
+                  <td class="py-4"><input type="text" placeholder="Observation..." class="text-xs px-3 py-1.5 bg-[#112240]/80/5 border border-white/10 rounded-lg text-white outline-none focus:ring-1 focus:ring-amber-500 w-48"></td>
                 </tr>
               `).join('')}
             </tbody>
@@ -242,23 +254,23 @@
             <h3 class="font-black uppercase tracking-wider text-sm mb-4">Nouveau Devoir / Leçon</h3>
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Classe cible</label>
-              <select class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+              <select class="w-full px-4 py-3 bg-[#112240]/80/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
                 ${mockClasses.map(c => `<option>${c}</option>`).join('')}
               </select>
             </div>
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Type</label>
-              <select class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+              <select class="w-full px-4 py-3 bg-[#112240]/80/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
                 <option>Devoir à rendre</option><option>Leçon à apprendre</option><option>Exercice de préparation</option><option>Avis important</option>
               </select>
             </div>
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Date limite</label>
-              <input type="date" class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+              <input type="date" class="w-full px-4 py-3 bg-[#112240]/80/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
             </div>
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Description</label>
-              <textarea rows="3" placeholder="Détaillez le devoir..." class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
+              <textarea rows="3" placeholder="Détaillez le devoir..." class="w-full px-4 py-3 bg-[#112240]/80/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
             </div>
             <button onclick="alert('Devoir publié sur le portail des parents !')" class="w-full py-3 bg-amber-500 text-[#0a192f] font-black rounded-xl hover:bg-amber-400 transition flex items-center justify-center gap-2">
               <i data-lucide="send" class="w-4 h-4"></i> Publier aux Parents
@@ -273,7 +285,7 @@
                 { type: 'Leçon', titre: 'Chapitre 6 — Réactions chimiques', classe: '2ème Humanités', date: 'Hier', icon: 'flask-conical', color: 'blue' },
                 { type: 'Devoir', titre: 'Calcul mental — Tables', classe: '1ère Primaire', date: '10 Juil.', icon: 'calculator', color: 'green' },
               ].map(d => `
-                <div class="flex items-start gap-4 p-4 bg-white/5 rounded-xl hover:bg-white/8 transition">
+                <div class="flex items-start gap-4 p-4 bg-[#112240]/80/5 rounded-xl hover:bg-[#112240]/80/8 transition">
                   <div class="p-2.5 rounded-xl bg-${d.color}-500/20 text-${d.color}-400 flex-shrink-0"><i data-lucide="${d.icon}" class="w-5 h-5"></i></div>
                   <div class="flex-1">
                     <div class="flex items-start justify-between gap-2">
@@ -298,19 +310,19 @@
         <div class="glass p-6 rounded-2xl mb-6 flex flex-wrap gap-4 items-end">
           <div class="flex-1 min-w-40">
             <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Classe</label>
-            <select class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+            <select class="w-full px-4 py-3 bg-[#112240]/80/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
               ${mockClasses.map(c => `<option>${c}</option>`).join('')}
             </select>
           </div>
           <div class="flex-1 min-w-40">
             <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Type d'évaluation</label>
-            <select class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+            <select class="w-full px-4 py-3 bg-[#112240]/80/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
               <option>Interrogation (10 pts)</option><option>Devoir (20 pts)</option><option>Examen mi-trimestre (20 pts)</option><option>Examen final (100 pts)</option>
             </select>
           </div>
           <div class="flex-1 min-w-40">
             <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Date</label>
-            <input type="date" class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
+            <input type="date" class="w-full px-4 py-3 bg-[#112240]/80/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500">
           </div>
         </div>
         <div class="glass p-6 rounded-2xl">
@@ -320,9 +332,9 @@
             </thead>
             <tbody class="divide-y divide-white/5">
               ${mockEleves.map((e, i) => `
-                <tr class="hover:bg-white/3 transition">
+                <tr class="hover:bg-[#112240]/80/3 transition">
                   <td class="py-4 font-bold">${e.nom}</td>
-                  <td class="py-4 text-center"><input type="number" min="0" max="20" value="${[15,8,18,12,14][i]}" class="w-20 text-center px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500 font-black text-lg"></td>
+                  <td class="py-4 text-center"><input type="number" min="0" max="20" value="${[15,8,18,12,14][i]}" class="w-20 text-center px-3 py-2 bg-[#112240]/80/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500 font-black text-lg"></td>
                   <td class="py-4 text-center"><span class="px-3 py-1 rounded-full text-[10px] font-black ${[15,8,18,12,14][i]>=14?'badge-green':[15,8,18,12,14][i]>=10?'badge-amber':'badge-red'}">${[15,8,18,12,14][i]>=14?'Bien':[15,8,18,12,14][i]>=10?'Passable':'Insuffisant'}</span></td>
                 </tr>
               `).join('')}
@@ -387,7 +399,7 @@
               { nom: 'Direction Générale', msg: 'Votre rapport est bien reçu.', heure: '09:14', unread: 2, color: 'amber' },
               { nom: 'Préfet de Discipline', msg: 'Merci pour le signalement.', heure: 'Hier', unread: 0, color: 'blue' },
             ].map((c, i) => `
-              <div class="flex items-center gap-3 p-3 ${i===0?'bg-amber-500/10 border border-amber-500/20':'bg-white/5'} rounded-xl cursor-pointer hover:bg-white/10 transition">
+              <div class="flex items-center gap-3 p-3 ${i===0?'bg-amber-500/10 border border-amber-500/20':'bg-[#112240]/80/5'} rounded-xl cursor-pointer hover:bg-[#112240]/80/10 transition">
                 <div class="w-10 h-10 rounded-xl bg-${c.color}-500/20 border border-${c.color}-500/30 flex items-center justify-center text-${c.color}-400 font-black text-sm flex-shrink-0">${c.nom[0]}</div>
                 <div class="flex-1 min-w-0">
                   <div class="flex justify-between items-center">
@@ -408,17 +420,33 @@
             </div>
             <div class="flex-1 overflow-y-auto space-y-4 mb-4">
               <div class="flex justify-end"><div class="bg-amber-500/20 border border-amber-500/20 rounded-2xl rounded-tr-sm px-4 py-3 max-w-xs"><p class="text-sm">Bonjour, j'ai soumis le rapport de présences du jour.</p><p class="text-[10px] text-gray-500 mt-1 text-right">08:30</p></div></div>
-              <div class="flex justify-start"><div class="bg-white/8 rounded-2xl rounded-tl-sm px-4 py-3 max-w-xs"><p class="text-sm">Votre rapport est bien reçu. Merci pour la ponctualité.</p><p class="text-[10px] text-gray-500 mt-1">09:14</p></div></div>
+              <div class="flex justify-start"><div class="bg-[#112240]/80/8 rounded-2xl rounded-tl-sm px-4 py-3 max-w-xs"><p class="text-sm">Votre rapport est bien reçu. Merci pour la ponctualité.</p><p class="text-[10px] text-gray-500 mt-1">09:14</p></div></div>
             </div>
             <div class="flex gap-3">
-              <input type="text" placeholder="Votre message..." class="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm">
+              <input type="text" placeholder="Votre message..." class="flex-1 px-4 py-3 bg-[#112240]/80/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm">
               <button onclick="alert('Message envoyé !')" class="px-5 py-3 bg-amber-500 text-[#0a192f] font-black rounded-xl hover:bg-amber-400 transition"><i data-lucide="send" class="w-4 h-4"></i></button>
             </div>
           </div>
         </div>`;
     }
 
-    // Init
+    // Init — Affichage nom & rôle réel
+    const userInit = JSON.parse(localStorage.getItem('hr_user'));
+    if (!userInit) {
+      window.location.href = '/login.html';
+    } else if (userInit.role === 'Parent') {
+      alert("⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nUn compte parent ne peut pas accéder à l'Espace Enseignant.");
+      window.location.href = '/parent-dashboard.html';
+    } else {
+      const elName   = document.getElementById('teacher-name');
+      const elRole   = document.getElementById('teacher-role');
+      const elAvatar = document.getElementById('teacher-avatar');
+      const fullName = [userInit.prenom, userInit.nom].filter(Boolean).join(' ');
+      if (elName)   elName.textContent   = fullName || 'Inconnu';
+      if (elRole)   elRole.textContent   = userInit.role || 'Agent';
+      if (elAvatar) elAvatar.textContent = (((userInit.prenom || '')[0]) + ((userInit.nom || '')[0])).toUpperCase() || '?';
+    }
+
     showView('accueil');
   </script>
 </body>

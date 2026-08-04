@@ -6,260 +6,890 @@
   <title>Tableau de Bord Parent | Harmonie-Retrouvailles</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap');
     body { font-family: 'Inter', sans-serif; }
     .font-display { font-family: 'Playfair Display', serif; }
     
-    /* Premium Glassmorphism */
     .glass-panel {
-      background: rgba(10, 25, 47, 0.6);
-      backdrop-filter: blur(12px);
+      background: rgba(10, 25, 47, 0.7);
+      backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-      border-radius: 1rem;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      border-radius: 1.25rem;
     }
     
-    .glass-card:hover {
-      background: rgba(10, 25, 47, 0.8);
-      transform: translateY(-2px);
+    .glass-card {
+      background: rgba(15, 30, 55, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       transition: all 0.3s ease;
-      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .glass-card:hover {
+      background: rgba(20, 40, 75, 0.8);
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .nav-btn.active {
+      background: rgba(59, 130, 246, 0.2);
+      color: #ffffff;
+      border-color: rgba(59, 130, 246, 0.4);
     }
 
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="bg-[#0B1528] text-gray-200 antialiased h-screen overflow-hidden flex">
+<body class="bg-[#0B1528] text-gray-200 antialiased min-h-screen flex flex-col md:flex-row overflow-y-auto">
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 ease-out bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border border-emerald-400/30">
+    <i data-lucide="check-circle" class="w-6 h-6"></i>
+    <span id="toast-message" class="font-medium text-sm">Opération réussie !</span>
+  </div>
 
   <!-- Sidebar -->
-  <aside class="w-64 glass-panel border-r-0 rounded-none rounded-r-2xl flex flex-col justify-between h-full relative z-20">
+  <aside class="w-full md:w-64 glass-panel border-r-0 rounded-none md:rounded-r-2xl flex flex-col justify-between shrink-0 relative z-20 md:h-full">
     <div>
       <div class="p-6 border-b border-white/10">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-blue-950 border border-amber-500 flex items-center justify-center text-white font-display font-bold text-lg rounded-lg">HR</div>
+          <div class="w-10 h-10 bg-blue-950 border border-amber-500 flex items-center justify-center text-white font-display font-bold text-lg rounded-lg shadow-lg">HR</div>
           <div>
             <h1 class="font-display font-bold text-white leading-tight">Espace Parent</h1>
-            <p class="text-xs text-amber-500">Premium Access</p>
+            <p class="text-xs text-amber-500 font-semibold tracking-wider">Premium Access</p>
           </div>
         </div>
       </div>
-      <nav class="p-4 space-y-2 mt-4">
-        <a href="#" class="flex items-center gap-3 px-4 py-3 bg-blue-600/20 text-white rounded-xl border border-blue-500/30 font-medium">
+
+      <!-- Selector Enfants -->
+      <div class="px-4 pt-4">
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-2">Sélection de l'Élève</p>
+        <div class="flex gap-2">
+          <button id="btn-child-david" onclick="selectChild('david')" class="flex-1 p-2 bg-blue-600/30 border border-blue-500/50 rounded-xl text-left transition text-white">
+            <p class="text-xs font-bold">David M.</p>
+            <p class="text-[10px] text-gray-300">3è Hum. Scientifique</p>
+          </button>
+          <button id="btn-child-sarah" onclick="selectChild('sarah')" class="flex-1 p-2 bg-[#112240]/80/5 border border-white/10 rounded-xl text-left transition text-gray-400 hover:text-white">
+            <p class="text-xs font-bold">Sarah M.</p>
+            <p class="text-[10px] text-gray-400">6è Primaire</p>
+          </button>
+        </div>
+      </div>
+
+      <nav class="p-4 space-y-2 mt-2">
+        <button onclick="switchTab('vue360')" id="nav-vue360" class="nav-btn active w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white rounded-xl border border-transparent font-medium transition-all text-sm">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
           Vue 360° (Élève)
-        </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl font-medium transition-all">
+        </button>
+        <button onclick="switchTab('finances')" id="nav-finances" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white rounded-xl border border-transparent font-medium transition-all text-sm">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          Finances
-        </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl font-medium transition-all">
+          Finances & Frais
+        </button>
+        <button onclick="switchTab('bulletins')" id="nav-bulletins" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white rounded-xl border border-transparent font-medium transition-all text-sm">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
           Bulletins (PDF)
-        </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl font-medium transition-all">
+        </button>
+        <button onclick="switchTab('calendrier')" id="nav-calendrier" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white rounded-xl border border-transparent font-medium transition-all text-sm">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-          Calendrier
-        </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl font-medium transition-all relative">
+          Calendrier Scolaire
+        </button>
+        <button onclick="switchTab('messagerie')" id="nav-messagerie" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white rounded-xl border border-transparent font-medium transition-all text-sm relative">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-          Messagerie
+          Messagerie Directe
+          <span class="absolute right-4 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
           <span class="absolute right-4 w-2 h-2 bg-red-500 rounded-full"></span>
-        </a>
+        </button>
       </nav>
     </div>
     
-    <div class="p-6">
-      <a href="/index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl font-medium transition-all">
+    <div class="p-4 border-t border-white/10">
+      <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl font-medium transition-all text-sm">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
         Déconnexion
-      </a>
+      </button>
     </div>
   </aside>
 
-  <!-- Main Content -->
-  <main class="flex-1 overflow-y-auto hide-scrollbar p-8 relative">
+  <!-- Main Content Area -->
+  <main class="flex-1 p-4 md:p-8 relative md:overflow-y-auto md:h-full">
     
-    <!-- Header -->
-    <header class="flex justify-between items-center mb-8">
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
       <div>
-        <h2 class="text-3xl font-bold text-white mb-1">Dossier de l'Enfant</h2>
-        <p class="text-gray-400 text-sm">Vue globale : Académique, Financier & Comportemental</p>
+        <h2 id="view-title" class="text-3xl font-bold text-white mb-1">Dossier de l'Enfant</h2>
+        <p id="view-subtitle" class="text-gray-400 text-sm">Vue globale : Académique, Financier & Comportemental</p>
       </div>
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-4 self-end sm:self-auto">
         <div class="text-right hidden sm:block">
-          <p class="text-sm font-bold text-white">Mme. KABUYA</p>
-          <p class="text-xs text-gray-400">Parent Associé</p>
+          <p class="text-sm font-bold text-white" id="parent-name">Mme. KABUYA</p>
+          <p class="text-xs text-amber-500 font-semibold">Parent Associé</p>
         </div>
-        <div class="w-12 h-12 rounded-full bg-blue-900 border-2 border-white/20 flex items-center justify-center text-white font-bold">K</div>
+        <div class="w-11 h-11 rounded-full bg-gradient-to-br from-blue-600 to-indigo-900 border-2 border-amber-500/50 flex items-center justify-center text-white font-bold text-lg shadow-lg">K</div>
       </div>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- ==================== VUE 360° (ÉLÈVE) ==================== -->
+    <div id="view-vue360" class="tab-content space-y-6">
       
-      <!-- Top Left: Identity Card -->
-      <div class="lg:col-span-2 glass-panel p-6 flex flex-col md:flex-row gap-6 items-center">
-        <div class="w-32 h-32 rounded-2xl bg-gray-800 overflow-hidden border-2 border-amber-500/50 shadow-lg flex-shrink-0">
-          <img src="https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=400&q=80" alt="Eleve" class="w-full h-full object-cover">
-        </div>
-        <div class="flex-1">
-          <div class="flex justify-between items-start">
-            <div>
-              <h3 class="text-2xl font-bold text-white">MUKENDI KABUYA <span class="text-amber-500">David</span></h3>
-              <p class="text-blue-400 font-medium">3ème Humanité (Scientifique) - G.S. Retrouvailles</p>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Identity Card -->
+        <div class="lg:col-span-2 glass-panel p-6 flex flex-col md:flex-row gap-6 items-center">
+          <div class="w-32 h-32 rounded-2xl bg-gray-800 overflow-hidden border-2 border-amber-500/50 shadow-lg flex-shrink-0 relative group">
+            <img id="child-img" src="https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=400&q=80" alt="Eleve" class="w-full h-full object-cover">
+          </div>
+          <div class="flex-1 w-full">
+            <div class="flex flex-wrap justify-between items-start gap-2">
+              <div>
+                <h3 id="child-fullname" class="text-2xl font-bold text-white">MUKENDI KABUYA <span class="text-amber-500">David</span></h3>
+                <p id="child-class" class="text-blue-400 font-medium">3ème Humanité (Scientifique) - G.S. Retrouvailles</p>
+              </div>
+              <span class="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-bold rounded-full border border-green-500/30">Actif</span>
             </div>
-            <span class="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-bold rounded-full border border-green-500/30">Actif</span>
+            
+            <div class="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-white/10">
+              <div>
+                <p class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Titulaire</p>
+                <p id="child-teacher" class="font-medium text-gray-100">Mr. TSHIBANGU</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Matricule</p>
+                <p id="child-matricule" class="font-medium text-amber-400 font-mono">HR-2026-0451</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Finance Gauge -->
+        <div class="glass-panel p-6 flex flex-col items-center justify-center relative">
+          <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest absolute top-6 left-6">Situation Financière</h3>
+          <button onclick="openModal('modal-paiement')" class="absolute top-6 right-6 text-amber-400 text-xs hover:underline font-bold flex items-center gap-1">
+            Détails & Payer <i data-lucide="chevron-right" class="w-3 h-3"></i>
+          </button>
+          
+          <div class="relative w-36 h-36 mt-6">
+            <svg class="w-full h-full" viewBox="0 0 100 100">
+              <circle class="text-gray-800 stroke-current" stroke-width="8" cx="50" cy="50" r="40" fill="transparent"></circle>
+              <circle id="finance-ring" class="text-amber-500 stroke-current transition-all duration-1000" stroke-width="8" stroke-linecap="round" cx="50" cy="50" r="40" fill="transparent" stroke-dasharray="251.2" stroke-dashoffset="62.8"></circle>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="finance-pct" class="text-2xl font-bold text-white">75%</span>
+              <span class="text-xs text-emerald-400 font-medium">Réglé</span>
+            </div>
+          </div>
+          <p class="mt-4 text-center text-sm font-medium">Reste à payer : <span id="finance-rest" class="text-red-400 font-bold font-mono">$120.00</span></p>
+        </div>
+
+        <!-- Evolution Graph -->
+        <div class="lg:col-span-2 glass-panel p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Évolution Académique (Sur 20)</h3>
+            <select id="chart-period" class="bg-[#112240] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-200 outline-none focus:ring-1 focus:ring-amber-500">
+              <option value="t1">1er Trimestre</option>
+              <option value="t2">2ème Trimestre</option>
+              <option value="t3">3ème Trimestre</option>
+            </select>
+          </div>
+          <div class="h-64 w-full">
+            <canvas id="evolutionChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Assiduité & Conduite -->
+        <div class="glass-panel p-6 flex flex-col gap-4">
+          <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-1">Assiduité & Conduite</h3>
+          
+          <div class="glass-card p-4 rounded-xl flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400">Absences (Non justifiées)</p>
+                <p id="absences-count" class="font-bold text-white">2 Jours</p>
+              </div>
+            </div>
+            <button onclick="openModal('modal-absence')" class="text-xs px-3 py-1.5 bg-blue-600/30 text-blue-300 hover:bg-blue-600/50 rounded-lg font-bold transition border border-blue-500/30">Justifier</button>
+          </div>
+
+          <div class="glass-card p-4 rounded-xl flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400">Retards Accumulés</p>
+              <p id="retards-count" class="font-bold text-white">45 Minutes</p>
+            </div>
+          </div>
+
+          <div class="glass-card p-4 rounded-xl flex items-center justify-between border border-green-500/30 bg-green-500/10 mt-auto">
+            <div>
+              <p class="text-xs text-green-400 uppercase tracking-widest font-bold">Points de Conduite</p>
+              <p class="font-bold text-2xl text-white">18<span class="text-sm text-gray-400">/20</span></p>
+            </div>
+            <div class="text-green-400">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Devoirs & Cahier de texte -->
+        <div class="lg:col-span-3 glass-panel p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Cahier de Texte (Devoirs & Tâches)</h3>
+            <button onclick="openModal('modal-devoirs')" class="text-xs text-amber-400 hover:underline font-bold">Voir Tout le Cahier de Texte</button>
           </div>
           
-          <div class="grid grid-cols-2 gap-4 mt-6">
-            <div>
-              <p class="text-xs text-gray-500 uppercase tracking-widest">Titulaire</p>
-              <p class="font-medium text-gray-200">Mr. TSHIBANGU</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            
+            <div class="glass-card p-4 rounded-xl border border-amber-500/30 relative overflow-hidden">
+              <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold px-2 py-1 bg-amber-500/20 text-amber-400 rounded">Mathématiques</span>
+                <span class="text-xs text-gray-400">Pour Demain</span>
+              </div>
+              <h4 class="font-bold text-white mb-1">Exercices d'Algèbre</h4>
+              <p class="text-xs text-gray-400 mb-4 line-clamp-2">Résoudre les équations du second degré page 45, numéros 1 à 10.</p>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" onchange="toggleHomework(this)" class="w-4 h-4 rounded bg-[#112240] border-gray-600 text-amber-500 focus:ring-amber-500">
+                <span class="text-xs font-medium text-gray-300">Marquer comme fait</span>
+              </label>
             </div>
-            <div>
-              <p class="text-xs text-gray-500 uppercase tracking-widest">Matricule</p>
-              <p class="font-medium text-gray-200">HR-2026-0451</p>
+
+            <div class="glass-card p-4 rounded-xl border border-blue-500/30 relative overflow-hidden">
+              <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold px-2 py-1 bg-blue-500/20 text-blue-400 rounded">Physique</span>
+                <span class="text-xs text-gray-400">Lun 18 Juin</span>
+              </div>
+              <h4 class="font-bold text-white mb-1">Rapport de Laboratoire</h4>
+              <p class="text-xs text-gray-400 mb-4 line-clamp-2">Rédiger le rapport sur l'expérience de cinématique (Chute libre).</p>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" onchange="toggleHomework(this)" class="w-4 h-4 rounded bg-[#112240] border-gray-600 text-blue-500 focus:ring-blue-500">
+                <span class="text-xs font-medium text-gray-300">Marquer comme fait</span>
+              </label>
             </div>
+
+            <div class="glass-card p-4 rounded-xl border border-green-500/30 relative overflow-hidden opacity-60">
+              <div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold px-2 py-1 bg-gray-700 text-gray-300 rounded">Français</span>
+                <span class="text-xs text-green-400 font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Terminé</span>
+              </div>
+              <h4 class="font-bold text-gray-400 mb-1 line-through">Dissertation</h4>
+              <p class="text-xs text-gray-500 mb-4">Sujet : Le romantisme littéraire au 19e siècle.</p>
+              <label class="flex items-center gap-2">
+                <input type="checkbox" checked disabled class="w-4 h-4 rounded text-green-500">
+                <span class="text-xs font-medium text-gray-500">Fait</span>
+              </label>
+            </div>
+
           </div>
         </div>
+
       </div>
-
-      <!-- Top Right: Finance Gauge -->
-      <div class="glass-panel p-6 flex flex-col items-center justify-center relative">
-        <h3 class="text-sm font-bold text-gray-300 uppercase tracking-widest absolute top-6 left-6">Situation Financière</h3>
-        <button class="absolute top-6 right-6 text-blue-400 text-xs hover:underline">Détails</button>
-        
-        <div class="relative w-36 h-36 mt-6">
-          <!-- Circular Progress (SVG) -->
-          <svg class="w-full h-full" viewBox="0 0 100 100">
-            <circle class="text-gray-800 stroke-current" stroke-width="8" cx="50" cy="50" r="40" fill="transparent"></circle>
-            <circle class="text-amber-500 progress-ring stroke-current" stroke-width="8" stroke-linecap="round" cx="50" cy="50" r="40" fill="transparent" stroke-dasharray="251.2" stroke-dashoffset="62.8"></circle>
-          </svg>
-          <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <span class="text-2xl font-bold text-white">75%</span>
-            <span class="text-xs text-gray-400">Payé</span>
-          </div>
-        </div>
-        <p class="mt-4 text-center text-sm font-medium">Reste à payer : <span class="text-red-400 font-bold">$120.00</span></p>
-      </div>
-
-      <!-- Middle: Evolution Graph -->
-      <div class="lg:col-span-2 glass-panel p-6">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-sm font-bold text-gray-300 uppercase tracking-widest">Évolution Académique (Sur 20)</h3>
-          <select class="bg-[#112240] border border-white/10 rounded px-2 py-1 text-xs text-gray-300 outline-none">
-            <option>1er Trimestre</option>
-            <option>2ème Trimestre</option>
-          </select>
-        </div>
-        <div class="h-64 w-full">
-          <canvas id="evolutionChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Middle Right: Assiduité & Conduite -->
-      <div class="glass-panel p-6 flex flex-col gap-4">
-        <h3 class="text-sm font-bold text-gray-300 uppercase tracking-widest mb-2">Assiduité & Conduite</h3>
-        
-        <div class="glass-card p-4 rounded-xl flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </div>
-            <div>
-              <p class="text-xs text-gray-400">Absences (Non justifiées)</p>
-              <p class="font-bold text-white">2 Jours</p>
-            </div>
-          </div>
-          <button class="text-xs text-blue-400 hover:underline">Justifier</button>
-        </div>
-
-        <div class="glass-card p-4 rounded-xl flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          </div>
-          <div>
-            <p class="text-xs text-gray-400">Retards</p>
-            <p class="font-bold text-white">45 Minutes (Cumulé)</p>
-          </div>
-        </div>
-
-        <div class="glass-card p-4 rounded-xl flex items-center justify-between border border-green-500/30 bg-green-500/10 mt-auto">
-          <div>
-            <p class="text-xs text-green-400 uppercase tracking-widest">Points de Conduite</p>
-            <p class="font-bold text-2xl text-white">18<span class="text-sm text-gray-400">/20</span></p>
-          </div>
-          <div class="text-green-400">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bottom: Devoirs / Cahier de texte -->
-      <div class="lg:col-span-3 glass-panel p-6">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-sm font-bold text-gray-300 uppercase tracking-widest">Cahier de Texte (Devoirs)</h3>
-          <button class="text-xs text-blue-400 hover:underline">Voir tout</button>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          
-          <div class="glass-card p-4 rounded-xl border border-amber-500/30 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
-            <div class="flex justify-between items-start mb-2">
-              <span class="text-xs font-bold px-2 py-1 bg-amber-500/20 text-amber-400 rounded">Mathématiques</span>
-              <span class="text-xs text-gray-400">Pour Demain</span>
-            </div>
-            <h4 class="font-bold text-white mb-1">Exercices d'Algèbre</h4>
-            <p class="text-xs text-gray-400 mb-4 line-clamp-2">Résoudre les équations du second degré page 45, numéros 1 à 10.</p>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" class="w-4 h-4 rounded bg-[#112240] border-gray-600 text-amber-500 focus:ring-amber-500">
-              <span class="text-xs font-medium">Marquer comme fait</span>
-            </label>
-          </div>
-
-          <div class="glass-card p-4 rounded-xl border border-blue-500/30 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-            <div class="flex justify-between items-start mb-2">
-              <span class="text-xs font-bold px-2 py-1 bg-blue-500/20 text-blue-400 rounded">Physique</span>
-              <span class="text-xs text-gray-400">Lun 18 Juin</span>
-            </div>
-            <h4 class="font-bold text-white mb-1">Rapport de Laboratoire</h4>
-            <p class="text-xs text-gray-400 mb-4 line-clamp-2">Rédiger le rapport sur l'expérience de cinématique (Chute libre).</p>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" class="w-4 h-4 rounded bg-[#112240] border-gray-600 text-blue-500 focus:ring-blue-500">
-              <span class="text-xs font-medium">Marquer comme fait</span>
-            </label>
-          </div>
-
-          <div class="glass-card p-4 rounded-xl border border-green-500/30 relative overflow-hidden opacity-60">
-            <div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
-            <div class="flex justify-between items-start mb-2">
-              <span class="text-xs font-bold px-2 py-1 bg-gray-700 text-gray-300 rounded">Français</span>
-              <span class="text-xs text-green-400 font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Terminé</span>
-            </div>
-            <h4 class="font-bold text-gray-400 mb-1 line-through">Dissertation</h4>
-            <p class="text-xs text-gray-500 mb-4">Sujet : Le romantisme littéraire au 19e siècle.</p>
-            <label class="flex items-center gap-2">
-              <input type="checkbox" checked disabled class="w-4 h-4 rounded text-green-500">
-              <span class="text-xs font-medium text-gray-500">Fait</span>
-            </label>
-          </div>
-
-        </div>
-      </div>
-
     </div>
+
+    <!-- ==================== VUE FINANCES & FRAIS ==================== -->
+    <div id="view-finances" class="tab-content hidden space-y-6">
+      
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="glass-panel p-6 border-l-4 border-l-blue-500">
+          <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Montant Total Annuel</p>
+          <p class="text-3xl font-black text-white">$480.00</p>
+          <p class="text-xs text-gray-400 mt-2">Frais d'études & Minerval 2025-2026</p>
+        </div>
+        <div class="glass-panel p-6 border-l-4 border-l-emerald-500">
+          <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Total Déjà Payé</p>
+          <p class="text-3xl font-black text-emerald-400">$360.00</p>
+          <p class="text-xs text-emerald-400/80 mt-2">1ère, 2ème & 3ème Tranches réglées</p>
+        </div>
+        <div class="glass-panel p-6 border-l-4 border-l-amber-500 flex flex-col justify-between">
+          <div>
+            <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Solde Reste à Payer</p>
+            <p class="text-3xl font-black text-amber-400">$120.00</p>
+          </div>
+          <button onclick="openModal('modal-paiement')" class="mt-4 w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-gray-950 font-black rounded-xl hover:from-amber-400 hover:to-amber-500 transition shadow-lg text-sm">
+            Régler le Solde Maintenant
+          </button>
+        </div>
+      </div>
+
+      <!-- Financial Table -->
+      <div class="glass-panel p-6">
+        <h3 class="text-lg font-bold text-white mb-4 flex items-center justify-between">
+          <span>Historique des Paiements et Échéancier</span>
+          <span class="text-xs font-normal text-gray-400">Devise : USD ($)</span>
+        </h3>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="text-xs text-gray-400 uppercase bg-[#112240]/80/5">
+              <tr>
+                <th class="p-3">Désignation</th>
+                <th class="p-3">Échéance</th>
+                <th class="p-3">Montant</th>
+                <th class="p-3">Statut</th>
+                <th class="p-3">Reçu / Bordereau</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              <tr>
+                <td class="p-3 font-semibold text-white">Acompte Inscription & Réinscription</td>
+                <td class="p-3 text-gray-400">15 Sept 2025</td>
+                <td class="p-3 font-mono font-bold">$120.00</td>
+                <td class="p-3"><span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/30">Payé</span></td>
+                <td class="p-3"><button onclick="downloadReceipt('REC-2025-001')" class="text-blue-400 hover:underline flex items-center gap-1"><i data-lucide="file-text" class="w-4 h-4"></i> REC-001</button></td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-white">1ère Tranche Minerval</td>
+                <td class="p-3 text-gray-400">15 Nov 2025</td>
+                <td class="p-3 font-mono font-bold">$120.00</td>
+                <td class="p-3"><span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/30">Payé</span></td>
+                <td class="p-3"><button onclick="downloadReceipt('REC-2025-042')" class="text-blue-400 hover:underline flex items-center gap-1"><i data-lucide="file-text" class="w-4 h-4"></i> REC-042</button></td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-white">2ème Tranche Minerval</td>
+                <td class="p-3 text-gray-400">15 Fév 2026</td>
+                <td class="p-3 font-mono font-bold">$120.00</td>
+                <td class="p-3"><span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/30">Payé</span></td>
+                <td class="p-3"><button onclick="downloadReceipt('REC-2026-109')" class="text-blue-400 hover:underline flex items-center gap-1"><i data-lucide="file-text" class="w-4 h-4"></i> REC-109</button></td>
+              </tr>
+              <tr class="bg-amber-500/10 border-l-4 border-l-amber-500">
+                <td class="p-3 font-bold text-amber-300">3ème Tranche & Frais d'Examens (Solde)</td>
+                <td class="p-3 text-amber-200">15 Mai 2026</td>
+                <td class="p-3 font-mono font-bold text-amber-300">$120.00</td>
+                <td class="p-3"><span class="px-2.5 py-1 bg-amber-500/20 text-amber-300 text-xs font-bold rounded-full border border-amber-500/30">En Attente</span></td>
+                <td class="p-3"><button onclick="openModal('modal-paiement')" class="px-3 py-1 bg-amber-500 text-gray-950 font-bold rounded hover:bg-amber-400 text-xs transition">Payer</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VUE BULLETINS PDF ==================== -->
+    <div id="view-bulletins" class="tab-content hidden space-y-6">
+      <div class="glass-panel p-6">
+        <h3 class="text-lg font-bold text-white mb-2">Bulletins de Notes & Palmarès</h3>
+        <p class="text-sm text-gray-400 mb-6">Consultez et téléchargez les bulletins officiels numérisés de l'élève.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Bulletin T1 -->
+          <div class="glass-card p-6 rounded-2xl border border-blue-500/30 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center mb-4">
+                <span class="text-xs font-bold px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full border border-blue-500/30">1er Trimestre</span>
+                <span class="text-emerald-400 font-bold text-sm">Réussi</span>
+              </div>
+              <p class="text-3xl font-black text-white mb-1">83.5%</p>
+              <p class="text-xs text-gray-400">Place : <strong class="text-white">3ème / 38 éléves</strong></p>
+              <p class="text-xs text-gray-400 mt-1">Conduite : <strong class="text-green-400">Très Bonne (18/20)</strong></p>
+            </div>
+            <button onclick="openModal('modal-bulletin')" class="mt-6 w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 text-sm">
+              <i data-lucide="download" class="w-4 h-4"></i> Aperçu & PDF
+            </button>
+          </div>
+
+          <!-- Bulletin T2 -->
+          <div class="glass-card p-6 rounded-2xl border border-amber-500/30 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center mb-4">
+                <span class="text-xs font-bold px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30">2ème Trimestre</span>
+                <span class="text-emerald-400 font-bold text-sm">En Cours</span>
+              </div>
+              <p class="text-3xl font-black text-white mb-1">79.2%</p>
+              <p class="text-xs text-gray-400">Moyenne Provisoire</p>
+              <p class="text-xs text-gray-400 mt-1">Conduite : <strong class="text-green-400">Excellente (19/20)</strong></p>
+            </div>
+            <button onclick="openModal('modal-bulletin')" class="mt-6 w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 text-sm">
+              <i data-lucide="eye" class="w-4 h-4"></i> Voir Notes Provisoires
+            </button>
+          </div>
+
+          <!-- Bulletin T3 -->
+          <div class="glass-card p-6 rounded-2xl border border-white/10 opacity-50 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center mb-4">
+                <span class="text-xs font-bold px-3 py-1 bg-gray-700 text-gray-300 rounded-full">3ème Trimestre</span>
+                <span class="text-gray-400 font-bold text-sm">Non Débuté</span>
+              </div>
+              <p class="text-3xl font-black text-gray-500 mb-1">--.--%</p>
+              <p class="text-xs text-gray-400">Échéance : Juillet 2026</p>
+            </div>
+            <button disabled class="mt-6 w-full py-2.5 bg-gray-800 text-gray-500 font-bold rounded-xl cursor-not-allowed text-sm">
+              Non Disponible
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VUE CALENDRIER ==================== -->
+    <div id="view-calendrier" class="tab-content hidden space-y-6">
+      <div class="glass-panel p-6">
+        <h3 class="text-lg font-bold text-white mb-4">Agenda & Événements Scolaires</h3>
+        
+        <div class="space-y-4">
+          <div class="p-4 bg-[#112240]/80/5 border border-white/10 rounded-xl flex items-center gap-4">
+            <div class="w-14 h-14 bg-amber-500/20 border border-amber-500/40 rounded-xl flex flex-col items-center justify-center text-amber-400 shrink-0">
+              <span class="text-xs font-bold uppercase">FEV</span>
+              <span class="text-xl font-black">15</span>
+            </div>
+            <div class="flex-1">
+              <h4 class="font-bold text-white">Session d'Examens du 2ème Trimestre</h4>
+              <p class="text-xs text-gray-400">Présence obligatoire pour tous les élèves. Début des épreuves écrites à 07h30.</p>
+            </div>
+            <span class="px-3 py-1 bg-amber-500/20 text-amber-300 text-xs font-bold rounded-full">Important</span>
+          </div>
+
+          <div class="p-4 bg-[#112240]/80/5 border border-white/10 rounded-xl flex items-center gap-4">
+            <div class="w-14 h-14 bg-blue-500/20 border border-blue-500/40 rounded-xl flex flex-col items-center justify-center text-blue-400 shrink-0">
+              <span class="text-xs font-bold uppercase">MARS</span>
+              <span class="text-xl font-black">04</span>
+            </div>
+            <div class="flex-1">
+              <h4 class="font-bold text-white">Réunion Générale des Parents d'Élèves</h4>
+              <p class="text-xs text-gray-400">Ordre du jour : Évaluation trimestrielle et préparation des activités culturelles.</p>
+            </div>
+            <span class="px-3 py-1 bg-blue-500/20 text-blue-300 text-xs font-bold rounded-full">Réunion</span>
+          </div>
+
+          <div class="p-4 bg-[#112240]/80/5 border border-white/10 rounded-xl flex items-center gap-4">
+            <div class="w-14 h-14 bg-emerald-500/20 border border-emerald-500/40 rounded-xl flex flex-col items-center justify-center text-emerald-400 shrink-0">
+              <span class="text-xs font-bold uppercase">AVR</span>
+              <span class="text-xl font-black">12</span>
+            </div>
+            <div class="flex-1">
+              <h4 class="font-bold text-white">Congé de Pâques (Vacances)</h4>
+              <p class="text-xs text-gray-400">Reprise des cours fixée au Lundi 20 Avril 2026 à 07h30 précises.</p>
+            </div>
+            <span class="px-3 py-1 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-full">Vacances</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VUE MESSAGERIE ==================== -->
+    <div id="view-messagerie" class="tab-content hidden space-y-6">
+      <div class="glass-panel p-6 flex flex-col h-[500px]">
+        <div class="flex justify-between items-center pb-4 border-b border-white/10 mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold">PT</div>
+            <div>
+              <h4 class="font-bold text-white text-sm">Mr. TSHIBANGU (Prof. Titulaire)</h4>
+              <p class="text-xs text-emerald-400">En ligne</p>
+            </div>
+          </div>
+          <span class="text-xs text-gray-400">Discussions directes École-Parents</span>
+        </div>
+
+        <!-- Chat history -->
+        <div class="flex-1 overflow-y-auto space-y-3 pr-2">
+          <div class="flex flex-col items-start max-w-[80%]">
+            <div class="bg-[#112240]/80/10 p-3 rounded-2xl rounded-tl-none text-xs text-gray-200">
+              Bonjour Mme. Kabuya, David fait de très bons progrès en Mathématiques ce mois-ci. Félicitations !
+            </div>
+            <span class="text-[10px] text-gray-500 mt-1">Hier à 14h20</span>
+          </div>
+
+          <div class="flex flex-col items-end max-w-[80%] ml-auto">
+            <div class="bg-blue-600 p-3 rounded-2xl rounded-tr-none text-xs text-white">
+              Merci beaucoup Monsieur le Titulaire pour le suivi rigoriste !
+            </div>
+            <span class="text-[10px] text-gray-500 mt-1">Hier à 15h05</span>
+          </div>
+        </div>
+
+        <!-- Input -->
+        <form onsubmit="sendMessage(event)" class="pt-4 border-t border-white/10 flex gap-2">
+          <input id="chat-input" type="text" placeholder="Écrivez votre message..." class="flex-1 bg-[#112240]/80/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-amber-500">
+          <button type="submit" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold rounded-xl transition text-sm flex items-center gap-1">
+            Envoyer <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+
   </main>
 
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Modal Justifier Absence -->
+  <div id="modal-absence" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md p-6 border border-white/20 relative shadow-2xl">
+      <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-3">
+        <h3 class="text-lg font-bold text-white">Justifier une Absence</h3>
+        <button onclick="closeModal('modal-absence')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <form onsubmit="submitAbsence(event)" class="space-y-4 text-sm">
+        <div>
+          <label class="block text-xs font-bold text-gray-300 mb-1">Motif de l'absence *</label>
+          <select required class="w-full bg-[#112240] border border-white/10 rounded-xl p-2.5 text-white outline-none focus:border-amber-500">
+            <option value="Maladie / Raisons Médicales">Maladie / Raisons Médicales</option>
+            <option value="Urgence Familiale">Urgence Familiale</option>
+            <option value="Voyage / Déplacement">Voyage / Déplacement</option>
+            <option value="Autre motif">Autre motif</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-300 mb-1">Commentaire / Explications</label>
+          <textarea rows="3" placeholder="Précisez les détails..." class="w-full bg-[#112240] border border-white/10 rounded-xl p-2.5 text-white placeholder-gray-500 outline-none focus:border-amber-500"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-300 mb-1">Joindre un justificatif (Certificat médical...)</label>
+          <input type="file" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600/30 file:text-blue-300 hover:file:bg-blue-600/50">
+        </div>
+
+        <div class="pt-4 flex gap-3">
+          <button type="button" onclick="closeModal('modal-absence')" class="flex-1 py-2.5 border border-white/10 rounded-xl text-gray-300 hover:bg-[#112240]/80/5 font-bold">Annuler</button>
+          <button type="submit" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black rounded-xl shadow-lg">Soumettre</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Paiement / Détails Financiers -->
+  <div id="modal-paiement" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg p-6 border border-white/20 relative shadow-2xl">
+      <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="credit-card" class="w-5 h-5 text-amber-400"></i> Règlement des Frais Scolaires
+        </h3>
+        <button onclick="closeModal('modal-paiement')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl mb-6">
+        <div class="flex justify-between items-center text-sm">
+          <span class="text-gray-300">Solde Restant à Régler :</span>
+          <span class="text-xl font-black text-amber-400">$120.00</span>
+        </div>
+      </div>
+
+      <form onsubmit="submitPayment(event)" class="space-y-4 text-sm">
+        <div>
+          <label class="block text-xs font-bold text-gray-300 mb-1">Mode de Paiement *</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="p-3 border border-amber-500/50 bg-amber-500/10 rounded-xl flex flex-col items-center cursor-pointer text-xs font-bold text-amber-300">
+              <input type="radio" name="pay-method" checked class="hidden">
+              M-Pesa
+            </label>
+            <label class="p-3 border border-white/10 bg-[#112240]/80/5 rounded-xl flex flex-col items-center cursor-pointer text-xs font-bold text-gray-300 hover:border-white/30">
+              <input type="radio" name="pay-method" class="hidden">
+              Airtel Money
+            </label>
+            <label class="p-3 border border-white/10 bg-[#112240]/80/5 rounded-xl flex flex-col items-center cursor-pointer text-xs font-bold text-gray-300 hover:border-white/30">
+              <input type="radio" name="pay-method" class="hidden">
+              Visa / Card
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-300 mb-1">Numéro Téléphone Mobile Money *</label>
+          <input type="tel" placeholder="+243 81 000 0000" required class="w-full bg-[#112240] border border-white/10 rounded-xl p-2.5 text-white placeholder-gray-500 outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-300 mb-1">Montant à Payer (USD) *</label>
+          <input type="number" value="120" min="10" max="120" required class="w-full bg-[#112240] border border-white/10 rounded-xl p-2.5 text-white font-mono outline-none focus:border-amber-500">
+        </div>
+
+        <div class="pt-4 flex gap-3">
+          <button type="button" onclick="closeModal('modal-paiement')" class="flex-1 py-2.5 border border-white/10 rounded-xl text-gray-300 hover:bg-[#112240]/80/5 font-bold">Annuler</button>
+          <button type="submit" id="btn-pay-submit" class="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-gray-950 font-black rounded-xl shadow-lg hover:from-amber-400 hover:to-amber-500 transition">
+            Confirmer le Paiement
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Bulletin PDF -->
+  <div id="modal-bulletin" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-2xl p-6 border border-white/20 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="file-text" class="w-5 h-5 text-blue-400"></i> Bulletin Officiel - 1er Trimestre
+        </h3>
+        <button onclick="closeModal('modal-bulletin')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <!-- PDF Preview Box -->
+      <div class="bg-slate-900 text-slate-100 p-6 rounded-xl border border-white/10 font-mono text-xs space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+          <div>
+            <h4 class="font-bold text-base text-amber-400">G.S. RETROUVAILLES</h4>
+            <p class="text-[10px] text-slate-400">Enseignement Secondaire & Humanités</p>
+          </div>
+          <div class="text-right text-[10px] text-slate-400">
+            <p>Année Scolaire : 2025-2026</p>
+            <p>Élève : MUKENDI David</p>
+          </div>
+        </div>
+
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-700 text-amber-400">
+              <th class="py-1">Branche / Cours</th>
+              <th class="py-1 text-center">Pond.</th>
+              <th class="py-1 text-center">Note /20</th>
+              <th class="py-1 text-right">Appréciation</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 text-[11px]">
+            <tr><td class="py-1">Mathématiques (Algèbre & Géométrie)</td><td class="text-center">4</td><td class="text-center font-bold text-emerald-400">17.0</td><td class="text-right">Excellent</td></tr>
+            <tr><td class="py-1">Physique & Chimie</td><td class="text-center">3</td><td class="text-center font-bold text-emerald-400">15.5</td><td class="text-right">Très Bien</td></tr>
+            <tr><td class="py-1">Langue Française & Littérature</td><td class="text-center">3</td><td class="text-center font-bold text-emerald-400">16.0</td><td class="text-right">Très Bien</td></tr>
+            <tr><td class="py-1">Anglais & Immersion</td><td class="text-center">2</td><td class="text-center font-bold text-emerald-400">18.0</td><td class="text-right">Excellent</td></tr>
+            <tr><td class="py-1">Informatique & Algorithmique</td><td class="text-center">2</td><td class="text-center font-bold text-emerald-400">19.0</td><td class="text-right">Remarquable</td></tr>
+          </tbody>
+        </table>
+
+        <div class="pt-4 border-t border-slate-700 flex justify-between items-center text-sm font-bold">
+          <span>Pourcentage Général : <strong class="text-emerald-400">83.5%</strong></span>
+          <span>Rang : <strong class="text-amber-400">3ème / 38</strong></span>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button onclick="closeModal('modal-bulletin')" class="px-4 py-2 bg-[#112240]/80/10 hover:bg-[#112240]/80/20 text-white rounded-xl text-sm font-bold">Fermer</button>
+        <button onclick="window.print()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center gap-2">
+          <i data-lucide="printer" class="w-4 h-4"></i> Imprimer / Télécharger PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cahier de texte -->
+  <div id="modal-devoirs" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-2xl p-6 border border-white/20 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="book-open" class="w-5 h-5 text-amber-400"></i> Cahier de Texte Complet
+        </h3>
+        <button onclick="closeModal('modal-devoirs')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="space-y-3 text-sm">
+        <div class="p-4 bg-[#112240]/80/5 border border-amber-500/30 rounded-xl">
+          <div class="flex justify-between items-start mb-1">
+            <span class="font-bold text-amber-400">Mathématiques - Devoir n°4</span>
+            <span class="text-xs text-gray-400">Échéance : Demain 08h00</span>
+          </div>
+          <p class="text-xs text-gray-300">Exercices d'Algèbre p.45 n°1 à 10. Résolution graphique des fonctions polynômes.</p>
+        </div>
+        <div class="p-4 bg-[#112240]/80/5 border border-blue-500/30 rounded-xl">
+          <div class="flex justify-between items-start mb-1">
+            <span class="font-bold text-blue-400">Physique - Labo TP</span>
+            <span class="text-xs text-gray-400">Échéance : Lun 18 Juin</span>
+          </div>
+          <p class="text-xs text-gray-300">Rapport complet sur la mesure de la pesanteur (Chute libre sans frottement).</p>
+        </div>
+        <div class="p-4 bg-[#112240]/80/5 border border-green-500/30 rounded-xl opacity-60">
+          <div class="flex justify-between items-start mb-1">
+            <span class="font-bold text-gray-400 line-through">Français - Dissertation</span>
+            <span class="text-xs text-green-400 font-bold">Rendu & Noté</span>
+          </div>
+          <p class="text-xs text-gray-500">Sujet : Le romantisme littéraire au 19e siècle.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Logic -->
   <script>
-    // Chart.js Configuration for Evolution
+    let currentParentUser = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+
+      // Enforce Strict Parent Session Security
+      const userStr = localStorage.getItem('hr_user');
+      if (!userStr) {
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      try {
+        currentParentUser = JSON.parse(userStr);
+        const role = currentParentUser.role;
+        
+        // Strict RBAC: block Enseignant, Préfet, Comptable, Direction (unless Super-Admin testing)
+        if (role !== 'Parent' && role !== 'Super-Admin') {
+          alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nVotre rôle (${role}) ne vous donne pas accès à l'Espace Parent.`);
+          // Redirect them back to their appropriate dashboard
+          if (role === 'Enseignant' || role === 'Professeur') window.location.href = '/teacher-dashboard.html';
+          else if (['Préfet', 'D.E', 'D.D'].includes(role)) window.location.href = '/prefet-dashboard.html';
+          else if (role === 'Comptable') window.location.href = '/compta-dashboard.html';
+          else window.location.href = '/admin-dashboard.html';
+          return;
+        }
+
+        if (currentParentUser && currentParentUser.nom) {
+          document.getElementById('parent-name').textContent = `${currentParentUser.prenom} ${currentParentUser.nom}`;
+          if (currentParentUser.activeStudent) {
+            const active = currentParentUser.activeStudent;
+            if (active.name.includes('Sarah')) {
+              selectChild('sarah', true);
+            } else {
+              selectChild('david', true);
+            }
+          }
+        }
+      } catch(err) {
+        console.warn("Session error", err);
+        window.location.href = '/login.html';
+      }
+    });
+
+    // Toast helper
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').textContent = msg;
+      toast.classList.remove('translate-x-full');
+      setTimeout(() => {
+        toast.classList.add('translate-x-full');
+      }, 3500);
+    }
+
+    // Modal Helpers
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    // Tabs Navigation
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+      const targetView = document.getElementById(`view-${tabId}`);
+      const targetNav = document.getElementById(`nav-${tabId}`);
+
+      if (targetView) targetView.classList.remove('hidden');
+      if (targetNav) targetNav.classList.add('active');
+
+      const titleEl = document.getElementById('view-title');
+      const subTitleEl = document.getElementById('view-subtitle');
+
+      switch(tabId) {
+        case 'vue360':
+          titleEl.textContent = "Dossier de l'Enfant";
+          subTitleEl.textContent = "Vue globale : Académique, Financier & Comportemental";
+          break;
+        case 'finances':
+          titleEl.textContent = "Situation Financière & Frais";
+          subTitleEl.textContent = "Minerval, frais d'études et règlement sécurisé en ligne";
+          break;
+        case 'bulletins':
+          titleEl.textContent = "Bulletins & Palmarès";
+          subTitleEl.textContent = "Téléchargement des bulletins de notes officiels au format PDF";
+          break;
+        case 'calendrier':
+          titleEl.textContent = "Calendrier & Agenda";
+          subTitleEl.textContent = "Examens, réunions des parents et vacances scolaires";
+          break;
+        case 'messagerie':
+          titleEl.textContent = "Messagerie Directe";
+          subTitleEl.textContent = "Communication directe avec les enseignants et la direction";
+          break;
+      }
+    }
+
+    // Child Selector Logic (Strictly scoped to parent's authorized children)
+    function selectChild(childKey, silent = false) {
+      const btnDavid = document.getElementById('btn-child-david');
+      const btnSarah = document.getElementById('btn-child-sarah');
+
+      if (childKey === 'david') {
+        btnDavid.className = "flex-1 p-2 bg-blue-600/30 border border-blue-500/50 rounded-xl text-left transition text-white";
+        btnSarah.className = "flex-1 p-2 bg-[#112240]/80/5 border border-white/10 rounded-xl text-left transition text-gray-400 hover:text-white";
+        
+        document.getElementById('child-fullname').innerHTML = 'MUKENDI KABUYA <span class="text-amber-500">David</span>';
+        document.getElementById('child-class').textContent = '3ème Humanité (Scientifique) - G.S. Retrouvailles';
+        document.getElementById('child-teacher').textContent = 'Mr. TSHIBANGU';
+        document.getElementById('child-matricule').textContent = 'HR-2026-0451';
+        document.getElementById('child-img').src = 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=400&q=80';
+        if (!silent) showToast("Dossier sécurisé : David Mukendi");
+      } else {
+        btnSarah.className = "flex-1 p-2 bg-purple-600/30 border border-purple-500/50 rounded-xl text-left transition text-white";
+        btnDavid.className = "flex-1 p-2 bg-[#112240]/80/5 border border-white/10 rounded-xl text-left transition text-gray-400 hover:text-white";
+        
+        document.getElementById('child-fullname').innerHTML = 'MUKENDI KABUYA <span class="text-purple-400">Sarah</span>';
+        document.getElementById('child-class').textContent = '6ème Primaire - C.S. Harmonie';
+        document.getElementById('child-teacher').textContent = 'Mme. ILUNGA';
+        document.getElementById('child-matricule').textContent = 'HR-2026-0812';
+        document.getElementById('child-img').src = 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&q=80';
+        if (!silent) showToast("Dossier sécurisé : Sarah Mukendi");
+      }
+    }
+
+    // Homework toggle
+    function toggleHomework(cb) {
+      if (cb.checked) {
+        showToast("Devoir marqué comme accompli !");
+      }
+    }
+
+    // Submission handlers
+    function submitAbsence(e) {
+      e.preventDefault();
+      closeModal('modal-absence');
+      showToast("Justificatif transmis au Préfet avec succès !");
+    }
+
+    function submitPayment(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-pay-submit');
+      btn.disabled = true;
+      btn.innerHTML = `<svg class="animate-spin h-5 w-5 text-gray-950 inline mr-2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Traitement...`;
+      
+      setTimeout(() => {
+        closeModal('modal-paiement');
+        btn.disabled = false;
+        btn.innerHTML = `Confirmer le Paiement`;
+        
+        // Update Gauge
+        document.getElementById('finance-pct').textContent = "100%";
+        document.getElementById('finance-rest').textContent = "$0.00";
+        document.getElementById('finance-ring').setAttribute('stroke-dashoffset', '0');
+        document.getElementById('finance-ring').classList.replace('text-amber-500', 'text-emerald-500');
+        
+        showToast("Paiement effectué ! Reçu téléchargé.");
+      }, 1500);
+    }
+
+    function downloadReceipt(num) {
+      showToast(`Téléchargement du bordereau ${num}...`);
+    }
+
+    function sendMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-input');
+      if (input.value.trim() !== "") {
+        input.value = "";
+        showToast("Message envoyé à l'enseignant !");
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('hr_user');
+      localStorage.removeItem('hr_token');
+      window.location.href = '/login.html';
+    }
+
+    // Chart.js Configuration
     const ctx = document.getElementById('evolutionChart').getContext('2d');
-    
-    // Gradient fill
     let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); // Blue
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');
     gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
 
     new Chart(ctx, {

@@ -1,4 +1,5 @@
 import './style.css';
+// Admin Dashboard v5.0 — ERP Direction EPST Kinshasa
 
 // ==========================================
 // ETAT GLOBAL (Mocked Database in LocalStorage)
@@ -116,7 +117,47 @@ const saveDb = () => localStorage.setItem('admin_db', JSON.stringify(db));
 document.addEventListener('DOMContentLoaded', () => {
 
     const user = JSON.parse(localStorage.getItem('hr_user'));
-    if (!user) { window.location.href = '/login.html'; return; }
+
+    // SECURITY CHECK 1: Must be authenticated
+    if (!user) {
+        window.location.href = '/login.html';
+        return;
+    }
+
+    // SECURITY CHECK 2: Strict RBAC - Only Super-Admin & Direction can access Super-Admin dashboard
+    const isSuperAdmin = ['Super-Admin', 'Direction', 'Directeur', 'Direction Générale'].includes(user.role);
+
+    if (!isSuperAdmin) {
+        // Enseignant attempt
+        if (user.role === 'Enseignant' || user.role === 'Professeur' || user.role === 'Sur École') {
+            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nUn enseignant (${user.prenom} ${user.nom}) ne peut pas se connecter au compte de la Direction ou du Super-Administrateur.\n\nVous êtes réorienté vers votre Espace Enseignant.`);
+            window.location.href = '/teacher-dashboard.html';
+            return;
+        }
+        // Préfet / DE / DD attempt
+        if (['Préfet', 'D.E', 'D.D'].includes(user.role)) {
+            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nAccès réservé exclusivement à la Direction Générale et au Super-Administrateur.\n\nVous êtes réorienté vers votre Espace Discipline & Préfecture.`);
+            window.location.href = '/prefet-dashboard.html';
+            return;
+        }
+        // Comptable attempt
+        if (user.role === 'Comptable') {
+            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nVotre rôle ne vous autorise qu'à l'Espace Comptabilité.\n\nVous êtes réorienté vers votre Espace Comptabilité.`);
+            window.location.href = '/compta-dashboard.html';
+            return;
+        }
+        // Parent attempt
+        if (user.role === 'Parent') {
+            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nUn compte parent ne peut jamais accéder au système d'administration de l'école.\n\nVous êtes réorienté vers votre Espace Parent.`);
+            window.location.href = '/parent-dashboard.html';
+            return;
+        }
+
+        // Fallback for any unknown role
+        alert(`⛔ ACCÈS REFUSÉ — Vous n'avez pas l'autorisation d'accéder à ce panneau.`);
+        window.location.href = '/login.html';
+        return;
+    }
 
     const ui = {
         name: document.getElementById('admin-name'),
@@ -126,7 +167,16 @@ document.addEventListener('DOMContentLoaded', () => {
         logout: document.getElementById('logout-btn')
     };
 
-    if (ui.name) ui.name.textContent = `${user.prenom} ${user.nom}`;
+    if (ui.name) ui.name.textContent = `${user.prenom || ''} ${user.nom || ''}`;
+    // Update avatar with real initials
+    const avatarEl = document.querySelector('img[alt="User"]');
+    if (avatarEl) {
+        const initials = `${(user.prenom||'A')[0]}${(user.nom||'D')[0]}`;
+        avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.prenom+' '+user.nom)}&background=c7882c&color=fff&bold=true`;
+    }
+    // Show role badge
+    const roleBadge = document.querySelector('p.text-xs.text-gold-600');
+    if (roleBadge && user.role) roleBadge.textContent = user.role;
 
     let currentView = 'dashboard';
 
@@ -141,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'coffrefort': renderCoffreFort(); break;
             case 'suivi-direction': renderSuiviDirection(); break;
             case 'dossier360': renderDossier360(); break;
+            case 'gestion-comptes': renderGestionComptes(); break;
         }
         if (window.lucide) lucide.createIcons();
     };
@@ -155,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (ui.theme) ui.theme.onclick = () => { document.documentElement.classList.toggle('dark'); renderView(); };
-    if (ui.logout) ui.logout.onclick = () => { localStorage.clear(); window.location.href = '/login.html'; };
+    if (ui.logout) ui.logout.onclick = () => { localStorage.removeItem('hr_user'); localStorage.removeItem('hr_token'); window.location.href = '/login.html'; };
 
     renderView();
     initInstitutionalSwitcher();
@@ -179,17 +230,92 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     function renderDashboard() {
         const inst = db.institutions[db.ecoleActive];
+        const allPointages = db.rh.pointages.filter(p => p.ecole === db.ecoleActive);
+        const presenceRate = allPointages.length > 0 ? Math.round((allPointages.filter(p => p.statut === 'Présent').length / allPointages.length) * 100) : 0;
+        const solde = inst.finance.revenus - inst.finance.depenses;
+        const today = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
+        const isGS = db.ecoleActive === 'Retrouvailles';
+
         ui.content.innerHTML = `
-            <div class="mb-8"><h2 class="text-3xl font-black dark:text-white uppercase tracking-tight">Tableau de Bord | ${db.ecoleActive}</h2></div>
-            <div id="widgets" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-                ${createKPI('Revenus', `$${inst.finance.revenus.toLocaleString()}`, 'trending-up', 'text-green-500', 'bg-green-50')}
-                ${createKPI('Dépenses', `$${inst.finance.depenses.toLocaleString()}`, 'trending-down', 'text-red-500', 'bg-red-50')}
-                ${createKPI('Inscrits', inst.pedagogie.eleves.length, 'users', 'text-blue-500', 'bg-blue-50')}
-                ${createKPI('SMS/WA', inst.comms.smsEnvoyes, 'message-square', 'text-purple-500', 'bg-purple-50')}
+            <div class="mb-8 flex justify-between items-start">
+                <div>
+                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tight">Tableau de Bord ERP</h2>
+                    <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">${db.ecoleActive} — ${today}</p>
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-xs font-black text-emerald-400 uppercase tracking-widest">Système Opérationnel</span>
+                </div>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="glass-panel p-8 rounded-3xl shadow-xl border border-white/20"><h3 class="font-bold mb-6">Trésorerie</h3><div id="chartRev" class="h-80"></div></div>
-                <div class="glass-panel p-8 rounded-3xl shadow-xl border border-white/20"><h3 class="font-bold mb-6">Scolarité</h3><div id="chartPed" class="h-80"></div></div>
+
+            <!-- KPI Grid -->
+            <div id="widgets" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                ${createKPI('Recettes Totales', `$${inst.finance.revenus.toLocaleString()}`, 'trending-up', 'text-emerald-500', 'bg-emerald-500/10')}
+                ${createKPI('Dépenses', `$${inst.finance.depenses.toLocaleString()}`, 'trending-down', 'text-red-400', 'bg-red-500/10')}
+                ${createKPI('Solde Net', `$${solde.toLocaleString()}`, 'wallet', 'text-amber-400', 'bg-amber-500/10')}
+                ${createKPI('Effectif Inscrits', inst.pedagogie.eleves.length, 'users', 'text-blue-400', 'bg-blue-500/10')}
+            </div>
+
+            <!-- Secondary KPIs -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center"><i data-lucide="message-square" class="w-6 h-6 text-purple-400"></i></div>
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">SMS Envoyés</p><h4 class="text-2xl font-black text-white">${inst.comms.smsEnvoyes}</h4></div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center"><i data-lucide="smartphone" class="w-6 h-6 text-green-400"></i></div>
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">WhatsApp</p><h4 class="text-2xl font-black text-white">${inst.comms.whatsappEnvoyes}</h4></div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center"><i data-lucide="user-check" class="w-6 h-6 text-cyan-400"></i></div>
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Taux Présence</p><h4 class="text-2xl font-black text-white">${presenceRate}%</h4></div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-rose-500/10 flex items-center justify-center"><i data-lucide="school" class="w-6 h-6 text-rose-400"></i></div>
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Classes Actives</p><h4 class="text-2xl font-black text-white">${inst.pedagogie.classes.length}</h4></div>
+                </div>
+            </div>
+
+            <!-- Charts + Activity Feed -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="lg:col-span-2 glass-panel p-6 rounded-3xl shadow-xl border border-white/10">
+                    <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4">Évolution Financière ${new Date().getFullYear()}</h3>
+                    <div id="chartRev" class="h-64"></div>
+                </div>
+                <div class="glass-panel p-6 rounded-3xl shadow-xl border border-white/10">
+                    <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4">Répartition des Élèves</h3>
+                    <div id="chartPed" class="h-64"></div>
+                </div>
+            </div>
+
+            <!-- EPST-Specific: Classes Scolarité Overview -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-panel p-6 rounded-2xl border border-white/10">
+                    <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4 flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4 text-amber-400"></i> Grille des Frais EPST</h3>
+                    <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        ${inst.finance.fraisScolaires.map(f => `
+                            <div class="flex justify-between items-center p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition">
+                                <span class="text-xs font-bold text-gray-300">${f.classe}</span>
+                                <span class="text-sm font-black text-amber-400">${f.montant !== undefined ? '$' + f.montant : '$' + f.montantNonTech + ' / $' + f.montantTech}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="glass-panel p-6 rounded-2xl border border-white/10">
+                    <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-blue-400"></i> Dernières Activités</h3>
+                    <div class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                        ${db.rh.journalDirection.filter(j => j.ecole === db.ecoleActive).slice(0, 5).map(j => `
+                            <div class="flex items-start gap-3 p-3 bg-white/5 border border-white/5 rounded-xl">
+                                <div class="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-black shrink-0">${j.auteur[0]}</div>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-bold text-white truncate">${j.action}</p>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">${j.detail}</p>
+                                    <p class="text-[9px] text-gray-500 mt-0.5 font-mono">${j.heure} — ${j.date}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
             </div>
         `;
         setTimeout(initDashboardCharts, 100);
@@ -217,8 +343,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="xl:col-span-2 glass-panel p-10 rounded-[2.5rem] shadow-2xl relative border border-white/20">
                     
                     <!-- DUAL GATEWAY CHOICE -->
-                    <div class="flex bg-gray-100 dark:bg-gray-800/80 p-1.5 rounded-2xl mb-10 w-fit shadow-inner">
-                        <button id="tabM" class="px-8 py-3 text-sm font-black rounded-xl transition-all bg-white dark:bg-gray-700 shadow-md text-brand-600 scale-105">Mobile Money</button>
+                    <div class="flex bg-white/10 dark:bg-gray-800/80 p-1.5 rounded-2xl mb-10 w-fit shadow-inner">
+                        <button id="tabM" class="px-8 py-3 text-sm font-black rounded-xl transition-all bg-[#112240]/80 dark:bg-gray-700 shadow-md text-brand-600 scale-105">Mobile Money</button>
                         <button id="tabC" class="px-8 py-3 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700">Caisse (Présentiel)</button>
                     </div>
 
@@ -277,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             <!-- Cash Specific -->
                             <div id="cFields" class="hidden animate-fade-in">
-                                <div class="p-4 bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 rounded-xl text-xs text-gray-500 font-medium">
+                                <div class="p-4 bg-[#112240]/50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 rounded-xl text-xs text-gray-500 font-medium">
                                     Paiement manuel enregistré à la caisse.
                                 </div>
                             </div>
@@ -296,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         <!-- Sidebar Summary -->
                         <div class="lg:col-span-2">
-                            <div class="bg-gray-50 dark:bg-gray-800/50 rounded-[2.5rem] p-10 border dark:border-gray-700 shadow-inner h-full flex flex-col justify-between">
+                            <div class="bg-[#112240]/50 dark:bg-gray-800/50 rounded-[2.5rem] p-10 border dark:border-gray-700 shadow-inner h-full flex flex-col justify-between">
                                 <div>
                                     <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-10">Résumé du Dossier</h4>
                                     <div class="space-y-6">
@@ -317,10 +443,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="space-y-8">
                     <!-- Clôture de Caisse Panel -->
                     <div class="glass-panel p-8 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 text-white relative overflow-hidden group hover:shadow-2xl transition-all">
-                        <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                        <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-[#112240]/80/10 rounded-full blur-2xl"></div>
                         <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Opérations du Jour</h3>
                         <div class="text-3xl font-black tracking-tighter mb-6">$${inst.finance.revenus.toLocaleString()} <span class="text-xs text-brand-400 uppercase tracking-widest font-bold block mt-1">+ Encaissés Aujourd'hui</span></div>
-                        <button onclick="alert('Rapport de clôture hautement sécurisé généré et envoyé à la direction.')" class="w-full py-4 bg-white text-gray-900 font-black rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                        <button onclick="alert('Rapport de clôture hautement sécurisé généré et envoyé à la direction.')" class="w-full py-4 bg-[#112240]/80 text-gray-900 font-black rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
                             <i data-lucide="lock" class="w-4 h-4"></i> Clôturer la Caisse
                         </button>
                     </div>
@@ -330,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-6 flex justify-between">Tarification Officielle <i data-lucide="shield-check" class="w-3 h-3 text-brand-500"></i></h3>
                         <div class="space-y-3">
                             ${inst.finance.fraisScolaires.map(f => `
-                                <div class="p-4 bg-gray-50 dark:bg-gray-800/80 rounded-2xl flex justify-between items-center hover:bg-brand-50 transition-all cursor-pointer border border-transparent hover:border-brand-100">
+                                <div class="p-4 bg-[#112240]/50 dark:bg-gray-800/80 rounded-2xl flex justify-between items-center hover:bg-brand-50 transition-all cursor-pointer border border-transparent hover:border-brand-100">
                                     <span class="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase">${f.classe}</span>
                                     <span class="text-sm font-black text-brand-600">$${f.montant !== undefined ? f.montant : `${f.montantNonTech} - $${f.montantTech}`}</span>
                                 </div>
@@ -372,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     let color = pct < 40 ? 'bg-red-500' : (pct < 100 ? 'bg-orange-400' : 'bg-brand-500');
                     progUI = `
                                                 <div class="w-full flex items-center gap-3">
-                                                    <div class="flex-1 bg-gray-100 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
+                                                    <div class="flex-1 bg-white/10 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
                                                         <div class="${color} h-full rounded-full transition-all duration-1000" style="width: ${pct}%"></div>
                                                     </div>
                                                     <span class="text-[9px] font-black uppercase text-gray-500 w-8 text-right">${pct}%</span>
@@ -382,19 +508,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             return `
-                                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group">
+                                    <tr class="hover:bg-[#112240]/50/50 dark:hover:bg-gray-800/30 transition-colors group">
                                         <td class="py-5 font-mono text-[11px] text-gray-400">#${p.id}</td>
                                         <td class="py-5">
                                             <div class="font-bold text-gray-900 dark:text-white flex items-center gap-2">${p.student}</div>
                                             <div class="text-[10px] text-gray-400 mt-1 uppercase font-bold flex gap-2 items-center">
-                                                <span class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700">${p.motif || 'N/A'}</span> • ${p.date}
+                                                <span class="px-1.5 py-0.5 rounded bg-white/10 dark:bg-gray-700">${p.motif || 'N/A'}</span> • ${p.date}
                                             </div>
                                         </td>
                                         <td class="py-5 pr-8">
                                             ${progUI}
                                         </td>
                                         <td class="py-5">
-                                            <span class="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider shadow-sm border ${p.mode === 'Mobile' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-700 border-gray-200'}">
+                                            <span class="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider shadow-sm border ${p.mode === 'Mobile' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-[#112240]/50 text-gray-700 border-gray-200'}">
                                                 ${p.mode}
                                             </span>
                                         </td>
@@ -501,6 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tC.onclick = () => { mode = 'Caisse'; bC.classList.remove('hidden'); bM.classList.add('hidden'); tC.className = 'active-tab-caisse'; tM.className = 'inactive-tab'; };
         }
 
+        const vBtn = document.getElementById('valBtn');
         if (vBtn) {
             vBtn.onclick = () => {
                 const name = sS.value, amt = parseFloat(document.getElementById('amtInp').value), cls = sC.value;
@@ -583,27 +710,109 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createKPI(t, v, i, c, b) {
-        return `<div class="glass-panel p-6 rounded-3xl flex items-center gap-5 hover:translate-y-[-4px] transition-all cursor-move border border-white/20">
-            <div class="w-14 h-14 rounded-2xl ${b} ${c} flex items-center justify-center"><i data-lucide="${i}" class="w-7 h-7"></i></div>
-            <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">${t}</p><h4 class="text-3xl font-black dark:text-white">${v}</h4></div>
+        return `<div class="glass-panel p-5 rounded-2xl flex items-center gap-4 hover:translate-y-[-3px] transition-all cursor-move border border-white/10">
+            <div class="w-12 h-12 rounded-xl ${b} ${c} flex items-center justify-center shrink-0"><i data-lucide="${i}" class="w-6 h-6"></i></div>
+            <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">${t}</p><h4 class="text-2xl font-black dark:text-white">${v}</h4></div>
         </div>`;
     }
 
     function renderPedagogie() {
         const inst = db.institutions[db.ecoleActive];
+        const isRetro = db.ecoleActive === 'Retrouvailles';
 
         // Define action listeners
-        window.approuverInscription = window.approuverInscription || function (id) {
+        window.approuverInscription = function (id) {
             inst.pedagogie.nouvellesInscriptions = inst.pedagogie.nouvellesInscriptions.filter(i => i.id !== id);
             saveDb();
             renderPedagogie();
         };
 
+        // Sample bulletin data for demonstration
+        const sampleBulletin = {
+            eleve: 'MUKENDI KABUYA David',
+            classe: isRetro ? '3ème Humanités (Scientifique)' : '4ème Primaire',
+            trimestre: '2ème Trimestre',
+            matieres: isRetro ? [
+                { cours: 'Mathématiques', max: 50, pts: 42, appreciation: 'Bien' },
+                { cours: 'Physique-Chimie', max: 50, pts: 38, appreciation: 'Assez Bien' },
+                { cours: 'Biologie', max: 30, pts: 26, appreciation: 'Bien' },
+                { cours: 'Français', max: 50, pts: 45, appreciation: 'Très Bien' },
+                { cours: 'Histoire-Géo', max: 30, pts: 22, appreciation: 'Assez Bien' },
+                { cours: 'Anglais', max: 30, pts: 24, appreciation: 'Bien' },
+                { cours: 'ECM', max: 20, pts: 18, appreciation: 'Excellent' },
+                { cours: 'Informatique', max: 20, pts: 19, appreciation: 'Excellent' },
+                { cours: 'Sport & EPS', max: 20, pts: 17, appreciation: 'Bien' }
+            ] : [
+                { cours: 'Calcul/Arithmétique', max: 50, pts: 40, appreciation: 'Bien' },
+                { cours: 'Langue Française', max: 50, pts: 43, appreciation: 'Très Bien' },
+                { cours: 'Éveil Scientifique', max: 30, pts: 26, appreciation: 'Bien' },
+                { cours: 'Histoire-Géo', max: 20, pts: 17, appreciation: 'Bien' },
+                { cours: 'EPS', max: 20, pts: 18, appreciation: 'Très Bien' },
+                { cours: 'Morale/Religion', max: 30, pts: 26, appreciation: 'Excellent' }
+            ]
+        };
+        const totalPts = sampleBulletin.matieres.reduce((s, m) => s + m.pts, 0);
+        const totalMax = sampleBulletin.matieres.reduce((s, m) => s + m.max, 0);
+        const pct = Math.round((totalPts / totalMax) * 100);
+
         ui.content.innerHTML = `
             <div class="mb-8 flex justify-between items-end">
                 <div>
-                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Pédagogie & Palmarès</h2>
-                    <p class="text-xs text-gray-500 font-bold mt-1 uppercase tracking-widest">Suivi académique et inscriptions</p>
+                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Pédagogie & Palmarès EPST</h2>
+                    <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">${db.ecoleActive} — Gestion académique EPST Kinshasa</p>
+                </div>
+                <button onclick="document.getElementById('modal-bulletin').classList.remove('hidden')" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-gray-950 font-black rounded-xl shadow-lg hover:shadow-xl transition flex items-center gap-2 text-sm">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> Aperçu Bulletin
+                </button>
+            </div>
+
+            <!-- Modal Bulletin -->
+            <div id="modal-bulletin" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+                <div class="bg-white text-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+                    <div class="p-6 bg-blue-900 text-white text-center">
+                        <div class="text-lg font-black uppercase">${db.ecoleActive === 'Retrouvailles' ? 'Groupe Scolaire Retrouvailles' : 'Complexe Scolaire Harmonie'}</div>
+                        <div class="text-sm mt-1">Bulletin Scolaire Officiel — ${sampleBulletin.trimestre} — Année 2025-2026</div>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
+                            <div><strong>Élève :</strong> ${sampleBulletin.eleve}</div>
+                            <div><strong>Classe :</strong> ${sampleBulletin.classe}</div>
+                        </div>
+                        <table class="w-full text-sm border border-gray-200 rounded-xl overflow-hidden mb-4">
+                            <thead class="bg-gray-100 text-xs font-black uppercase text-gray-600">
+                                <tr>
+                                    <th class="p-2 text-left">Cours</th>
+                                    <th class="p-2 text-center">/ Max</th>
+                                    <th class="p-2 text-center">Points</th>
+                                    <th class="p-2 text-center">%</th>
+                                    <th class="p-2 text-left">Appréciation</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                ${sampleBulletin.matieres.map(m => `
+                                <tr>
+                                    <td class="p-2 font-semibold">${m.cours}</td>
+                                    <td class="p-2 text-center text-gray-500">${m.max}</td>
+                                    <td class="p-2 text-center font-black ${m.pts/m.max >= 0.7 ? 'text-green-600' : m.pts/m.max >= 0.5 ? 'text-amber-600' : 'text-red-600'}">${m.pts}</td>
+                                    <td class="p-2 text-center">${Math.round(m.pts/m.max*100)}%</td>
+                                    <td class="p-2 text-xs">${m.appreciation}</td>
+                                </tr>`).join('')}
+                            </tbody>
+                            <tfoot class="bg-blue-50 font-black">
+                                <tr>
+                                    <td class="p-2">TOTAL GÉNÉRAL</td>
+                                    <td class="p-2 text-center">${totalMax}</td>
+                                    <td class="p-2 text-center text-blue-700">${totalPts}</td>
+                                    <td class="p-2 text-center text-blue-700">${pct}%</td>
+                                    <td class="p-2 text-xs">${pct >= 70 ? '✅ Admis(e)' : pct >= 50 ? '⚠️ Passable' : '❌ Insuffisant'}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <div class="flex justify-end gap-3">
+                            <button onclick="document.getElementById('modal-bulletin').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50">Fermer</button>
+                            <button onclick="window.print()" class="px-5 py-2 bg-blue-700 text-white rounded-lg text-sm font-bold hover:bg-blue-600 flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Imprimer</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -621,7 +830,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 '<p class="text-center text-sm text-gray-500 italic py-10">Aucune demande en probation.</p>' :
                 `<div class="space-y-4">
                             ${inst.pedagogie.nouvellesInscriptions.map(insc => `
-                                <div class="bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl border dark:border-gray-700 flex justify-between items-center transition-all hover:shadow-md">
+                                <div class="bg-[#112240]/50 dark:bg-gray-800 p-5 rounded-2xl border dark:border-gray-700 flex justify-between items-center transition-all hover:shadow-md">
                                     <div>
                                         <div class="font-bold text-gray-900 dark:text-white text-lg">${insc.nom}</div>
                                         <div class="text-xs text-gray-400 mt-1 uppercase font-semibold">
@@ -639,13 +848,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                 </div>
                             `).join('')}
-                        <div class="mt-8 bg-gray-50/80 dark:bg-gray-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between border border-gray-100 dark:border-gray-700 shadow-inner no-print">
+                        <div class="mt-8 bg-[#112240]/50/80 dark:bg-gray-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between border border-gray-100 dark:border-gray-700 shadow-inner no-print">
                             <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-semibold mb-4 sm:mb-0 uppercase tracking-wider">
                                 <i data-lucide="info" class="w-4 h-4 text-brand-500"></i>
                                 Exporter la liste d'attente
                             </div>
                             <div class="flex flex-wrap gap-3 justify-end w-full sm:w-auto">
-                                <button class="group flex flex-1 sm:flex-none justify-center items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md font-bold rounded-xl transition-all duration-300 hover:scale-105 active:scale-95" onclick="window.print()">
+                                <button class="group flex flex-1 sm:flex-none justify-center items-center gap-2 px-5 py-2.5 bg-[#112240]/80 dark:bg-gray-700 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md font-bold rounded-xl transition-all duration-300 hover:scale-105 active:scale-95" onclick="window.print()">
                                     <i data-lucide="printer" class="w-4 h-4 text-gray-500 group-hover:text-gray-800 dark:text-gray-400 dark:group-hover:text-white"></i> 
                                     Imprimer
                                 </button>
@@ -672,16 +881,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     
                     <div class="space-y-4">
-                        <div class="p-4 bg-white dark:bg-gray-700 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+                        <div class="p-4 bg-[#112240]/80 dark:bg-gray-700 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
                             <span class="font-bold uppercase text-sm">Effectif Total</span>
                             <span class="font-black text-xl text-brand-600">${inst.pedagogie.eleves.length}</span>
                         </div>
-                        <div class="p-4 bg-white dark:bg-gray-700 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+                        <div class="p-4 bg-[#112240]/80 dark:bg-gray-700 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
                             <span class="font-bold uppercase text-sm">Classes Actives</span>
                             <span class="font-black text-xl text-blue-600">${inst.pedagogie.classes.length}</span>
                         </div>
                         ${db.ecoleActive === 'Retrouvailles' ? `
-                        <div class="p-4 bg-white dark:bg-gray-700 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+                        <div class="p-4 bg-[#112240]/80 dark:bg-gray-700 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
                             <span class="font-bold uppercase text-sm">Sections & Options</span>
                             <span class="font-black text-xl text-purple-600">${inst.pedagogie.sections.length}</span>
                         </div>
@@ -712,13 +921,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <!-- Export actions for the Registered list -->
-                <div class="mt-8 bg-gray-50/80 dark:bg-gray-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between border border-gray-100 dark:border-gray-700 shadow-inner no-print">
+                <div class="mt-8 bg-[#112240]/50/80 dark:bg-gray-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between border border-gray-100 dark:border-gray-700 shadow-inner no-print">
                     <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-semibold mb-4 sm:mb-0 uppercase tracking-wider">
                         <i data-lucide="users" class="w-4 h-4 text-blue-500"></i>
                         Générer un registre officiel
                     </div>
                     <div class="flex flex-wrap gap-3 justify-end w-full sm:w-auto">
-                        <button class="group flex flex-1 sm:flex-none justify-center items-center gap-2 px-6 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md font-black rounded-xl transition-all duration-300 hover:scale-105 active:scale-95" onclick="window.print()">
+                        <button class="group flex flex-1 sm:flex-none justify-center items-center gap-2 px-6 py-3 bg-[#112240]/80 dark:bg-gray-700 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md font-black rounded-xl transition-all duration-300 hover:scale-105 active:scale-95" onclick="window.print()">
                             <i data-lucide="printer" class="w-4 h-4 text-gray-500 group-hover:text-gray-800 dark:text-gray-400 dark:group-hover:text-white"></i> 
                             Archivage Impression
                         </button>
@@ -772,8 +981,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <!-- RH Tabs -->
-            <div class="flex flex-wrap bg-gray-100 dark:bg-gray-800/80 p-1.5 rounded-2xl mb-8 w-fit shadow-inner gap-1">
-                <button id="rh-tab-comptes" onclick="rhTab('comptes')" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all bg-white dark:bg-gray-700 shadow-md text-brand-600">👤 Comptes & Accès</button>
+            <div class="flex flex-wrap bg-white/10 dark:bg-gray-800/80 p-1.5 rounded-2xl mb-8 w-fit shadow-inner gap-1">
+                <button id="rh-tab-comptes" onclick="rhTab('comptes')" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all bg-[#112240]/80 dark:bg-gray-700 shadow-md text-brand-600">👤 Comptes & Accès</button>
                 <button id="rh-tab-hierarchie" onclick="rhTab('hierarchie')" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700">🏢 Organigramme</button>
                 <button id="rh-tab-pointages" onclick="rhTab('pointages')" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700">🕐 Pointages du Jour</button>
                 <button id="rh-tab-classes" onclick="rhTab('classes')" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700">📚 Attribution des Classes</button>
@@ -811,10 +1020,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                             ${allComptes.map(c => `
-                                <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group">
+                                <tr class="hover:bg-[#112240]/50/50 dark:hover:bg-gray-800/30 transition-colors group">
                                     <td class="py-5">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-xl ${roleColors[c.role]||'bg-gray-100 text-gray-600'} flex items-center justify-center font-black text-sm">${(c.prenom[0]||'')+(c.nom[0]||'')}</div>
+                                            <div class="w-10 h-10 rounded-xl ${roleColors[c.role]||'bg-white/10 text-gray-600'} flex items-center justify-center font-black text-sm">${(c.prenom[0]||'')+(c.nom[0]||'')}</div>
                                             <div>
                                                 <p class="font-bold dark:text-white">${c.prenom} ${c.nom}</p>
                                                 <p class="text-xs text-gray-400">${c.email}</p>
@@ -822,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         </div>
                                     </td>
                                     <td class="py-5">
-                                        <span class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${roleColors[c.role]||'bg-gray-100 text-gray-600'}">${c.role}</span>
+                                        <span class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${roleColors[c.role]||'bg-white/10 text-gray-600'}">${c.role}</span>
                                     </td>
                                     <td class="py-5 font-mono text-sm text-gray-600 dark:text-gray-300">${c.login}</td>
                                     <td class="py-5">
@@ -880,13 +1089,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                             ${allPointages.map(p => `
-                                <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                                <tr class="hover:bg-[#112240]/50/50 dark:hover:bg-gray-800/30 transition-colors">
                                     <td class="py-4 font-bold dark:text-white">${p.nom}</td>
-                                    <td class="py-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${roleColors[p.role]||'bg-gray-100 text-gray-600'}">${p.role||'—'}</span></td>
+                                    <td class="py-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${roleColors[p.role]||'bg-white/10 text-gray-600'}">${p.role||'—'}</span></td>
                                     <td class="py-4 font-mono text-sm">${p.arrivee}</td>
                                     <td class="py-4"><span class="px-3 py-1.5 rounded-full text-xs font-black uppercase ${statutPColors[p.statut]||''}">${p.statut}</span></td>
                                     <td class="py-4 text-right">
-                                        <button onclick="alert('Modification du pointage de ${p.nom}')" class="text-xs px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition font-bold">Corriger</button>
+                                        <button onclick="alert('Modification du pointage de ${p.nom}')" class="text-xs px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-[#112240]/50 dark:hover:bg-gray-800 transition font-bold">Corriger</button>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -905,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="text-sm text-gray-500 mb-8">L'administrateur définit quels cours chaque enseignant dispense. Ces informations apparaissent dans leur tableau de bord.</p>
                     <div class="space-y-4">
                         ${allComptes.filter(c => c.role === 'Enseignant').map(c => `
-                            <div class="p-5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
+                            <div class="p-5 bg-[#112240]/50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="flex items-center gap-3">
                                         <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black text-sm">${(c.prenom[0]||'')+(c.nom[0]||'')}</div>
@@ -926,7 +1135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     `).join('')}
                                     ${(c.classes||[]).length === 0 ? '<span class="text-xs text-gray-400 italic">Aucune classe attribuée</span>' : ''}
                                 </div>
-                                <select onchange="alert('Classe \"' + this.value + '\" ajoutée à ${c.prenom} ${c.nom}'); this.value='';" class="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
+                                <select onchange="alert('Classe \"' + this.value + '\" ajoutée à ${c.prenom} ${c.nom}'); this.value='';" class="w-full px-4 py-2.5 bg-[#112240]/80 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
                                     <option value="">+ Ajouter une classe / cours...</option>
                                     ${allClasses.map(cl => `<option value="${cl}">${cl}</option>`).join('')}
                                 </select>
@@ -960,7 +1169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="h-8 w-0.5 bg-gray-300 dark:bg-gray-600 my-2"></div>
                                 <!-- DP -->
                                 ${allComptes.filter(c => c.role === 'DP').map(c => `
-                                    <div class="glass-panel px-6 py-4 rounded-2xl border border-indigo-200 dark:border-indigo-800 z-10 w-64 text-center shadow-md bg-white dark:bg-gray-800">
+                                    <div class="glass-panel px-6 py-4 rounded-2xl border border-indigo-200 dark:border-indigo-800 z-10 w-64 text-center shadow-md bg-[#112240]/80 dark:bg-gray-800">
                                         <div class="w-10 h-10 mx-auto rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm mb-2">${c.prenom[0]}${c.nom[0]}</div>
                                         <p class="font-bold dark:text-white">${c.prenom} ${c.nom}</p>
                                         <p class="text-xs font-black text-indigo-500 uppercase mt-1">Directeur Primaire</p>
@@ -969,7 +1178,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="h-8 w-0.5 bg-gray-300 dark:bg-gray-600 my-2"></div>
                                 <!-- Sur Ecole -->
                                 ${allComptes.filter(c => c.role === 'Sur école').map(c => `
-                                    <div class="glass-panel px-6 py-4 rounded-2xl border border-cyan-200 dark:border-cyan-800 z-10 w-64 text-center shadow-sm bg-white dark:bg-gray-800">
+                                    <div class="glass-panel px-6 py-4 rounded-2xl border border-cyan-200 dark:border-cyan-800 z-10 w-64 text-center shadow-sm bg-[#112240]/80 dark:bg-gray-800">
                                         <div class="w-10 h-10 mx-auto rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center font-black text-sm mb-2">${c.prenom[0]}${c.nom[0]}</div>
                                         <p class="font-bold dark:text-white">${c.prenom} ${c.nom}</p>
                                         <p class="text-xs font-black text-cyan-500 uppercase mt-1">Sur École</p>
@@ -980,7 +1189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="flex gap-4 flex-wrap justify-center mt-2 border-t-2 border-gray-300 dark:border-gray-600 pt-8 relative">
                                     <div class="absolute -top-1 left-1/2 w-0.5 h-8 bg-gray-300 dark:bg-gray-600 -translate-x-1/2 -mt-7"></div>
                                     ${allComptes.filter(c => c.role === 'Enseignant').map(c => `
-                                        <div class="glass-panel px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 w-48 text-center bg-gray-50 dark:bg-gray-800/50">
+                                        <div class="glass-panel px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 w-48 text-center bg-[#112240]/50 dark:bg-gray-800/50">
                                             <p class="font-bold text-sm dark:text-white truncate">${c.prenom} ${c.nom}</p>
                                             <p class="text-[10px] font-black text-gray-500 uppercase mt-1">Enseignant</p>
                                         </div>
@@ -1001,7 +1210,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="h-8 w-0.5 bg-gray-300 dark:bg-gray-600 my-2"></div>
                                 <!-- Prefet -->
                                 ${allComptes.filter(c => c.role === 'Préfet').map(c => `
-                                    <div class="glass-panel px-6 py-4 rounded-2xl border border-purple-300 dark:border-purple-700 z-10 w-64 text-center shadow-md bg-white dark:bg-gray-800">
+                                    <div class="glass-panel px-6 py-4 rounded-2xl border border-purple-300 dark:border-purple-700 z-10 w-64 text-center shadow-md bg-[#112240]/80 dark:bg-gray-800">
                                         <div class="w-10 h-10 mx-auto rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-black text-sm mb-2">${c.prenom[0]}${c.nom[0]}</div>
                                         <p class="font-bold dark:text-white">${c.prenom} ${c.nom}</p>
                                         <p class="text-xs font-black text-purple-500 uppercase mt-1">Préfet</p>
@@ -1017,7 +1226,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <!-- D.E -->
                                     <div class="flex flex-col items-center">
                                         ${allComptes.filter(c => c.role === 'D.E').map(c => `
-                                            <div class="glass-panel px-4 py-3 rounded-xl border border-rose-200 dark:border-rose-800 z-10 w-48 text-center shadow-sm bg-white dark:bg-gray-800">
+                                            <div class="glass-panel px-4 py-3 rounded-xl border border-rose-200 dark:border-rose-800 z-10 w-48 text-center shadow-sm bg-[#112240]/80 dark:bg-gray-800">
                                                 <p class="font-bold dark:text-white text-sm">${c.prenom} ${c.nom}</p>
                                                 <p class="text-[10px] font-black text-rose-500 uppercase mt-1">Dir. des Études</p>
                                             </div>
@@ -1027,7 +1236,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <!-- D.D -->
                                     <div class="flex flex-col items-center">
                                         ${allComptes.filter(c => c.role === 'D.D').map(c => `
-                                            <div class="glass-panel px-4 py-3 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 z-10 w-48 text-center shadow-sm bg-white dark:bg-gray-800">
+                                            <div class="glass-panel px-4 py-3 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 z-10 w-48 text-center shadow-sm bg-[#112240]/80 dark:bg-gray-800">
                                                 <p class="font-bold dark:text-white text-sm">${c.prenom} ${c.nom}</p>
                                                 <p class="text-[10px] font-black text-fuchsia-500 uppercase mt-1">Dir. de Discipline</p>
                                             </div>
@@ -1039,7 +1248,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <p class="text-center text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Corps Professoral</p>
                                     <div class="flex gap-4 flex-wrap justify-center">
                                         ${allComptes.filter(c => c.role === 'Enseignant').map(c => `
-                                            <div class="glass-panel px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 w-48 text-center bg-gray-50 dark:bg-gray-800/50">
+                                            <div class="glass-panel px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 w-48 text-center bg-[#112240]/50 dark:bg-gray-800/50">
                                                 <p class="font-bold text-sm dark:text-white truncate">${c.prenom} ${c.nom}</p>
                                                 <p class="text-[10px] font-black text-gray-500 uppercase mt-1">Enseignant</p>
                                             </div>
@@ -1054,10 +1263,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <!-- MODAL CREATION COMPTE -->
             <div id="modal-create-compte" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-                <div class="glass-panel bg-white dark:bg-gray-900 rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl border border-white/20">
+                <div class="glass-panel bg-[#112240]/80 dark:bg-gray-900 rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl border border-white/20">
                     <div class="flex items-center justify-between mb-8">
                         <h3 class="text-xl font-black dark:text-white uppercase tracking-tighter">Créer un Compte Personnel</h3>
-                        <button onclick="document.getElementById('modal-create-compte').classList.add('hidden')" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">
+                        <button onclick="document.getElementById('modal-create-compte').classList.add('hidden')" class="p-2 hover:bg-white/10 dark:hover:bg-gray-800 rounded-xl transition">
                             <i data-lucide="x" class="w-5 h-5"></i>
                         </button>
                     </div>
@@ -1086,7 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         <div><label class="premium-label">Mot de passe temporaire *</label><input id="new-pwd" type="password" class="premium-input" placeholder="••••••••" required></div>
                         <div class="pt-4 flex gap-3">
-                            <button type="button" onclick="document.getElementById('modal-create-compte').classList.add('hidden')" class="flex-1 py-3 border border-gray-200 dark:border-gray-700 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition">Annuler</button>
+                            <button type="button" onclick="document.getElementById('modal-create-compte').classList.add('hidden')" class="flex-1 py-3 border border-gray-200 dark:border-gray-700 rounded-xl font-bold hover:bg-[#112240]/50 dark:hover:bg-gray-800 transition">Annuler</button>
                             <button type="submit" class="flex-1 py-3 premium-btn rounded-xl font-black">Créer le Compte</button>
                         </div>
                     </form>
@@ -1106,7 +1315,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 options = ['Direction', 'Préfet', 'D.E', 'D.D', 'Enseignant', 'Comptable'];
             }
             
-            roleSelect.innerHTML = options.map(o => \`<option value="\${o}">\${o}</option>\`).join('');
+            roleSelect.innerHTML = options.map(o => `<option value="${o}">${o}</option>`).join('');
         };
         
         // Init options on open
@@ -1119,7 +1328,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btn = document.getElementById('rh-tab-' + t);
                 if (btn) {
                     btn.className = t === tab
-                        ? 'px-6 py-2.5 text-sm font-black rounded-xl transition-all bg-white dark:bg-gray-700 shadow-md text-brand-600'
+                        ? 'px-6 py-2.5 text-sm font-black rounded-xl transition-all bg-[#112240]/80 dark:bg-gray-700 shadow-md text-brand-600'
                         : 'px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700 dark:hover:text-gray-300';
                 }
             });
@@ -1155,48 +1364,306 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCommunication() {
         const inst = db.institutions[db.ecoleActive];
+        const templates = [
+            { id: 'ret', label: '📅 Rappel Retard Frais Scolaires', body: 'Cher(e) Parent, nous vous informons que des frais scolaires restent impayés pour votre enfant. Merci de vous présenter au secrétariat. — Direction ' + db.ecoleActive },
+            { id: 'abs', label: '⚠️ Alerte Absence Injustifiée', body: 'Cher(e) Parent, votre enfant a été absent(e) sans justification. Merci de contacter la Direction dans les 48h. — ' + db.ecoleActive },
+            { id: 'exam', label: '📝 Rappel Examens EPST / EXETAT', body: 'Cher(e) Parent, les examens de fin d\'année commencent le [DATE]. Assurez-vous que votre enfant est prêt(e). — Direction ' + db.ecoleActive },
+            { id: 'bul', label: '📊 Bulletin disponible en ligne', body: 'Cher(e) Parent, le bulletin du 2ème trimestre de votre enfant est disponible sur le portail HR. Connectez-vous sur hr-ecole.cd — Direction' },
+            { id: 'reu', label: '🏫 Réunion des Parents d\'Élèves', body: 'Cher(e) Parent, une réunion générale est organisée le [DATE] à [HEURE]. Votre présence est fortement souhaitée. — Direction ' + db.ecoleActive },
+        ];
+
         ui.content.innerHTML = `
             <div class="mb-8">
-                <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Communication</h2>
-                <p class="text-xs text-gray-500 font-bold mt-1 uppercase tracking-widest">SMS & Rappels Automatiques</p>
+                <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Communication SMS & WhatsApp</h2>
+                <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">${db.ecoleActive} — Plateforme de Communication Parentale EPST</p>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="glass-panel p-10 rounded-[2.5rem] shadow-xl border border-white/20 flex flex-col items-center justify-center text-center">
-                    <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mb-6">
-                        <i data-lucide="message-square" class="w-10 h-10 text-purple-600"></i>
-                    </div>
-                    <div class="text-4xl font-black mb-2">${inst.comms.smsEnvoyes}</div>
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">SMS Envoyés Ce Mois</div>
-                    <button class="mt-8 px-8 py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:bg-purple-700 transition">Nouvelle Campagne SMS</button>
+
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 text-center">
+                    <div class="text-3xl font-black text-purple-400 mb-1">${inst.comms.smsEnvoyes}</div>
+                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest">SMS ce mois</div>
                 </div>
-                <div class="glass-panel p-10 rounded-[2.5rem] shadow-xl border border-white/20 flex flex-col items-center justify-center text-center">
-                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                        <i data-lucide="smartphone" class="w-10 h-10 text-green-600"></i>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 text-center">
+                    <div class="text-3xl font-black text-green-400 mb-1">${inst.comms.whatsappEnvoyes}</div>
+                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest">WhatsApp envoyés</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 text-center">
+                    <div class="text-3xl font-black text-amber-400 mb-1">98%</div>
+                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Taux de livraison</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 text-center">
+                    <div class="text-3xl font-black text-blue-400 mb-1">${inst.pedagogie.eleves.length}</div>
+                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Parents contactables</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Composer -->
+                <div class="lg:col-span-2 glass-panel p-8 rounded-[2.5rem] shadow-xl border border-white/10">
+                    <h3 class="font-black text-lg uppercase tracking-wider mb-6 flex items-center gap-2">
+                        <i data-lucide="send" class="w-5 h-5 text-purple-400"></i> Composer un Message
+                    </h3>
+
+                    <!-- Channel Selector -->
+                    <div class="flex bg-white/5 p-1 rounded-xl mb-6 border border-white/10">
+                        <button id="ch-sms" onclick="switchChannel('sms')" class="flex-1 py-2 text-xs font-black rounded-lg bg-purple-600 text-white shadow transition">📱 SMS</button>
+                        <button id="ch-wa" onclick="switchChannel('wa')" class="flex-1 py-2 text-xs font-black rounded-lg text-gray-400 hover:text-white transition">💬 WhatsApp</button>
+                        <button id="ch-both" onclick="switchChannel('both')" class="flex-1 py-2 text-xs font-black rounded-lg text-gray-400 hover:text-white transition">📡 SMS + WhatsApp</button>
                     </div>
-                    <div class="text-4xl font-black mb-2">${inst.comms.whatsappEnvoyes}</div>
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">WhatsApp Envoyés</div>
-                    <button class="mt-8 px-8 py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg hover:bg-green-700 transition">Configurer API WhatsApp</button>
+
+                    <!-- Templates -->
+                    <div class="mb-5">
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Templates Prédéfinis EPST</label>
+                        <select id="comm-template" onchange="loadTemplate()" class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white outline-none focus:border-purple-500">
+                            <option value="">Choisir un template...</option>
+                            ${templates.map(t => `<option value="${t.id}">${t.label}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <!-- Target -->
+                    <div class="mb-5">
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Cible</label>
+                        <select id="comm-target" class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white outline-none focus:border-purple-500">
+                            <option value="tous">🌐 Tous les parents — ${db.ecoleActive}</option>
+                            ${inst.pedagogie.classes.map(c => `<option value="${c}">Classe : ${c}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <!-- Message Body -->
+                    <div class="mb-5">
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Corps du message <span id="char-count" class="text-gray-500 font-normal normal-case">(0 / 160 car.)</span></label>
+                        <textarea id="comm-body" rows="4" oninput="updateCharCount()" placeholder="Saisissez votre message ici..." class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500 resize-none"></textarea>
+                    </div>
+
+                    <!-- Schedule Option -->
+                    <div class="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-blue-300">📆 Planifier l'envoi</p>
+                            <p class="text-[10px] text-gray-400">Programmer l'envoi automatique à une heure précise</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="datetime-local" class="text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-gray-300 outline-none">
+                        </div>
+                    </div>
+
+                    <button onclick="sendCampaign()" class="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-black rounded-xl shadow-lg flex items-center justify-center gap-2 transition">
+                        <i data-lucide="send" class="w-5 h-5"></i> Envoyer la Campagne
+                    </button>
+                </div>
+
+                <!-- Right Panel: Automation + History -->
+                <div class="space-y-6">
+                    <!-- Automation Toggles -->
+                    <div class="glass-panel p-6 rounded-2xl border border-white/10">
+                        <h4 class="font-black text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Automatisations EPST
+                        </h4>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-bold text-gray-200">SMS Rappel Retard</p>
+                                    <p class="text-[10px] text-gray-400">Chaque lundi à 8h00</p>
+                                </div>
+                                <button onclick="toggleAuto('smsRetard', this)" class="w-10 h-5 rounded-full relative transition-all ${db.commsGlobal.autoSmsRetard ? 'bg-purple-600' : 'bg-gray-600'}" id="toggle-smsRetard">
+                                    <span class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${db.commsGlobal.autoSmsRetard ? 'left-5' : 'left-0.5'}"></span>
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-bold text-gray-200">WhatsApp Rappel Examen</p>
+                                    <p class="text-[10px] text-gray-400">J-3 avant chaque période</p>
+                                </div>
+                                <button onclick="toggleAuto('autoWaRappel', this)" class="w-10 h-5 rounded-full relative transition-all ${db.commsGlobal.autoWaRappel ? 'bg-green-600' : 'bg-gray-600'}" id="toggle-autoWaRappel">
+                                    <span class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${db.commsGlobal.autoWaRappel ? 'left-5' : 'left-0.5'}"></span>
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-bold text-gray-200">Alerte Absence Auto</p>
+                                    <p class="text-[10px] text-gray-400">Après 2 absences consécutives</p>
+                                </div>
+                                <button class="w-10 h-5 rounded-full relative transition-all bg-amber-600">
+                                    <span class="absolute top-0.5 left-5 h-4 w-4 rounded-full bg-white shadow"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Send History -->
+                    <div class="glass-panel p-6 rounded-2xl border border-white/10">
+                        <h4 class="font-black text-sm uppercase tracking-wider mb-4">Historique des Envois</h4>
+                        <div class="space-y-3 max-h-64 overflow-y-auto pr-1">
+                            <div class="p-3 bg-white/5 border border-white/5 rounded-xl">
+                                <p class="text-xs font-bold text-gray-200">SMS Rappel Frais — Tous</p>
+                                <p class="text-[10px] text-gray-400">Envoyé à 47 parents • Il y a 3 jours</p>
+                                <span class="text-[10px] text-green-400 font-bold">✓ Livré 100%</span>
+                            </div>
+                            <div class="p-3 bg-white/5 border border-white/5 rounded-xl">
+                                <p class="text-xs font-bold text-gray-200">WhatsApp — Alerte Examens</p>
+                                <p class="text-[10px] text-gray-400">Envoyé à 3ème Humanités • Il y a 1 semaine</p>
+                                <span class="text-[10px] text-green-400 font-bold">✓ Livré 98%</span>
+                            </div>
+                            <div class="p-3 bg-white/5 border border-white/5 rounded-xl">
+                                <p class="text-xs font-bold text-gray-200">SMS — Réunion Parents</p>
+                                <p class="text-[10px] text-gray-400">Envoyé à 52 parents • Il y a 2 semaines</p>
+                                <span class="text-[10px] text-amber-400 font-bold">⚠ Livré 91%</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
+
+        // JS for communication module
+        const tmplData = {};
+        templates.forEach(t => tmplData[t.id] = t.body);
+
+        window.loadTemplate = function() {
+            const sel = document.getElementById('comm-template');
+            const body = document.getElementById('comm-body');
+            if (sel && body && tmplData[sel.value]) {
+                body.value = tmplData[sel.value];
+                updateCharCount();
+            }
+        };
+
+        window.updateCharCount = function() {
+            const body = document.getElementById('comm-body');
+            const counter = document.getElementById('char-count');
+            if (body && counter) counter.textContent = `(${body.value.length} / 160 car.)`;
+        };
+
+        window.switchChannel = function(ch) {
+            ['sms','wa','both'].forEach(c => {
+                const btn = document.getElementById('ch-' + c);
+                if (btn) btn.className = c === ch
+                    ? 'flex-1 py-2 text-xs font-black rounded-lg bg-purple-600 text-white shadow transition'
+                    : 'flex-1 py-2 text-xs font-black rounded-lg text-gray-400 hover:text-white transition';
+            });
+        };
+
+        window.toggleAuto = function(key, btn) {
+            db.commsGlobal[key] = !db.commsGlobal[key];
+            saveDb();
+            renderCommunication();
+        };
+
+        window.sendCampaign = function() {
+            const target = document.getElementById('comm-target')?.value || 'tous';
+            const body = document.getElementById('comm-body')?.value;
+            if (!body || !body.trim()) { alert('Veuillez rédiger un message avant d\'envoyer.'); return; }
+            alert(`✅ Campagne envoyée avec succès à : ${target}\n\nMessage : ${body.substring(0, 80)}...`);
+            inst.comms.smsEnvoyes += 15;
+            saveDb();
+            renderCommunication();
+        };
     }
 
     function renderCoffreFort() {
+        const docs = [
+            { name: 'Palmarès EXETAT 2025', type: 'pdf', size: '2.4 Mo', date: '2025-07-15', category: 'Académique', secured: true },
+            { name: 'Rapport Financier Annuel 2025', type: 'xlsx', size: '1.8 Mo', date: '2025-08-01', category: 'Finance', secured: true },
+            { name: 'Registre des Enseignants', type: 'pdf', size: '0.9 Mo', date: '2026-01-10', category: 'RH', secured: false },
+            { name: 'Statuts & Agréments EPST', type: 'pdf', size: '3.1 Mo', date: '2024-09-01', category: 'Administratif', secured: true },
+            { name: 'Correspondances PROVED', type: 'pdf', size: '0.5 Mo', date: '2026-05-18', category: 'Administratif', secured: false },
+            { name: 'Bulletins Trimestre 1 (ZIP)', type: 'zip', size: '15.2 Mo', date: '2026-03-30', category: 'Académique', secured: true },
+        ];
+        const catColors = { Académique: 'bg-blue-500/20 text-blue-400 border-blue-500/30', Finance: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', RH: 'bg-amber-500/20 text-amber-400 border-amber-500/30', Administratif: 'bg-purple-500/20 text-purple-400 border-purple-500/30' };
+        const typeIcons = { pdf: 'file-text', xlsx: 'sheet', zip: 'archive', doc: 'file' };
+
         ui.content.innerHTML = `
-            <div class="mb-8">
-                <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Coffre-fort Numérique</h2>
-                <p class="text-xs text-gray-500 font-bold mt-1 uppercase tracking-widest">Sécurité des documents</p>
+            <div class="mb-8 flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Coffre-fort Numérique</h2>
+                    <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">Archives sécurisées — ${db.ecoleActive}</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs font-bold text-emerald-400">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Chiffrement AES-256
+                    </span>
+                    <button onclick="document.getElementById('unlock-zone').classList.toggle('hidden')" class="px-4 py-2 bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold rounded-xl text-xs hover:bg-amber-500/30 transition flex items-center gap-1.5">
+                        <i data-lucide="key" class="w-3.5 h-3.5"></i> Déverrouiller
+                    </button>
+                </div>
             </div>
-            <div class="glass-panel p-16 rounded-[2.5rem] shadow-xl border border-white/20 text-center flex flex-col items-center">
-                <i data-lucide="shield-check" class="w-24 h-24 text-gold-500 mb-6 drop-shadow-lg"></i>
-                <h3 class="text-2xl font-black mb-4">Espace Hautement Sécurisé</h3>
-                <p class="text-gray-500 max-w-md mx-auto mb-8">Accédez aux archives, documents officiels, et sauvegardes de base de données. L'accès nécessite une double authentification.</p>
-                <div class="flex gap-4">
-                    <input type="password" placeholder="Mot de passe Maître" class="px-6 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gold-500">
-                    <button class="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black rounded-xl shadow-lg hover:scale-105 transition">Déverrouiller</button>
+
+            <!-- Unlock Panel -->
+            <div id="unlock-zone" class="hidden mb-6">
+                <div class="p-6 glass-panel rounded-2xl border border-amber-500/20 bg-amber-500/5">
+                    <p class="text-xs font-black text-amber-400 uppercase tracking-wider mb-3">Authentification Requise — Coffre-fort</p>
+                    <div class="flex gap-3">
+                        <input type="password" id="vault-pwd" placeholder="Mot de passe Maître" class="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 outline-none focus:border-amber-500">
+                        <button onclick="unlockVault()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black rounded-xl text-sm transition">Confirmer</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 text-center">
+                    <div class="text-2xl font-black text-white mb-1">${docs.length}</div>
+                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Documents</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 text-center">
+                    <div class="text-2xl font-black text-amber-400 mb-1">${docs.filter(d => d.secured).length}</div>
+                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sécurisés</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 text-center">
+                    <div class="text-2xl font-black text-emerald-400 mb-1">Auto</div>
+                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sauvegarde</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10 text-center">
+                    <div class="text-2xl font-black text-blue-400 mb-1">24.9 Mo</div>
+                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Stockage utilisé</div>
+                </div>
+            </div>
+
+            <!-- Document Grid -->
+            <div class="glass-panel p-8 rounded-[2.5rem] shadow-xl border border-white/10">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="font-black text-lg uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="archive" class="w-5 h-5 text-amber-400"></i> Documents & Archives
+                    </h3>
+                    <button class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5">
+                        <i data-lucide="upload" class="w-3.5 h-3.5"></i> Déposer un fichier
+                    </button>
+                </div>
+                <div class="space-y-3">
+                    ${docs.map(d => `
+                        <div class="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition group">
+                            <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                                <i data-lucide="${typeIcons[d.type] || 'file'}" class="w-5 h-5 text-gray-300"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold text-white truncate">${d.name}</p>
+                                <p class="text-[10px] text-gray-400 mt-0.5">${d.size} • ${d.date}</p>
+                            </div>
+                            <span class="px-2.5 py-1 text-[10px] font-black rounded-full border ${catColors[d.category] || 'bg-white/10 text-gray-400 border-white/10'} uppercase">${d.category}</span>
+                            ${d.secured ? '<span class="text-amber-400 text-[10px] font-black flex items-center gap-0.5"><i data-lucide="lock" class="w-3 h-3"></i> Sécurisé</span>' : ''}
+                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                <button onclick="alert('Téléchargement de: ${d.name}')" class="p-1.5 text-gray-400 hover:text-white bg-white/10 rounded-lg" title="Télécharger">
+                                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="alert('Suppression de: ${d.name}')" class="p-1.5 text-gray-400 hover:text-red-400 bg-white/10 rounded-lg" title="Supprimer">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         `;
+
+        window.unlockVault = function() {
+            const pwd = document.getElementById('vault-pwd')?.value;
+            if (pwd === 'admin123' || pwd === 'password') {
+                alert('✅ Coffre-fort déverrouillé ! Accès aux archives sensibles accordé.');
+                document.getElementById('unlock-zone').classList.add('hidden');
+            } else {
+                alert('❌ Mot de passe incorrect. Tentative enregistrée dans le journal de sécurité.');
+            }
+        };
     }
 
     // ==========================================
@@ -1289,7 +1756,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
 
                     <div class="relative">
-                        <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-100 dark:bg-gray-700"></div>
+                        <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-white/10 dark:bg-gray-700"></div>
                         <div class="space-y-4">
                             ${journal.length === 0
                                 ? '<p class="text-center text-gray-400 italic py-10 ml-10">Aucune activité enregistrée.</p>'
@@ -1300,7 +1767,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <div class="w-10 h-10 rounded-full ${t.bg} flex items-center justify-center flex-shrink-0 z-10 border-2 border-white dark:border-gray-900">
                                             <i data-lucide="${t.icon}" class="w-4 h-4 ${t.iconColor}"></i>
                                         </div>
-                                        <div class="flex-1 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                                        <div class="flex-1 p-4 bg-[#112240]/50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                                             <div class="flex items-start justify-between gap-2">
                                                 <div>
                                                     <p class="font-black text-sm dark:text-white">${j.action}</p>
@@ -1346,7 +1813,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <span class="text-xs font-bold text-gray-600 dark:text-gray-300">${role}</span>
                                         <span class="text-xs font-black text-${c}-600">${pct}%</span>
                                     </div>
-                                    <div class="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                    <div class="h-2 bg-white/10 dark:bg-gray-700 rounded-full overflow-hidden">
                                         <div class="h-full bg-${c}-500 rounded-full transition-all duration-500" style="width:${pct}%"></div>
                                     </div>
                                     <div class="text-[10px] text-gray-400 mt-1">${present}/${total} présents</div>
@@ -1384,15 +1851,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i data-lucide="zap" class="w-4 h-4 text-brand-500"></i> Actions Rapides
                         </h4>
                         <div class="space-y-2">
-                            <button onclick="alert('Rapport exporté !')" class="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/20 transition text-left group">
+                            <button onclick="alert('Rapport exporté !')" class="w-full flex items-center gap-3 p-3 bg-[#112240]/50 dark:bg-gray-800/50 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/20 transition text-left group">
                                 <i data-lucide="download" class="w-4 h-4 text-gray-400 group-hover:text-brand-600"></i>
                                 <span class="text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:text-brand-600">Exporter le journal PDF</span>
                             </button>
-                            <button onclick="alert('Rapport envoyé par email !')" class="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/20 transition text-left group">
+                            <button onclick="alert('Rapport envoyé par email !')" class="w-full flex items-center gap-3 p-3 bg-[#112240]/50 dark:bg-gray-800/50 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/20 transition text-left group">
                                 <i data-lucide="mail" class="w-4 h-4 text-gray-400 group-hover:text-brand-600"></i>
                                 <span class="text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:text-brand-600">Envoyer rapport par email</span>
                             </button>
-                            <button onclick="currentView='rh'; renderView();" class="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/20 transition text-left group">
+                            <button onclick="currentView='rh'; renderView();" class="w-full flex items-center gap-3 p-3 bg-[#112240]/50 dark:bg-gray-800/50 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/20 transition text-left group">
                                 <i data-lucide="users" class="w-4 h-4 text-gray-400 group-hover:text-brand-600"></i>
                                 <span class="text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:text-brand-600">Gérer les comptes RH</span>
                             </button>
@@ -1445,7 +1912,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
                             Étape 1 — Classe
                         </label>
-                        <select id="cascade-classe" class="w-full px-4 py-3 bg-white dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                        <select id="cascade-classe" class="w-full px-4 py-3 bg-[#112240]/80 dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 font-medium">
                             ${allClassesOptions}
                         </select>
                     </div>
@@ -1473,7 +1940,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
                             Étape 3 — Option
                         </label>
-                        <select id="cascade-option" class="w-full px-4 py-3 bg-white dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                        <select id="cascade-option" class="w-full px-4 py-3 bg-[#112240]/80 dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 font-medium">
                             <option value="" disabled selected>Choisir une option...</option>
                             <optgroup id="cascade-option-tech" label="Options Techniques" style="display:none">${techOptions}</optgroup>
                             <optgroup id="cascade-option-nontech" label="Options Non Techniques" style="display:none">${nonTechOptions}</optgroup>
@@ -1491,7 +1958,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const mat = classes.filter(c => c.includes('Maternelle'));
             const prim = classes.filter(c => c.includes('Primaire'));
             groupOptionsHtml = `
-                <select class="w-full px-4 py-3 bg-white dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                <select class="w-full px-4 py-3 bg-[#112240]/80 dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 font-medium">
                     <option disabled selected>Sélectionnez la classe cible...</option>
                     <optgroup label="🌐 Diffusion Générale">
                         <option>Tous les élèves — C.S. Harmonie</option>
@@ -1518,7 +1985,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="glass-panel p-10 rounded-[2.5rem] shadow-2xl border border-white/20">
                 <h3 class="text-xl font-bold mb-6 dark:text-white">Recherche d'un dossier élève</h3>
                 <div class="flex gap-4 max-w-2xl mb-8">
-                    <input type="text" id="search-eleve-360" placeholder="Entrez le nom de l'élève (ex: MUKENDI KABUYA)" class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <input type="text" id="search-eleve-360" placeholder="Entrez le nom de l'élève (ex: MUKENDI KABUYA)" class="flex-1 px-4 py-3 bg-white/10 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
                     <button onclick="window.location.href='/parent-dashboard.html'" class="px-6 py-3 bg-brand-600 text-white font-bold rounded-lg hover:bg-brand-500 transition-all shadow-lg">Consulter le dossier</button>
                 </div>
                 
@@ -1549,11 +2016,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <!-- Formulaire d'envoi -->
-                        <div class="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+                        <div class="bg-[#112240]/50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
                             <form id="form-send-parent" class="space-y-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Type d'information</label>
-                                    <select class="w-full px-4 py-3 bg-white dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
+                                    <select class="w-full px-4 py-3 bg-[#112240]/80 dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
                                         <option>Nouveau Devoir / Cahier de texte</option>
                                         <option>Note d'Évaluation</option>
                                         <option>Alerte Assiduité / Conduite</option>
@@ -1565,14 +2032,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Cible de la communication</label>
                                     
                                     <!-- Premium Toggle -->
-                                    <div class="flex bg-gray-100 dark:bg-gray-900/50 p-1.5 rounded-2xl mb-4 w-fit shadow-inner border border-gray-200 dark:border-gray-700">
-                                        <button type="button" id="btn-target-indiv" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all bg-white dark:bg-gray-800 shadow-md text-brand-600 scale-105">Individuel (Élève)</button>
+                                    <div class="flex bg-white/10 dark:bg-gray-900/50 p-1.5 rounded-2xl mb-4 w-fit shadow-inner border border-gray-200 dark:border-gray-700">
+                                        <button type="button" id="btn-target-indiv" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all bg-[#112240]/80 dark:bg-gray-800 shadow-md text-brand-600 scale-105">Individuel (Élève)</button>
                                         <button type="button" id="btn-target-group" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Groupe (Classe)</button>
                                     </div>
                                     
                                     <!-- Input for Individual -->
                                     <div id="target-individual" class="animate-fade-in">
-                                        <input type="text" placeholder="Rechercher l'élève (Ex: MUKENDI KABUYA)" class="w-full px-4 py-3 bg-white dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
+                                        <input type="text" placeholder="Rechercher l'élève (Ex: MUKENDI KABUYA)" class="w-full px-4 py-3 bg-[#112240]/80 dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
                                     </div>
                                     
                                     <!-- Select for Group -->
@@ -1582,7 +2049,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Détails / Contenu</label>
-                                    <textarea rows="3" placeholder="Saisissez le contenu à envoyer..." class="w-full px-4 py-3 bg-white dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                                    <textarea rows="3" placeholder="Saisissez le contenu à envoyer..." class="w-full px-4 py-3 bg-[#112240]/80 dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-brand-500"></textarea>
                                 </div>
 
                                 <!-- Zone d'upload pièce jointe -->
@@ -1597,7 +2064,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         
                                         <!-- Icône centrale -->
                                         <div class="flex flex-col items-center gap-3">
-                                            <div class="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover:bg-brand-100 dark:group-hover:bg-brand-900/30 transition-all">
+                                            <div class="w-14 h-14 rounded-2xl bg-white/10 dark:bg-gray-700 flex items-center justify-center group-hover:bg-brand-100 dark:group-hover:bg-brand-900/30 transition-all">
                                                 <i data-lucide="upload-cloud" class="w-7 h-7 text-gray-400 group-hover:text-brand-500 transition-colors"></i>
                                             </div>
                                             <div>
@@ -1613,7 +2080,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
 
                                     <!-- Prévisualisation du fichier sélectionné -->
-                                    <div id="file-preview" class="hidden mt-3 p-3 bg-white dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-xl flex items-center gap-3">
+                                    <div id="file-preview" class="hidden mt-3 p-3 bg-[#112240]/80 dark:bg-[#112240] border border-gray-200 dark:border-white/10 rounded-xl flex items-center gap-3">
                                         <div id="file-preview-icon" class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0">
                                             <i data-lucide="file" class="w-5 h-5 text-brand-600"></i>
                                         </div>
@@ -1634,10 +2101,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         
                         <!-- Historique d'envoi -->
-                        <div class="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+                        <div class="bg-[#112240]/50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
                             <h4 class="font-bold text-gray-700 dark:text-white mb-6 uppercase tracking-wider text-sm border-b dark:border-gray-700 pb-2">Derniers envois</h4>
                             <div class="space-y-4">
-                                <div class="p-4 bg-white dark:bg-[#112240] rounded-xl border border-gray-100 dark:border-white/5 flex items-start gap-4 hover:shadow-md transition-shadow">
+                                <div class="p-4 bg-[#112240]/80 dark:bg-[#112240] rounded-xl border border-gray-100 dark:border-white/5 flex items-start gap-4 hover:shadow-md transition-shadow">
                                     <div class="p-2 bg-amber-100 text-amber-600 rounded-lg"><i data-lucide="book-open" class="w-4 h-4"></i></div>
                                     <div>
                                         <p class="text-sm font-bold dark:text-white">Devoir de Mathématiques</p>
@@ -1645,7 +2112,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <p class="text-[10px] text-gray-400 mt-1 font-mono">Il y a 2 heures</p>
                                     </div>
                                 </div>
-                                <div class="p-4 bg-white dark:bg-[#112240] rounded-xl border border-gray-100 dark:border-white/5 flex items-start gap-4 hover:shadow-md transition-shadow">
+                                <div class="p-4 bg-[#112240]/80 dark:bg-[#112240] rounded-xl border border-gray-100 dark:border-white/5 flex items-start gap-4 hover:shadow-md transition-shadow">
                                     <div class="p-2 bg-red-100 text-red-600 rounded-lg"><i data-lucide="alert-triangle" class="w-4 h-4"></i></div>
                                     <div>
                                         <p class="text-sm font-bold dark:text-white">Alerte Retard</p>
@@ -1671,13 +2138,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnIndiv.onclick = () => {
                     targetIndiv.classList.remove('hidden');
                     targetGroup.classList.add('hidden');
-                    btnIndiv.className = "px-6 py-2.5 text-sm font-black rounded-xl transition-all bg-white dark:bg-gray-800 shadow-md text-brand-600 scale-105";
+                    btnIndiv.className = "px-6 py-2.5 text-sm font-black rounded-xl transition-all bg-[#112240]/80 dark:bg-gray-800 shadow-md text-brand-600 scale-105";
                     btnGroup.className = "px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700 dark:hover:text-gray-300";
                 };
                 btnGroup.onclick = () => {
                     targetGroup.classList.remove('hidden');
                     targetIndiv.classList.add('hidden');
-                    btnGroup.className = "px-6 py-2.5 text-sm font-black rounded-xl transition-all bg-white dark:bg-gray-800 shadow-md text-brand-600 scale-105";
+                    btnGroup.className = "px-6 py-2.5 text-sm font-black rounded-xl transition-all bg-[#112240]/80 dark:bg-gray-800 shadow-md text-brand-600 scale-105";
                     btnIndiv.className = "px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700 dark:hover:text-gray-300";
                 };
             }
@@ -1767,7 +2234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext)) return { icon: 'image', color: 'bg-blue-100 text-blue-600' };
                 if (ext === 'pdf') return { icon: 'file-text', color: 'bg-red-100 text-red-600' };
                 if (['doc','docx'].includes(ext)) return { icon: 'file-text', color: 'bg-blue-100 text-blue-700' };
-                return { icon: 'file', color: 'bg-gray-100 text-gray-600' };
+                return { icon: 'file', color: 'bg-white/10 text-gray-600' };
             }
 
             function showPreview(file) {
@@ -1818,4 +2285,85 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 100);
     }
+
+    // ==========================================
+    // VUE: GESTION DES COMPTES
+    // ==========================================
+    function renderGestionComptes() {
+        let db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+        
+        window.editUser = function(id) {
+            const u = db.find(x => x.id == id);
+            if (!u) return;
+            const newEmail = prompt(`Modifier l'email pour ${u.prenom} ${u.nom}`, u.email);
+            if (newEmail !== null && newEmail.trim() !== '') {
+                u.email = newEmail.trim();
+            }
+            const newPwd = prompt(`Modifier le mot de passe pour ${u.prenom} ${u.nom}`, u.password);
+            if (newPwd !== null && newPwd.trim() !== '') {
+                u.password = newPwd.trim();
+            }
+            localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+            alert('Compte mis à jour avec succès.');
+            renderGestionComptes(); // refresh view
+        };
+
+        window.deleteUser = function(id) {
+            if (id == 1) {
+                alert("Vous ne pouvez pas supprimer le Super-Admin.");
+                return;
+            }
+            if (confirm("Voulez-vous vraiment supprimer ce compte ?")) {
+                db = db.filter(x => x.id != id);
+                localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+                alert('Compte supprimé.');
+                renderGestionComptes();
+            }
+        };
+
+        let rows = '';
+        db.forEach(u => {
+            rows += `
+                <tr class="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                    <td class="py-3 px-4 font-bold text-sm text-gray-900 dark:text-white">${u.prenom || ''} ${u.nom || ''}</td>
+                    <td class="py-3 px-4 text-xs text-gray-500 font-mono">${u.email}</td>
+                    <td class="py-3 px-4 text-xs font-bold text-amber-500">${u.role}</td>
+                    <td class="py-3 px-4 text-xs text-gray-400">${u.ecole || 'N/A'}</td>
+                    <td class="py-3 px-4 text-xs text-gray-400 font-mono">${u.password}</td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                        <button onclick="editUser(${u.id})" class="px-2 py-1 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded transition text-xs font-bold">Modifier</button>
+                        <button onclick="deleteUser(${u.id})" class="px-2 py-1 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded transition text-xs font-bold">Supprimer</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        ui.content.innerHTML = `
+            <div class="mb-8 fade-in">
+                <h2 class="text-3xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">Gestion des Comptes</h2>
+                <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Administration des utilisateurs et réinitialisation des accès</p>
+            </div>
+
+            <div class="glass-panel dark:bg-gray-800 rounded-xl p-6 shadow-sm fade-in" style="animation-delay: 0.1s">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                <th class="pb-3 px-4">Utilisateur</th>
+                                <th class="pb-3 px-4">Email</th>
+                                <th class="pb-3 px-4">Rôle</th>
+                                <th class="pb-3 px-4">École</th>
+                                <th class="pb-3 px-4">Mot de passe</th>
+                                <th class="pb-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
 });

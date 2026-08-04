@@ -125,27 +125,27 @@ document.addEventListener('DOMContentLoaded', function () {
       '  padding:18px 20px; border-radius:16px;',
       '  border:2px solid transparent; cursor:pointer;',
       '  transition:all .22s ease; user-select:none;',
-      '  background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.06);',
+      '  background: rgba(255, 255, 255, 0.05); box-shadow:0 1px 4px rgba(0,0,0,.06);',
       '}',
       '.orient-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.1); }',
       '.orient-card.selected { box-shadow:0 6px 24px rgba(0,0,0,.14); }',
       '.orient-card .card-icon { font-size:26px; line-height:1; }',
-      '.orient-card .card-title { font-size:14px; font-weight:700; color:#1e1b4b; }',
+      '.orient-card .card-title { font-size:14px; font-weight:700; color: #f3f4f6; }',
       '.orient-card .card-sub   { font-size:11px; color:#6b7280; margin-top:2px; }',
       '.sous-section-chip {',
       '  display:flex; align-items:center; gap:8px; padding:12px 16px;',
       '  border-radius:12px; border:1.5px solid #e5e7eb; cursor:pointer;',
-      '  background:#fff; transition:all .18s ease; user-select:none;',
-      '  font-size:13px; font-weight:600; color:#374151;',
+      '  background: rgba(255, 255, 255, 0.05); transition:all .18s ease; user-select:none;',
+      '  font-size:13px; font-weight:600; color: #e5e7eb;',
       '}',
-      '.sous-section-chip:hover { border-color:#6366f1; color:#4f46e5; background:#f5f3ff; }',
-      '.sous-section-chip.selected { border-color:#4f46e5; background:#eef2ff; color:#4f46e5; }',
-      '.sous-section-chip.selected-tech { border-color:#d97706; background:#fffbeb; color:#b45309; }',
+      '.sous-section-chip:hover { border-color:#6366f1; color:#4f46e5; background: rgba(88, 28, 135, 0.3); }',
+      '.sous-section-chip.selected { border-color:#4f46e5; background: rgba(49, 46, 129, 0.3); color:#4f46e5; }',
+      '.sous-section-chip.selected-tech { border-color:#d97706; background: rgba(120, 53, 15, 0.3); color:#b45309; }',
       '.orient-appear { animation: fadeSlideIn .3s ease both; }',
       '.option-select-premium {',
-      '  width:100%; padding:14px 18px; background:#fff;',
+      '  width:100%; padding:14px 18px; background: rgba(255, 255, 255, 0.05);',
       '  border:2px solid #e5e7eb; border-radius:14px; font-size:13px;',
-      '  color:#111827; font-weight:600; outline:none; cursor:pointer;',
+      '  color: #f9fafb; font-weight:600; outline:none; cursor:pointer;',
       '  transition:border-color .2s ease, box-shadow .2s ease;',
       '  appearance:none; -webkit-appearance:none;',
       '  background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%236b7280\' stroke-width=\'2\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E");',
@@ -170,9 +170,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var tplPhoto = ''
     + '<div class="space-y-4">'
     +   '<h3 class="text-sm font-bold uppercase tracking-wider text-gray-500 border-b border-gray-200 pb-2">Photo du Candidat</h3>'
-    +   '<div class="flex items-start gap-6 p-5 bg-gray-50 rounded-2xl border border-dashed border-gray-300">'
+    +   '<div class="flex items-start gap-6 p-5 bg-[#112240]/50 rounded-2xl border border-dashed border-gray-300">'
     +     '<div class="shrink-0">'
-    +       '<div id="photo-preview" class="w-28 h-32 rounded-xl bg-white border-2 border-gray-200 flex flex-col items-center justify-center overflow-hidden shadow-sm">'
+    +       '<div id="photo-preview" class="w-28 h-32 rounded-xl bg-[#112240]/80 border-2 border-gray-200 flex flex-col items-center justify-center overflow-hidden shadow-sm">'
     +         '<svg class="w-10 h-10 text-gray-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>'
     +         '<span style="font-size:10px;color:#9ca3af;font-weight:500;">Aperçu</span>'
     +       '</div>'
@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function () {
     +     '<div class="flex-1 space-y-2">'
     +       '<label class="block text-sm font-semibold text-gray-700">Photo d\'identité du candidat</label>'
     +       '<p class="text-xs text-gray-500">Format : JPG, PNG, WEBP &nbsp;·&nbsp; Max <strong>5 Mo</strong></p>'
-    +       '<label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border-radius:12px;background:#fff;border:1.5px solid #d1d5db;box-shadow:0 1px 3px rgba(0,0,0,.07);transition:all .18s;font-size:13px;font-weight:600;color:#374151;">'
+    +       '<label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border-radius:12px;background: rgba(255, 255, 255, 0.05);border:1.5px solid #d1d5db;box-shadow:0 1px 3px rgba(0,0,0,.07);transition:all .18s;font-size:13px;font-weight:600;color: #e5e7eb;">'
     +         '<svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
     +         'Choisir une photo'
     +         '<input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp" style="display:none;">'
@@ -199,8 +199,8 @@ document.addEventListener('DOMContentLoaded', function () {
       + '<div class="space-y-4">'
       +   '<h3 class="text-sm font-bold uppercase tracking-wider border-b border-gray-200 pb-2" style="color:' + color + '">Filiation (Parents)</h3>'
       +   '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">'
-      +     '<div class="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">'
-      +       '<h4 style="font-size:12px;font-weight:700;color:#374151;display:flex;align-items:center;gap:6px;">'
+      +     '<div class="space-y-4 p-4 bg-[#112240]/50 rounded-xl border border-gray-100">'
+      +       '<h4 style="font-size:12px;font-weight:700;color: #e5e7eb;display:flex;align-items:center;gap:6px;">'
       +         '<span style="width:20px;height:20px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#2563eb;">P</span>'
       +         'Informations du Père'
       +       '</h4>'
@@ -208,8 +208,8 @@ document.addEventListener('DOMContentLoaded', function () {
       +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Profession</label><input type="text" class="input-field"></div>'
       +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Téléphone *</label><input type="tel" placeholder="+243..." required class="input-field phone-input"></div>'
       +     '</div>'
-      +     '<div class="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">'
-      +       '<h4 style="font-size:12px;font-weight:700;color:#374151;display:flex;align-items:center;gap:6px;">'
+      +     '<div class="space-y-4 p-4 bg-[#112240]/50 rounded-xl border border-gray-100">'
+      +       '<h4 style="font-size:12px;font-weight:700;color: #e5e7eb;display:flex;align-items:center;gap:6px;">'
       +         '<span style="width:20px;height:20px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#db2777;">M</span>'
       +         'Informations de la Mère'
       +       '</h4>'
@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Classe
     + '<div id="step-classe">'
-    +   '<label style="display:block;font-size:13px;font-weight:700;color:#111827;margin-bottom:8px;">① Classe Sollicitée *</label>'
+    +   '<label style="display:block;font-size:13px;font-weight:700;color: #f9fafb;margin-bottom:8px;">① Classe Sollicitée *</label>'
     +   '<select id="select-classe-humanite" required class="option-select-premium">'
     +     '<option value="">— Sélectionnez une classe —</option>'
     +     '<optgroup label="Éducation de Base (EB)">'
@@ -257,21 +257,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Choix Famille (affiché si ≥ 1ère Hum)
     + '<div id="step-famille" style="display:none;" class="orient-appear">'
-    +   '<label style="display:block;font-size:13px;font-weight:700;color:#111827;margin-bottom:12px;">② Famille de Section *</label>'
+    +   '<label style="display:block;font-size:13px;font-weight:700;color: #f9fafb;margin-bottom:12px;">② Famille de Section *</label>'
     +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
     +     '<div class="orient-card" id="card-non-technique" data-famille="non-technique"'
-    +       ' style="border-color:#c7d2fe;background:#eef2ff;">'
+    +       ' style="border-color:#c7d2fe;background: rgba(49, 46, 129, 0.3);">'
     +       '<span class="card-icon">📚</span>'
     +       '<div>'
-    +         '<div class="card-title" style="color:#3730a3;">Section Non Technique</div>'
+    +         '<div class="card-title" style="color: #a5b4fc;">Section Non Technique</div>'
     +         '<div class="card-sub">Sciences · Littéraire · Pédagogie</div>'
     +       '</div>'
     +     '</div>'
     +     '<div class="orient-card" id="card-technique" data-famille="technique"'
-    +       ' style="border-color:#fde68a;background:#fffbeb;">'
+    +       ' style="border-color:#fde68a;background: rgba(120, 53, 15, 0.3);">'
     +       '<span class="card-icon">⚙️</span>'
     +       '<div>'
-    +         '<div class="card-title" style="color:#92400e;">Section Technique</div>'
+    +         '<div class="card-title" style="color: #fcd34d;">Section Technique</div>'
     +         '<div class="card-sub">Commerciale · Industrielle · Sociale · Médicale · Agricole</div>'
     +       '</div>'
     +     '</div>'
@@ -280,13 +280,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Sous-sections (affiché après choix famille)
     + '<div id="step-sous-section" style="display:none;" class="orient-appear">'
-    +   '<label style="display:block;font-size:13px;font-weight:700;color:#111827;margin-bottom:12px;">③ Sous-Section *</label>'
+    +   '<label style="display:block;font-size:13px;font-weight:700;color: #f9fafb;margin-bottom:12px;">③ Sous-Section *</label>'
     +   '<div id="chips-sous-section" style="display:flex;flex-wrap:wrap;gap:10px;"></div>'
     + '</div>'
 
     // Option finale
     + '<div id="step-option" style="display:none;" class="orient-appear">'
-    +   '<label style="display:block;font-size:13px;font-weight:700;color:#111827;margin-bottom:8px;">④ Option *</label>'
+    +   '<label style="display:block;font-size:13px;font-weight:700;color: #f9fafb;margin-bottom:8px;">④ Option *</label>'
     +   '<div id="option-badge" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#f3f4f6;border-radius:20px;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:10px;"></div>'
     +   '<select id="select-option-final" required class="option-select-premium">'
     +     '<option value="">— Sélectionnez l\'option —</option>'
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function () {
     +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Province de l\'école</label><input type="text" class="input-field"></div>'
     +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Pourcentage / Mention</label><input type="text" class="input-field"></div>'
     +   '</div>'
-    +   '<div style="padding:20px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:16px;">'
+    +   '<div style="padding:20px;background: rgba(30, 58, 138, 0.3);border:1.5px solid #bfdbfe;border-radius:16px;">'
     +     '<label style="display:block;font-size:13px;font-weight:700;color:#1e40af;margin-bottom:10px;">Classe Sollicitée *</label>'
     +     '<select required class="option-select-premium" style="border-color:#93c5fd;">'
     +       '<option value="">— Sélectionnez une classe —</option>'
@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function () {
     +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">École de provenance *</label><input type="text" required class="input-field"></div>'
     +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Code de l\'école d\'origine</label><input type="text" class="input-field"></div>'
     +   '</div>'
-    +   '<div style="padding:16px;background:#f9fafb;border:1.5px dashed #d1d5db;border-radius:14px;">'
+    +   '<div style="padding:16px;background: rgba(17, 34, 64, 0.6);border:1.5px dashed #d1d5db;border-radius:14px;">'
     +     '<label class="block text-xs font-semibold text-gray-700 mb-2">Pièces jointes (Bulletins, Attestation de passation)</label>'
     +     '<input type="file" multiple class="block w-full text-sm text-gray-500 cursor-pointer">'
     +   '</div>'
@@ -534,7 +534,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // ─────────────────────────────────────────────
   function setupInputs() {
     document.querySelectorAll('.input-field').forEach(function (el) {
-      el.style.cssText = 'width:100%;padding:12px 16px;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;font-size:13px;transition:all .18s;outline:none;';
+      el.style.cssText = 'width:100%;padding:12px 16px;background: rgba(17, 34, 64, 0.6);border:1.5px solid #e5e7eb;border-radius:12px;font-size:13px;transition:all .18s;outline:none;';
       el.addEventListener('focus', function(){ el.style.borderColor='#6366f1'; el.style.background='#fff'; el.style.boxShadow='0 0 0 3px rgba(99,102,241,.12)'; });
       el.addEventListener('blur',  function(){ el.style.borderColor='#e5e7eb'; el.style.background='#f9fafb'; el.style.boxShadow='none'; });
     });

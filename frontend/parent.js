@@ -49,7 +49,7 @@ function renderEnfants() {
   enfantsContainer.innerHTML = '';
   enfantsMockData.forEach(enfant => {
     const card = document.createElement('div');
-    const bgClass = enfant.active ? `bg-${enfant.color}-500 text-white shadow-lg shadow-${enfant.color}-500/30` : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50';
+    const bgClass = enfant.active ? `bg-${enfant.color}-500 text-white shadow-lg shadow-${enfant.color}-500/30` : 'bg-[#112240]/80 text-slate-700 border border-slate-200 hover:bg-[#112240]/50';
     const textClass = enfant.active ? 'text-white/80' : 'text-slate-500';
     
     card.className = `min-w-[240px] p-4 rounded-2xl cursor-pointer transition-all duration-300 transform ${enfant.active ? '-translate-y-1' : ''} ${bgClass}`;
@@ -89,7 +89,7 @@ tabs.forEach(tab => {
       const b = document.getElementById(`tab-${t}`);
       const c = document.getElementById(`content-${t}`);
       
-      b.className = 'tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 font-medium transition-colors';
+      b.className = 'tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-[#112240]/50 font-medium transition-colors';
       c.classList.add('hidden');
       c.classList.remove('block');
     });

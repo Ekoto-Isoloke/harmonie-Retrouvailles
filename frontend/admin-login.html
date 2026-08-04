@@ -106,13 +106,13 @@
           <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center font-display font-bold text-xl text-white shadow-lg">HR</div>
           <div>
             <h1 class="font-display font-bold text-lg text-white leading-tight">Harmonie-Retrouvailles</h1>
-            <p id="portal-top-title" class="text-[11px] text-amber-400 font-bold tracking-widest uppercase">Portail ERP Direction & RH</p>
+            <p id="portal-top-title" class="text-[11px] text-amber-400 font-bold tracking-widest uppercase">Portail Super-Administration</p>
           </div>
         </div>
 
-        <h2 id="portal-title" class="text-[22px] font-black text-white leading-snug mb-3">Système de Gestion<br>Éducative EPST</h2>
+        <h2 id="portal-title" class="text-[22px] font-black text-white leading-snug mb-3">Connexion à<br>L'Administration</h2>
         <p id="portal-sub" class="text-xs text-gray-400 leading-relaxed mb-8">
-          Espace sécurisé réservé à la Direction, Préfets, Directeurs d'Études et Enseignants certifiés de Kinshasa.
+          Accès sécurisé exclusif à la Direction Générale et au Super-Administrateur.
         </p>
 
         <div class="space-y-2.5">
@@ -161,8 +161,8 @@
         <div id="panel-login" class="fade-up">
 
           <div class="mb-6">
-            <h3 class="text-xl font-black text-white mb-1">Connexion à l'Espace Direction</h3>
-            <p class="text-xs text-gray-400">Accédez à votre tableau de bord sécurisé EPST.</p>
+            <h3 id="form-login-title" class="text-xl font-black text-white mb-1">Connexion Super-Admin</h3>
+            <p class="text-xs text-gray-400">Accès réservé à la Direction Générale et au Super-Administrateur.</p>
           </div>
 
           <form onsubmit="handleLogin(event)" class="space-y-4">
@@ -205,7 +205,7 @@
 
             <button type="submit" class="btn-gold w-full py-4 flex items-center justify-center gap-2 mt-4">
               <i data-lucide="log-in" class="w-5 h-5"></i>
-              <span>Se Connecter à l'Espace Direction</span>
+              <span id="btn-login-text">Se Connecter à l'Administration</span>
             </button>
           </form>
 
@@ -345,64 +345,41 @@
               </div>
             </div>
 
-            <!-- ======================================================= -->
-            <!-- ÉTAPE 2 : ENREGISTREMENT BIOMÉTRIQUE (STYLE PREMIUM)    -->
-            <!-- ======================================================= -->
+            <!-- ================= SÉPARATEUR BIOMÉTRIE ================= -->
             <div class="pt-4 border-t border-white/10">
-              <p class="text-[11px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-1.5 mb-3">
-                <i data-lucide="shield" class="w-4 h-4"></i> Sécurité Biométrique — Étape Finale
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-black text-blue-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <i data-lucide="fingerprint" class="w-4 h-4"></i> OU BIOMÉTRIE (OPTIONNEL)
+                </span>
+                <span class="text-[10px] text-gray-400">Pointage campus</span>
+              </div>
+              <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                Votre empreinte servira uniquement d'identifiant d'accès sécurisé lors du pointage à l'entrée du campus.
               </p>
 
-              <!-- Scanner Card -->
-              <div id="bio-register-card" class="relative rounded-2xl overflow-hidden border border-blue-500/20 bg-gradient-to-br from-[#070f1f] to-[#0a1628] p-5">
-                <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-600/15 rounded-full blur-2xl pointer-events-none"></div>
-                <div class="absolute -bottom-8 -left-8 w-24 h-24 bg-indigo-400/10 rounded-full blur-xl pointer-events-none"></div>
-
-                <div class="relative flex items-center gap-4 mb-4">
-                  <div id="bio-ring" class="shrink-0 relative w-16 h-16 flex items-center justify-center">
-                    <svg class="absolute inset-0 w-full h-full" viewBox="0 0 64 64">
-                      <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(59,130,246,0.15)" stroke-width="3"/>
-                      <circle id="bio-progress-ring" cx="32" cy="32" r="28" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"
-                        stroke-dasharray="175.9" stroke-dashoffset="175.9" transform="rotate(-90 32 32)" style="transition:stroke-dashoffset 1.5s ease;"/>
-                    </svg>
-                    <div id="bio-icon-inner" class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center transition-all duration-500">
-                      <i data-lucide="fingerprint" class="w-5 h-5 text-blue-400 transition-colors duration-500"></i>
-                    </div>
+              <div id="bio-action-box" class="glass-light p-4 rounded-2xl border border-blue-500/20 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <div id="bio-icon-wrap" class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0">
+                    <i data-lucide="fingerprint" id="bio-icon" class="w-5 h-5 text-blue-400"></i>
                   </div>
-
-                  <div class="flex-1">
-                    <p id="bio-reg-title" class="text-sm font-black text-white mb-1">Enregistrement d'empreinte</p>
-                    <p id="bio-reg-sub" class="text-[11px] text-gray-400 leading-relaxed">
-                      Sécurisez votre accès avec votre capteur biométrique, Windows Hello ou Face ID.
-                    </p>
+                  <div>
+                    <p id="bio-title" class="text-xs font-bold text-white">Scanner votre empreinte</p>
+                    <p id="bio-sub" class="text-[10px] text-gray-400">Capture rapide via capteur</p>
                   </div>
                 </div>
-
-                <div id="bio-status-badge" class="flex items-center gap-2 text-[11px] text-blue-300/70 mb-4 px-0.5">
-                  <span id="bio-status-dot" class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0"></span>
-                  <span id="bio-status-text">Prêt — Appuyez pour lancer l'analyse biométrique</span>
-                </div>
-
-                <button type="button" id="btn-enroll-bio" onclick="enrollBiometrics()"
-                  class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 active:scale-[0.98] text-white text-sm font-bold rounded-xl transition-all shadow-[0_4px_20px_rgba(59,130,246,0.4)]">
+                <button type="button" id="btn-bio-capture" onclick="registerBiometrics()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5 shrink-0">
                   <i data-lucide="fingerprint" class="w-4 h-4"></i>
-                  <span id="btn-enroll-text">Enregistrement d'empreinte</span>
+                  Enregistrer mon empreinte
                 </button>
               </div>
             </div>
 
-            <!-- ========== BOUTON FINALISER (inactif jusqu'au bio) ========== -->
-            <div class="pt-2">
-              <button type="submit" id="btn-finalize" disabled
-                class="w-full py-4 flex items-center justify-center gap-2 rounded-[14px] text-sm font-black uppercase tracking-widest duration-500 cursor-not-allowed opacity-40"
-                style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;">
-                <i data-lucide="shield-check" class="w-5 h-5"></i>
-                Finaliser la Création du Compte
+            <!-- ================= BOUTON SE CONNECTER EN BAS ================= -->
+            <div class="pt-4">
+              <button type="submit" class="btn-gold w-full py-4 flex items-center justify-center gap-2 shadow-xl">
+                <i data-lucide="user-check" class="w-5 h-5"></i>
+                Créer mon Compte &amp; Se Connecter
               </button>
-              <p id="bio-required-hint" class="text-center text-[11px] text-amber-400/70 mt-2 flex items-center justify-center gap-1">
-                <i data-lucide="lock" class="w-3 h-3"></i>
-                Enregistrement biométrique requis pour finaliser
-              </p>
             </div>
 
           </form>
@@ -436,23 +413,6 @@ function initDB() {
       courses: '' 
     });
   }
-  
-  // Auto-Recovery : S'assurer que le compte EKOTO existe (au cas où effacé par le bug)
-  const ekotoExists = db.find(u => u.email === 'chadrackisoloke@gmail.com');
-  if (!ekotoExists) {
-    db.push({
-      id: 99,
-      email: 'chadrackisoloke@gmail.com',
-      password: 'chada123',
-      role: 'Enseignant',
-      nom: 'EKOTO ISOLOKE',
-      prenom: 'CHADA',
-      phone: '+243827613009',
-      ecole: 'Retrouvailles',
-      courses: '',
-      biometric: false
-    });
-  }
 
   localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
 }
@@ -460,8 +420,8 @@ function initDB() {
 document.addEventListener('DOMContentLoaded', () => {
   initDB();
   if (window.lucide) lucide.createIcons();
-  // Portal is always 'direction' on this page
-  currentPortal = 'direction';
+  // Portal is always 'admin' on this page
+  currentPortal = 'admin';
 
   const topTitleEl = document.getElementById('portal-top-title');
   const titleEl = document.getElementById('portal-title');
@@ -613,123 +573,33 @@ function selectInstitution(name) {
 }
 
 let isBioRegistered = false;
-let bioCredentialId = null; // Stocke l'ID WebAuthn
 
-// Helper: convertit Uint8Array <-> Base64
-function bufferToBase64(buffer) {
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)));
-}
+function registerBiometrics() {
+  const btn = document.getElementById('btn-bio-capture');
+  const box = document.getElementById('bio-action-box');
+  const title = document.getElementById('bio-title');
+  const sub = document.getElementById('bio-sub');
+  const iconWrap = document.getElementById('bio-icon-wrap');
 
-// =================================================================
-// ENREGISTREMENT D'EMPREINTE (WebAuthn Passkey)
-// =================================================================
-async function enrollBiometrics() {
-  const btn = document.getElementById('btn-enroll-bio');
-  const ring = document.getElementById('bio-progress-ring');
-  const iconInner = document.getElementById('bio-icon-inner');
-  const statusText = document.getElementById('bio-status-text');
-  const statusDot = document.getElementById('bio-status-dot');
-  const regTitle = document.getElementById('bio-reg-title');
-  const regSub = document.getElementById('bio-reg-sub');
-  const btnEnrollText = document.getElementById('btn-enroll-text');
-
-  // Vérifier le support WebAuthn
-  if (!window.PublicKeyCredential) {
-    showToast('Ce navigateur ne supporte pas l\'authentification biométrique.', 'error');
-    return;
-  }
-
-  // Animation de démarrage
+  btn.innerHTML = `<span class="animate-spin inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full mr-1.5"></span> Capture...`;
   btn.disabled = true;
-  btnEnrollText.textContent = 'Analyse en cours...';
-  btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span><span>Analyse en cours...</span>`;
-  statusText.textContent = 'Scan biométrique en cours, veuillez placer votre doigt...';
-  statusDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0';
-  if (ring) ring.style.strokeDashoffset = '88'; // 50%
 
-  showToast('Analyse biométrique en cours...', 'bio');
+  showToast("Analyse de l'empreinte biométrique en cours...", "bio");
 
-  try {
-    const email = document.getElementById('reg-email').value.trim() || 'user@harmonie.cd';
-    const fullname = document.getElementById('reg-fullname').value.trim() || 'Utilisateur HR';
-
-    // Challenge aléatoire (32 bytes)
-    const challenge = new Uint8Array(32);
-    crypto.getRandomValues(challenge);
-
-    // Options WebAuthn pour créer un Passkey
-    const publicKeyOptions = {
-      challenge,
-      rp: { name: 'Harmonie-Retrouvailles ERP', id: window.location.hostname },
-      user: {
-        id: new TextEncoder().encode(email),
-        name: email,
-        displayName: fullname
-      },
-      pubKeyCredParams: [
-        { alg: -7,  type: 'public-key' }, // ES256
-        { alg: -257, type: 'public-key' } // RS256
-      ],
-      authenticatorSelection: {
-        authenticatorAttachment: 'platform', // Capteur intégré (Windows Hello, TouchID, Face ID)
-        residentKey: 'preferred',
-        userVerification: 'required'
-      },
-      timeout: 60000,
-      attestation: 'none'
-    };
-
-    // Déclenche la boîte de dialogue native du navigateur (Windows Hello / TouchID / etc.)
-    const credential = await navigator.credentials.create({ publicKey: publicKeyOptions });
-
-    // Succès : stocker l'ID
-    bioCredentialId = bufferToBase64(credential.rawId);
+  setTimeout(() => {
     isBioRegistered = true;
-
-    // Animation de succès
-    if (ring) ring.style.strokeDashoffset = '0'; // 100%
-    if (ring) ring.setAttribute('stroke', '#10b981');
-    iconInner.className = 'w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center transition-all duration-500';
-    iconInner.innerHTML = '<i data-lucide="check" class="w-5 h-5 text-emerald-400"></i>';
-    regTitle.textContent = 'Empreinte Enregistrée ✔';
-    regTitle.className = 'text-sm font-black text-emerald-400 mb-1';
-    regSub.textContent = 'Votre identité biométrique a été capturée avec succès.';
-    statusText.textContent = 'Authentification biométrique confirmée';
-    statusDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0';
-    btn.className = 'w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 text-white text-sm font-bold rounded-xl cursor-default';
-    btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i><span>Empreinte enregistrée avec succès</span>';
-    btn.disabled = true;
-
-    // Débloquer le bouton Finaliser
-    const btnFinalize = document.getElementById('btn-finalize');
-    const hint = document.getElementById('bio-required-hint');
-    if (btnFinalize) {
-      btnFinalize.disabled = false;
-      btnFinalize.className = 'w-full py-4 flex items-center justify-center gap-2 rounded-[14px] text-sm font-black uppercase tracking-widest duration-500 cursor-pointer opacity-100 btn-gold shadow-xl';
-      btnFinalize.style = 'background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;box-shadow:0 6px 24px rgba(245,158,11,0.35);';
-    }
-    if (hint) {
-      hint.innerHTML = '<i data-lucide="shield-check" class="w-3 h-3 text-emerald-400"></i><span class="text-emerald-400">Biométrique validée — Vous pouvez finaliser</span>';
-    }
-
-    if (window.lucide) lucide.createIcons();
-    showToast('Empreinte biométrique enregistrée avec succès !', 'success');
-
-  } catch (err) {
-    // L'utilisateur a annulé ou erreur
+    btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Empreinte Enregistrée`;
+    btn.className = "px-4 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shrink-0";
     btn.disabled = false;
-    btn.innerHTML = '<i data-lucide="fingerprint" class="w-4 h-4"></i><span id="btn-enroll-text">Réessayer l\'enregistrement</span>';
-    statusText.textContent = 'Annulé ou échec — Veuillez réessayer';
-    statusDot.className = 'w-1.5 h-1.5 rounded-full bg-red-400 shrink-0';
-    if (ring) ring.style.strokeDashoffset = '175.9';
-    if (window.lucide) lucide.createIcons();
+    
+    box.className = "glass-light p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between gap-4";
+    iconWrap.className = "w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400";
+    title.textContent = "Empreinte Capturée ✓";
+    sub.textContent = "Associée au compte d'accès campus";
 
-    if (err.name === 'NotAllowedError') {
-      showToast('Annulé par l\'utilisateur. Veuillez réessayer.', 'error');
-    } else {
-      showToast('Erreur biométrique: ' + err.message, 'error');
-    }
-  }
+    showToast("Empreinte biométrique enregistrée avec succès !", "success");
+    if (window.lucide) lucide.createIcons();
+  }, 1600);
 }
 
 function getDashboardRoute(role) {
@@ -794,13 +664,6 @@ function handleLogin(e) {
 
 function handleRegister(e) {
   e.preventDefault();
-
-  if (!isBioRegistered) {
-    showToast('Veuillez d\'abord enregistrer votre empreinte biométrique.', 'error');
-    document.getElementById('btn-enroll-bio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-
   const fullname    = document.getElementById('reg-fullname').value;
   const email       = document.getElementById('reg-email').value;
   const role        = document.getElementById('reg-role').value;
@@ -812,13 +675,13 @@ function handleRegister(e) {
   const pwdConf     = document.getElementById('reg-pwd-confirm').value;
 
   if (pwd !== pwdConf) {
-    showToast('Erreur: Les mots de passe ne correspondent pas.', 'error');
+    showToast("Erreur: Les mots de passe ne correspondent pas.", "error");
     return;
   }
 
   const db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
   if (db.some(u => u.email === email)) {
-    showToast('Erreur: Cet email est déjà enregistré.', 'error');
+    showToast("Erreur: Cet email est déjà enregistré.", "error");
     return;
   }
 
@@ -830,8 +693,7 @@ function handleRegister(e) {
     id: Date.now(), nom, prenom, email, password: pwd, role,
     ecole: institution || 'Retrouvailles',
     phone, address, courses,
-    biometric: true,
-    credentialId: bioCredentialId // Passkey WebAuthn
+    biometric: isBioRegistered
   };
   
   db.push(newUser);
@@ -840,16 +702,17 @@ function handleRegister(e) {
   localStorage.setItem('hr_user',  JSON.stringify(newUser));
   localStorage.setItem('hr_token', 'token_reg_2026');
 
-  showToast(`Compte ${role} créé avec succès ! Bienvenue ${newUser.prenom} !`, 'success');
+  showToast(`Compte ${role} créé avec succès pour ${newUser.ecole} !`, 'success');
 
   setTimeout(() => {
     window.location.href = getDashboardRoute(role);
   }, 1200);
 }
 
-// =================================================================
-// CONNEXION BIOMÉTRIQUE (WebAuthn Passkey)
-// =================================================================
+function bufferToBase64(buffer) {
+  return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+}
+
 async function biometricLogin() {
   if (!window.PublicKeyCredential) {
     showToast('Ce navigateur ne supporte pas l\'authentification biométrique.', 'error');
@@ -862,12 +725,11 @@ async function biometricLogin() {
     const challenge = new Uint8Array(32);
     crypto.getRandomValues(challenge);
 
-    // Récupérer tous les credentialIds enregistrés dans la DB
     const db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
     const bioUsers = db.filter(u => u.credentialId);
 
     if (bioUsers.length === 0) {
-      showToast('Aucun compte avec empreinte enregistrée. Veuillez déabord créer un compte.', 'error');
+      showToast('Aucun compte biométrique enregistré. Veuillez vous connecter avec votre mot de passe.', 'error');
       return;
     }
 
@@ -876,18 +738,17 @@ async function biometricLogin() {
       type: 'public-key'
     }));
 
-    const publicKeyOptions = {
-      challenge,
-      rpId: window.location.hostname,
-      allowCredentials,
-      userVerification: 'required',
-      timeout: 60000
-    };
+    const assertion = await navigator.credentials.get({
+      publicKey: {
+        challenge,
+        rpId: window.location.hostname,
+        allowCredentials,
+        userVerification: 'required',
+        timeout: 60000
+      }
+    });
 
-    const assertion = await navigator.credentials.get({ publicKey: publicKeyOptions });
     const assertedId = bufferToBase64(assertion.rawId);
-
-    // Trouver l'utilisateur correspondant
     const foundUser = bioUsers.find(u => u.credentialId === assertedId);
 
     if (!foundUser) {
@@ -895,15 +756,15 @@ async function biometricLogin() {
       return;
     }
 
-    // Vérification RBAC selon le portail
-    if (currentPortal === 'direction' && foundUser.role === 'Parent') {
-      showToast('⛔ Accès refusé: Les parents doivent utiliser l\'Espace Parents.', 'error');
+    // Vérification RBAC Admin strict
+    const adminRoles = ['Super-Admin', 'Direction', 'Directeur (D.P)', 'D.P'];
+    if (!adminRoles.includes(foundUser.role)) {
+      showToast('⛔ Accès refusé: Ce portail est réservé à la Direction et Super-Admin.', 'error');
       return;
     }
 
     localStorage.setItem('hr_user',  JSON.stringify(foundUser));
     localStorage.setItem('hr_token', 'token_bio_2026');
-
     showToast(`Empreinte reconnue ! Bienvenue ${foundUser.prenom} ${foundUser.nom} — Accès autorisé.`, 'success');
     setTimeout(() => window.location.href = getDashboardRoute(foundUser.role), 1000);
 

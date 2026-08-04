@@ -1,16 +1,29 @@
 import './style.css';
 
-// ===== Auth verification =====
+// ===== Auth verification & RBAC =====
 const token = localStorage.getItem('hr_token');
 const userStr = localStorage.getItem('hr_user');
 
 if (!token || !userStr) {
   window.location.href = '/login.html';
+  throw new Error("Not logged in");
 }
 
 const user = JSON.parse(userStr);
-document.querySelector('aside .p-6 p.font-semibold').textContent = `${user.nom} ${user.prenom}`;
-document.querySelector('aside .p-6 p.text-xs').textContent = `Comptable – C.S. Harmonie / G.S. Retrouvailles`;
+const allowedRoles = ['Comptable', 'Super-Admin', 'Direction'];
+if (!allowedRoles.includes(user.role)) {
+  alert("⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nVotre rôle ne vous donne pas accès à la Comptabilité.");
+  if (user.role === 'Parent') window.location.href = '/parent-dashboard.html';
+  else if (user.role === 'Enseignant' || user.role === 'Professeur') window.location.href = '/teacher-dashboard.html';
+  else if (['Préfet', 'D.E', 'D.D'].includes(user.role)) window.location.href = '/prefet-dashboard.html';
+  else window.location.href = '/login.html';
+  throw new Error("Unauthorized");
+}
+
+const asideName = document.querySelector('aside .p-6 p.font-bold');
+if (asideName) asideName.textContent = `${user.nom} ${user.prenom}`;
+const asideRole = document.querySelector('aside .p-6 p.text-xs');
+if (asideRole) asideRole.textContent = `Comptable – C.S. Harmonie / G.S. Retrouvailles`;
 
 // ===== Données mock (simulent la base de données) =====
 const MOCK_DB = {
@@ -283,7 +296,7 @@ function renderRecents() {
   }
 
   tbody.innerHTML = paiements.map(p => `
-    <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+    <tr class="border-b border-slate-50 hover:bg-[#112240]/50/50 transition-colors">
       <td class="px-6 py-4 font-mono text-xs">${p.numero}</td>
       <td class="px-6 py-4 font-medium">${p.eleve_nom}</td>
       <td class="px-6 py-4">${p.frais_nom}</td>
@@ -301,7 +314,7 @@ tabs.forEach(tab => {
   const content = document.getElementById(`content-${tab}`);
   btn.addEventListener('click', () => {
     tabs.forEach(t => {
-      document.getElementById(`tab-${t}`).className = 'tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 font-medium transition-colors';
+      document.getElementById(`tab-${t}`).className = 'tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-[#112240]/50 font-medium transition-colors';
       document.getElementById(`content-${t}`).classList.add('hidden');
       document.getElementById(`content-${t}`).classList.remove('block');
     });

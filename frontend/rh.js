@@ -1,14 +1,23 @@
 import './style.css';
 
-// ===== Auth verification =====
+// ===== Auth verification & RBAC =====
 const token = localStorage.getItem('hr_token');
 const userStr = localStorage.getItem('hr_user');
 
 if (!token || !userStr) {
   window.location.href = '/login.html';
+  throw new Error("Not logged in");
 }
 
 const user = JSON.parse(userStr);
+
+// RBAC: Parents are strictly blocked from Espace RH
+if (user.role === 'Parent') {
+  alert("⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nUn compte parent n'a pas accès à l'Espace RH/Pointage.");
+  window.location.href = '/parent-dashboard.html';
+  throw new Error("Unauthorized");
+}
+
 document.getElementById('rh-user-name').textContent = `${user.nom} ${user.prenom}`;
 
 // ===== Horloge vivante =====
@@ -248,9 +257,9 @@ function renderHistory() {
   tbody.innerHTML = history.map(h => {
     const statutClass = h.statut === 'Présent' ? 'text-green-600 bg-green-50' :
                         h.statut === 'En retard' ? 'text-amber-600 bg-amber-50' :
-                        'text-slate-600 bg-slate-50';
+                        'text-slate-600 bg-[#112240]/50';
     return `
-      <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+      <tr class="border-b border-slate-50 hover:bg-[#112240]/50/50 transition-colors">
         <td class="px-6 py-4 font-medium">${h.date}</td>
         <td class="px-6 py-4">${h.arrivee || '—'}</td>
         <td class="px-6 py-4">${h.depart || '—'}</td>
@@ -285,7 +294,7 @@ tabs.forEach(tab => {
   const content = document.getElementById(`content-${tab}`);
   btn.addEventListener('click', () => {
     tabs.forEach(t => {
-      document.getElementById(`tab-${t}`).className = 'tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 font-medium transition-colors';
+      document.getElementById(`tab-${t}`).className = 'tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-[#112240]/50 font-medium transition-colors';
       document.getElementById(`content-${t}`).classList.add('hidden');
       document.getElementById(`content-${t}`).classList.remove('block');
     });

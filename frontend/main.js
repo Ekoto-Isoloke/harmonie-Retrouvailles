@@ -9,9 +9,9 @@ const navbar = document.getElementById('navbar');
 if (navbar) {
   window.addEventListener('scroll', () => {
     if (window.scrollY > 20) {
-      navbar.classList.add('shadow-md', 'bg-white/95');
+      navbar.classList.add('shadow-md', 'bg-[#112240]/80/95');
     } else {
-      navbar.classList.remove('shadow-md', 'bg-white/95');
+      navbar.classList.remove('shadow-md', 'bg-[#112240]/80/95');
     }
   });
 }

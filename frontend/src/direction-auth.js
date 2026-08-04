@@ -59,16 +59,17 @@ const initDirectionModal = () => {
 
   // Rôles par établissement
   const ROLES_HARMONIE = [
-    { value: 'directeur',   label: 'Directeur'   },
-    { value: 'sur-ecole',   label: 'Sur-école'   },
-    { value: 'enseignant',  label: 'Enseignant'  },
+    { value: 'D.P',        label: 'Directeur (D.P)'                 },
+    { value: 'Sur École',  label: 'Sur École'                       },
+    { value: 'D.D',        label: 'Directeur de Discipline (D.D)'   },
+    { value: 'Enseignant', label: 'Enseignant'                      },
   ];
 
   const ROLES_RETROUVAILLES = [
-    { value: 'prefet',                label: 'Préfet'                          },
-    { value: 'directeur-etudes',      label: 'Directeur des Études (D.E)'      },
-    { value: 'directeur-discipline',  label: 'Directeur de Discipline (D.D)'   },
-    { value: 'professeur',            label: 'Professeur'                      },
+    { value: 'Préfet',     label: 'Préfet'                          },
+    { value: 'D.E',        label: 'Directeur des Études (D.E)'      },
+    { value: 'D.D',        label: 'Directeur de Discipline (D.D)'   },
+    { value: 'Enseignant', label: 'Enseignant'                      },
   ];
 
   /**

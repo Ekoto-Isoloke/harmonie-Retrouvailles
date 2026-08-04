@@ -35,10 +35,21 @@
 }
 
 @layer base {
+  html, body {
+    min-height: 100vh;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+
   body {
     font-family: var(--font-sans);
     background-color: var(--color-brand-50);
-    overflow-x: hidden;
+  }
+
+  /* Universal smooth vertical scrolling for containers */
+  main, #main-content, .view-container, .dashboard-container {
+    overflow-y: auto !important;
   }
 }
 
@@ -65,11 +76,11 @@
 
   /* Finance Tabs */
   .active-tab-momo {
-    @apply px-6 py-2.5 text-sm font-bold rounded-xl transition-all bg-white dark:bg-gray-700 shadow-md text-brand-600 scale-105;
+    @apply px-6 py-2.5 text-sm font-bold rounded-xl transition-all bg-[#112240]/80 dark:bg-gray-700 shadow-md text-brand-600 scale-105;
   }
 
   .active-tab-caisse {
-    @apply px-6 py-2.5 text-sm font-bold rounded-xl transition-all bg-white dark:bg-gray-700 shadow-md text-gold-600 scale-105;
+    @apply px-6 py-2.5 text-sm font-bold rounded-xl transition-all bg-[#112240]/80 dark:bg-gray-700 shadow-md text-gold-600 scale-105;
   }
 
   .inactive-tab {
@@ -117,7 +128,7 @@
 
 .premium-input,
 .premium-select {
-  @apply w-full px-5 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl text-sm font-bold text-gray-800 dark:text-gray-100 shadow-sm transition-all duration-300 focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:outline-none placeholder:text-gray-300;
+  @apply w-full px-5 py-3.5 bg-[#112240]/80 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl text-sm font-bold text-gray-800 dark:text-gray-100 shadow-sm transition-all duration-300 focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:outline-none placeholder:text-gray-300;
 }
 
 .premium-btn {
@@ -133,7 +144,7 @@
 }
 
 .active-inst {
-  @apply px-4 py-1.5 rounded-xl bg-white shadow-lg text-brand-600 font-extrabold scale-105 transition-all dark:bg-gray-700 dark:text-white;
+  @apply px-4 py-1.5 rounded-xl bg-[#112240]/80 shadow-lg text-brand-600 font-extrabold scale-105 transition-all dark:bg-gray-700 dark:text-white;
 }
 
 .inactive-inst {
