@@ -514,7 +514,7 @@
               <p id="bio-required-hint"
                 class="text-center text-[11px] text-amber-400/70 mt-2 flex items-center justify-center gap-1">
                 <i data-lucide="lock" class="w-3 h-3"></i>
-                Enregistrement biométrique requis pour finaliser
+                Enregistrement facial requis pour finaliser
               </p>
             </div>
 
@@ -797,12 +797,12 @@
 
       // ─── Phase 2 : Demande de scan ───
       if (ring) ring.style.strokeDashoffset = '88'; // 50%
-      btn.innerHTML = `<span class="animate-pulse text-xl">👆</span><span>Posez votre doigt sur le capteur...</span>`;
-      statusText.textContent = 'Scan lancé — Placez votre doigt ou regardez la caméra (Windows Hello / TouchID)';
+      btn.innerHTML = `<span class="animate-pulse text-xl">📸</span><span>Positionnez votre visage devant la caméra...</span>`;
+      statusText.textContent = 'Scan lancé — Fixez l\'objectif ou validez avec Face ID/Hello';
       statusDot.className = 'w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0';
       regTitle.textContent = 'Scan en cours...';
-      regSub.textContent = 'La fenêtre de votre système va s\'ouvrir. Validez avec Windows Hello, TouchID ou votre capteur.';
-      showToast('Scan biométrique lancé — suivez les instructions à l\'écran', 'bio');
+      regSub.textContent = 'La fenêtre de votre système va s\'ouvrir. Mettez votre visage bien en évidence.';
+      showToast('Scan facial lancé — suivez les instructions à l\'écran', 'bio');
 
       try {
         let credentialIdStr;
@@ -824,15 +824,15 @@
         if (ring) { ring.style.strokeDashoffset = '0'; ring.setAttribute('stroke', '#10b981'); }
         iconInner.className = 'w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center transition-all duration-500';
         iconInner.innerHTML = '<i data-lucide="check" class="w-5 h-5 text-emerald-400"></i>';
-        regTitle.textContent = '✔ Empreinte enregistrée avec succès';
+        regTitle.textContent = '✔ Visage enregistré avec succès';
         regTitle.className = 'text-sm font-black text-emerald-400 mb-1';
-        regSub.textContent = 'Votre identité biométrique a été capturée. Cliquez sur Finaliser ci-dessous.';
-        statusText.textContent = 'Authentification biométrique confirmée ✔';
+        regSub.textContent = 'Votre reconnaissance faciale a été configurée. Cliquez sur Finaliser ci-dessous.';
+        statusText.textContent = 'Authentification faciale confirmée ✔';
         statusDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0';
 
         // Bouton scan → état succès verrouillé
         btn.className = 'w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-700/40 border border-emerald-500/30 text-emerald-300 text-sm font-bold rounded-xl cursor-default';
-        btn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i><span>Empreinte enregistrée — Scan réussi</span>';
+        btn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i><span>Visage enregistré — Scan réussi</span>';
         btn.disabled = true;
 
         // ── DÉVERROUILLER "Finaliser la Création du Compte" ──
@@ -844,11 +844,11 @@
           btnFinalize.style.cssText = 'background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;box-shadow:0 8px 28px rgba(245,158,11,0.5);';
         }
         if (hint) {
-          hint.innerHTML = '<i data-lucide="shield-check" class="w-3 h-3 text-emerald-400"></i><span class="text-emerald-400">Biométrique validée — Cliquez sur Finaliser</span>';
+          hint.innerHTML = '<i data-lucide="shield-check" class="w-3 h-3 text-emerald-400"></i><span class="text-emerald-400">Reconnaissance Faciale validée — Cliquez sur Finaliser</span>';
         }
 
         if (window.lucide) lucide.createIcons();
-        showToast('Empreinte biométrique enregistrée avec succès !', 'success');
+        showToast('Visage enregistré avec succès !', 'success');
 
         // Auto-scroll vers le bouton Finaliser
         setTimeout(() => {
