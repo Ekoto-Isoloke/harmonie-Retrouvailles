@@ -202,7 +202,7 @@
             <span>Palmarès EXETAT, TENASOSP & ENAFEP</span>
           </div>
           <div class="flex items-center gap-3 p-3 glass-light rounded-xl text-[12px] text-gray-300">
-            <i data-lucide="fingerprint" class="w-4 h-4 text-blue-400 shrink-0"></i>
+            <i data-lucide="scan-face" class="w-4 h-4 text-blue-400 shrink-0"></i>
             <span>Pointage Numérique des Agents</span>
           </div>
           <div class="flex items-center gap-3 p-3 glass-light rounded-xl text-[12px] text-gray-300">
@@ -274,12 +274,12 @@
             <!-- Biometric quick access -->
             <div class="glass-light rounded-2xl p-4 flex items-center justify-between gap-4 border border-blue-500/20">
               <div>
-                <p class="text-xs font-bold text-blue-300 mb-0.5">Connexion Biométrique Rapide</p>
-                <p class="text-[11px] text-gray-400">Scannez votre empreinte enregistrée</p>
+                <p class="text-xs font-bold text-blue-300 mb-0.5">Connexion par Reconnaissance Faciale</p>
+                <p class="text-[11px] text-gray-400">Positionnez votre visage devant la caméra</p>
               </div>
               <button type="button" onclick="biometricLogin()"
                 class="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition shadow-lg">
-                <i data-lucide="fingerprint" class="w-4 h-4"></i> Scanner
+                <i data-lucide="scan-face" class="w-4 h-4"></i> Scanner
               </button>
             </div>
 
@@ -478,27 +478,27 @@
                     </svg>
                     <div id="bio-icon-inner"
                       class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center transition-all duration-500">
-                      <i data-lucide="fingerprint" class="w-5 h-5 text-blue-400 transition-colors duration-500"></i>
+                      <i data-lucide="scan-face" class="w-5 h-5 text-blue-400 transition-colors duration-500"></i>
                     </div>
                   </div>
 
                   <div class="flex-1">
-                    <p id="bio-reg-title" class="text-sm font-black text-white mb-1">Enregistrement d'empreinte</p>
+                    <p id="bio-reg-title" class="text-sm font-black text-white mb-1">Enregistrement Facial</p>
                     <p id="bio-reg-sub" class="text-[11px] text-gray-400 leading-relaxed">
-                      Sécurisez votre accès avec votre capteur biométrique, Windows Hello ou Face ID.
+                      Sécurisez votre accès avec la reconnaissance faciale.
                     </p>
                   </div>
                 </div>
 
                 <div id="bio-status-badge" class="flex items-center gap-2 text-[11px] text-blue-300/70 mb-4 px-0.5">
                   <span id="bio-status-dot" class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0"></span>
-                  <span id="bio-status-text">Prêt — Appuyez pour lancer l'analyse biométrique</span>
+                  <span id="bio-status-text">Prêt — Appuyez pour lancer la caméra</span>
                 </div>
 
                 <button type="button" id="btn-enroll-bio" onclick="enrollBiometrics()"
                   class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 active:scale-[0.98] text-white text-sm font-bold rounded-xl transition-all shadow-[0_4px_20px_rgba(59,130,246,0.4)]">
-                  <i data-lucide="fingerprint" class="w-4 h-4"></i>
-                  <span id="btn-enroll-text">Enregistrement d'empreinte</span>
+                  <i data-lucide="scan-face" class="w-4 h-4"></i>
+                  <span id="btn-enroll-text">Scanner mon visage</span>
                 </button>
               </div>
             </div>
@@ -858,11 +858,11 @@
       } catch (err) {
         // ─── Phase 3 : ÉCHEC — message précis selon le type d'erreur ───
         btn.disabled = false;
-        btn.innerHTML = '<i data-lucide="fingerprint" class="w-4 h-4"></i><span>Réessayer l\'enregistrement</span>';
+        btn.innerHTML = '<i data-lucide="scan-face" class="w-4 h-4"></i><span>Réessayer l\'enregistrement</span>';
         btn.className = 'w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 active:scale-[0.98] text-white text-sm font-bold rounded-xl transition-all shadow-[0_4px_20px_rgba(59,130,246,0.4)]';
         if (ring) { ring.style.strokeDashoffset = '175.9'; ring.setAttribute('stroke', '#3b82f6'); }
         statusDot.className = 'w-1.5 h-1.5 rounded-full bg-red-400 shrink-0';
-        regTitle.textContent = 'Enregistrement d\'empreinte';
+        regTitle.textContent = 'Enregistrer mon visage';
         regTitle.className = 'text-sm font-black text-white mb-1';
         regSub.textContent = 'Sécurisez votre accès avec votre capteur biométrique, Windows Hello ou Face ID.';
         if (window.lucide) lucide.createIcons();
@@ -958,7 +958,7 @@
       e.preventDefault();
 
       if (!isBioRegistered) {
-        showToast('Veuillez d\'abord enregistrer votre empreinte biométrique.', 'error');
+        showToast('Veuillez d\'abord enregistrer votre visage.', 'error');
         document.getElementById('btn-enroll-bio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }

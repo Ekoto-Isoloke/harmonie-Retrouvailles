@@ -16,42 +16,42 @@ const initDirectionModal = () => {
   /* ─────────────────────────────────────────────
    * 1. ÉLÉMENTS DOM — Modale principale
    * ───────────────────────────────────────────── */
-  const modal            = document.getElementById('direction-auth-modal');
-  const modalBox         = document.getElementById('direction-modal-box');
-  const btnClose         = document.getElementById('close-direction-modal');
+  const modal = document.getElementById('direction-auth-modal');
+  const modalBox = document.getElementById('direction-modal-box');
+  const btnClose = document.getElementById('close-direction-modal');
   const directionButtons = document.querySelectorAll('.btn-direction-trigger');
 
   // Vues
   const viewDispatcher = document.getElementById('view-dispatcher');
-  const viewAuth       = document.getElementById('view-auth');
+  const viewAuth = document.getElementById('view-auth');
 
   // Cartes établissements
-  const cardHarmonie      = document.getElementById('card-harmonie');
+  const cardHarmonie = document.getElementById('card-harmonie');
   const cardRetrouvailles = document.getElementById('card-retrouvailles');
   const selectedSchoolText = document.getElementById('selected-school-name');
-  const btnBackToSchools  = document.getElementById('btn-back-schools');
+  const btnBackToSchools = document.getElementById('btn-back-schools');
 
   // Formulaire d'authentification
-  const roleSelect     = document.getElementById('auth-role');
-  const tabLogin       = document.getElementById('tab-login');
-  const tabRegister    = document.getElementById('tab-register');
-  const tabIndicator   = document.getElementById('tab-indicator');
-  const authSubmitBtn  = document.getElementById('auth-submit-btn');
-  const warningBadge   = document.getElementById('admin-warning-badge');
+  const roleSelect = document.getElementById('auth-role');
+  const tabLogin = document.getElementById('tab-login');
+  const tabRegister = document.getElementById('tab-register');
+  const tabIndicator = document.getElementById('tab-indicator');
+  const authSubmitBtn = document.getElementById('auth-submit-btn');
+  const warningBadge = document.getElementById('admin-warning-badge');
 
   /* ─────────────────────────────────────────────
    * 2. ÉLÉMENTS DOM — Module Biométrique
    * ───────────────────────────────────────────── */
-  const bioStepA       = document.getElementById('bio-step-a');
-  const bioStepB       = document.getElementById('bio-step-b');
-  const bioLoading     = document.getElementById('bio-loading');
-  const bioResult      = document.getElementById('bio-result');
+  const bioStepA = document.getElementById('bio-step-a');
+  const bioStepB = document.getElementById('bio-step-b');
+  const bioLoading = document.getElementById('bio-loading');
+  const bioResult = document.getElementById('bio-result');
   const bioActionBadge = document.getElementById('bio-action-badge');
   const bioLoadingText = document.getElementById('bio-loading-text');
-  const btnArrivee     = document.getElementById('btn-arrivee');
-  const btnDepart      = document.getElementById('btn-depart');
+  const btnArrivee = document.getElementById('btn-arrivee');
+  const btnDepart = document.getElementById('btn-depart');
   const btnFingerprint = document.getElementById('btn-fingerprint');
-  const btnBioBack     = document.getElementById('btn-bio-back');
+  const btnBioBack = document.getElementById('btn-bio-back');
 
   /* ─────────────────────────────────────────────
    * 3. DONNÉES DE CONFIGURATION
@@ -59,17 +59,17 @@ const initDirectionModal = () => {
 
   // Rôles par établissement
   const ROLES_HARMONIE = [
-    { value: 'D.P',        label: 'Directeur (D.P)'                 },
-    { value: 'Sur École',  label: 'Sur École'                       },
-    { value: 'D.D',        label: 'Directeur de Discipline (D.D)'   },
-    { value: 'Enseignant', label: 'Enseignant'                      },
+    { value: 'D.P', label: 'Directeur (D.P)' },
+    { value: 'Sur École', label: 'Sur École' },
+    { value: 'D.D', label: 'Directeur de Discipline (D.D)' },
+    { value: 'Enseignant', label: 'Enseignant' },
   ];
 
   const ROLES_RETROUVAILLES = [
-    { value: 'Préfet',     label: 'Préfet'                          },
-    { value: 'D.E',        label: 'Directeur des Études (D.E)'      },
-    { value: 'D.D',        label: 'Directeur de Discipline (D.D)'   },
-    { value: 'Enseignant', label: 'Enseignant'                      },
+    { value: 'Préfet', label: 'Préfet' },
+    { value: 'D.E', label: 'Directeur des Études (D.E)' },
+    { value: 'D.D', label: 'Directeur de Discipline (D.D)' },
+    { value: 'Enseignant', label: 'Enseignant' },
   ];
 
   /**
@@ -77,16 +77,16 @@ const initDirectionModal = () => {
    * Chaque objet représente un agent connecté au poste de pointage.
    */
   const MOCK_PERSONNEL = [
-    { name: 'M. Jean-Baptiste Kasongo', role: 'Directeur',   etablissement: 'G.S. Retrouvailles' },
-    { name: 'Mme. Claire Mumbere',      role: 'Enseignante', etablissement: 'C.S. Harmonie'       },
-    { name: 'M. Patrick Lukusa',        role: 'Préfet',      etablissement: 'G.S. Retrouvailles' },
+    { name: 'M. Jean-Baptiste Kasongo', role: 'Directeur', etablissement: 'G.S. Retrouvailles' },
+    { name: 'Mme. Claire Mumbere', role: 'Enseignante', etablissement: 'C.S. Harmonie' },
+    { name: 'M. Patrick Lukusa', role: 'Préfet', etablissement: 'G.S. Retrouvailles' },
   ];
 
   /* ─────────────────────────────────────────────
    * 4. ÉTAT INTERNE
    * ───────────────────────────────────────────── */
-  let currentSchool    = null;      // 'harmonie' | 'retrouvailles'
-  let currentMode      = 'login';   // 'login' | 'register'
+  let currentSchool = null;      // 'harmonie' | 'retrouvailles'
+  let currentMode = 'login';   // 'login' | 'register'
   let selectedBioAction = null;     // 'arrivee' | 'depart'
 
   // Personnel simulé (tiré aléatoirement pour la démo)
@@ -114,15 +114,15 @@ const initDirectionModal = () => {
     resetBiometric();
 
     // Force le display flex (contourne le conflit hidden/flex de Tailwind)
-    modal.style.display      = 'flex';
-    modal.style.opacity      = '0';
-    modal.style.transition   = '';
+    modal.style.display = 'flex';
+    modal.style.opacity = '0';
+    modal.style.transition = '';
 
     // Double rAF pour garantir que le navigateur a bien rendu l'état initial
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         modal.style.transition = 'opacity 0.3s ease';
-        modal.style.opacity    = '1';
+        modal.style.opacity = '1';
         modalBox.classList.remove('scale-95', 'opacity-0', 'translate-y-4');
         modalBox.classList.add('scale-100', 'opacity-100', 'translate-y-0');
       });
@@ -132,7 +132,7 @@ const initDirectionModal = () => {
   /** Ferme la modale avec une animation de zoom-out fluide. */
   const closeModal = () => {
     modal.style.transition = 'opacity 0.3s ease';
-    modal.style.opacity    = '0';
+    modal.style.opacity = '0';
     modalBox.classList.remove('scale-100', 'opacity-100', 'translate-y-0');
     modalBox.classList.add('scale-95', 'opacity-0', 'translate-y-4');
     setTimeout(() => { modal.style.display = 'none'; }, 300);
@@ -154,7 +154,7 @@ const initDirectionModal = () => {
     const roles = school === 'harmonie' ? ROLES_HARMONIE : ROLES_RETROUVAILLES;
     roles.forEach(({ value, label }) => {
       const opt = document.createElement('option');
-      opt.value       = value;
+      opt.value = value;
       opt.textContent = label;
       roleSelect.appendChild(opt);
     });
@@ -235,7 +235,7 @@ const initDirectionModal = () => {
     if (registerFields) registerFields.style.display = isLogin ? 'none' : 'block';
     if (confirmContainer) confirmContainer.style.display = isLogin ? 'none' : 'block';
     if (backToLogin) backToLogin.style.display = isLogin ? 'none' : 'block';
-    
+
     if (forgotLink) forgotLink.style.display = isLogin ? 'inline' : 'none';
     if (passwordLabel) passwordLabel.textContent = isLogin ? 'Mot de passe' : 'Créer un mot de passe';
 
@@ -246,9 +246,9 @@ const initDirectionModal = () => {
     if (bioLogin) bioLogin.style.display = isLogin ? 'grid' : 'none';
   };
 
-  tabLogin?.addEventListener('click',    () => switchTab('login'));
+  tabLogin?.addEventListener('click', () => switchTab('login'));
   tabRegister?.addEventListener('click', () => switchTab('register'));
-  
+
   // Bouton "Se connecter ->" en bas du form d'inscription
   document.getElementById('auth-switch-to-login-btn')?.addEventListener('click', () => switchTab('login'));
 
@@ -265,10 +265,10 @@ const initDirectionModal = () => {
    */
   const showBioStep = (step) => {
     const registry = {
-      a:       bioStepA,
-      b:       bioStepB,
+      a: bioStepA,
+      b: bioStepB,
       loading: bioLoading,
-      result:  bioResult,
+      result: bioResult,
     };
 
     // Cache tout
@@ -334,19 +334,19 @@ const initDirectionModal = () => {
 
     const isRegister = selectedBioAction === 'register';
 
-    const loadingMessages = isRegister 
+    const loadingMessages = isRegister
       ? [
-          "Initialisation du capteur...",
-          "Lecture de l'empreinte...",
-          "Création de la clé cryptographique...",
-          "Enregistrement sécurisé..."
-        ]
+        "Initialisation du capteur...",
+        "Lecture du visage...",
+        "Création de la clé cryptographique...",
+        "Enregistrement sécurisé..."
+      ]
       : [
-          'Lecture biométrique en cours...',
-          "Vérification de l'identité...",
-          'Authentification du personnel...',
-          'Enregistrement du pointage...',
-        ];
+        'Lecture faciale en cours...',
+        "Vérification de l'identité...",
+        'Authentification du personnel...',
+        'Enregistrement du pointage...',
+      ];
 
     let msgIdx = 0;
     const msgInterval = setInterval(() => {
@@ -374,7 +374,7 @@ const initDirectionModal = () => {
     const personnel = randomPersonnel();
 
     // Heure et date exactes
-    const now     = new Date();
+    const now = new Date();
     const timeStr = now.toLocaleTimeString('fr-FR', {
       hour: '2-digit', minute: '2-digit', second: '2-digit',
     });
@@ -388,47 +388,47 @@ const initDirectionModal = () => {
     let palette;
     if (isRegister) {
       palette = {
-        cardBg:     'linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%)',
+        cardBg: 'linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%)',
         cardBorder: '#c7d2fe',
-        dotColor:   '#4f46e5',
-        dotShadow:  'rgba(79,70,229,0.6)',
+        dotColor: '#4f46e5',
+        dotShadow: 'rgba(79,70,229,0.6)',
         labelColor: '#3730a3',
-        sepColor:   '#c7d2fe',
-        timeBg:     'linear-gradient(90deg, #4338ca, #4f46e5)',
-        timeText:   '#ffffff',
-        iconBg:     '#e0e7ff',
-        iconColor:  '#3730a3',
-        label:      '✓ Empreinte enregistrée',
+        sepColor: '#c7d2fe',
+        timeBg: 'linear-gradient(90deg, #4338ca, #4f46e5)',
+        timeText: '#ffffff',
+        iconBg: '#e0e7ff',
+        iconColor: '#3730a3',
+        label: '✓ Visage enregistré',
         resetColor: '#4f46e5',
       };
     } else if (isArrivee) {
       palette = {
-        cardBg:     'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)',
+        cardBg: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)',
         cardBorder: '#a7f3d0',
-        dotColor:   '#10b981',
-        dotShadow:  'rgba(16,185,129,0.6)',
+        dotColor: '#10b981',
+        dotShadow: 'rgba(16,185,129,0.6)',
         labelColor: '#065f46',
-        sepColor:   '#a7f3d0',
-        timeBg:     'linear-gradient(90deg, #059669, #10b981)',
-        timeText:   '#ffffff',
-        iconBg:     '#d1fae5',
-        iconColor:  '#065f46',
-        label:      '✓ Arrivée enregistrée',
+        sepColor: '#a7f3d0',
+        timeBg: 'linear-gradient(90deg, #059669, #10b981)',
+        timeText: '#ffffff',
+        iconBg: '#d1fae5',
+        iconColor: '#065f46',
+        label: '✓ Arrivée enregistrée',
         resetColor: '#10b981',
       };
     } else {
       palette = {
-        cardBg:     'linear-gradient(135deg, #fff1f2 0%, #fef2f2 100%)',
+        cardBg: 'linear-gradient(135deg, #fff1f2 0%, #fef2f2 100%)',
         cardBorder: '#fecdd3',
-        dotColor:   '#f43f5e',
-        dotShadow:  'rgba(244,63,94,0.6)',
+        dotColor: '#f43f5e',
+        dotShadow: 'rgba(244,63,94,0.6)',
         labelColor: '#9f1239',
-        sepColor:   '#fecdd3',
-        timeBg:     'linear-gradient(90deg, #be123c, #e11d48)',
-        timeText:   '#ffffff',
-        iconBg:     '#ffe4e6',
-        iconColor:  '#9f1239',
-        label:      '✓ Départ enregistré',
+        sepColor: '#fecdd3',
+        timeBg: 'linear-gradient(90deg, #be123c, #e11d48)',
+        timeText: '#ffffff',
+        iconBg: '#ffe4e6',
+        iconColor: '#9f1239',
+        label: '✓ Départ enregistré',
         resetColor: '#e11d48',
       };
     }
@@ -565,9 +565,9 @@ const initDirectionModal = () => {
   /* ─────────────────────────────────────────────
    * Listeners du module biométrique
    * ───────────────────────────────────────────── */
-  btnArrivee?.addEventListener('click',     () => selectBioAction('arrivee'));
-  btnDepart?.addEventListener('click',      () => selectBioAction('depart'));
-  btnBioBack?.addEventListener('click',     () => showBioStep('a'));
+  btnArrivee?.addEventListener('click', () => selectBioAction('arrivee'));
+  btnDepart?.addEventListener('click', () => selectBioAction('depart'));
+  btnBioBack?.addEventListener('click', () => showBioStep('a'));
   btnFingerprint?.addEventListener('click', simulateBiometricScan);
 
   // Boutons d'authentification biométrique premium (dans le formulaire)
