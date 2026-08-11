@@ -746,11 +746,10 @@
       const regSub = document.getElementById('bio-reg-sub');
 
       // ─── Vérification support WebAuthn ───
-      if (!window.PublicKeyCredential) {
-        showToast('Ce navigateur ne supporte pas l\'authentification biométrique.', 'error');
-        statusText.textContent = 'Navigateur incompatible — Utilisez Chrome, Edge ou Safari récent';
-        statusDot.className = 'w-1.5 h-1.5 rounded-full bg-red-400 shrink-0';
-        return;
+      let isSimulated = false;
+      if (!window.PublicKeyCredential || (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
+        showToast('Mode simulation activé : Réseau local non-HTTPS détecté.', 'info');
+        isSimulated = true;
       }
 
       // ─── Phase 1 : Préparation ───
@@ -806,11 +805,19 @@
       showToast('Scan biométrique lancé — suivez les instructions à l\'écran', 'bio');
 
       try {
-        // ── DÉCLENCHEMENT NATIF WINDOWS HELLO / TOUCHID / FACE ID ──
-        const credential = await navigator.credentials.create({ publicKey: publicKeyOptions });
+        let credentialIdStr;
+        if (isSimulated) {
+          // ── SIMULATION EN LOCAL ──
+          await new Promise(resolve => setTimeout(resolve, 2500));
+          credentialIdStr = btoa('simulated_credential_' + Date.now());
+        } else {
+          // ── DÉCLENCHEMENT NATIF WINDOWS HELLO / TOUCHID / FACE ID ──
+          const credential = await navigator.credentials.create({ publicKey: publicKeyOptions });
+          credentialIdStr = bufferToBase64(credential.rawId);
+        }
 
         // ─── Phase 3 : SUCCÈS ───
-        bioCredentialId = bufferToBase64(credential.rawId);
+        bioCredentialId = credentialIdStr;
         isBioRegistered = true;
 
         // Animation anneau complet → vert
@@ -1006,18 +1013,15 @@
     // CONNEXION BIOMÉTRIQUE (WebAuthn Passkey)
     // =================================================================
     async function biometricLogin() {
-      if (!window.PublicKeyCredential) {
-        showToast('Ce navigateur ne supporte pas l\'authentification biométrique.', 'error');
-        return;
+      const isSimulated = !window.PublicKeyCredential || (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1');
+
+      if (isSimulated) {
+        showToast('Mode simulation : Vérification (Réseau local)...', 'info');
+      } else {
+        showToast('Analyse biométrique en cours...', 'bio');
       }
 
-      showToast('Analyse biométrique en cours...', 'bio');
-
       try {
-        const challenge = new Uint8Array(32);
-        crypto.getRandomValues(challenge);
-
-        // Récupérer tous les credentialIds enregistrés dans la DB
         const db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
         const bioUsers = db.filter(u => u.credentialId);
 
@@ -1026,21 +1030,22 @@
           return;
         }
 
-        const allowCredentials = bioUsers.map(u => ({
-          id: Uint8Array.from(atob(u.credentialId), c => c.charCodeAt(0)),
-          type: 'public-key'
-        }));
-
-        const publicKeyOptions = {
-          challenge,
-          rpId: window.location.hostname,
-          allowCredentials,
-          userVerification: 'required',
-          timeout: 60000
-        };
-
-        const assertion = await navigator.credentials.get({ publicKey: publicKeyOptions });
-        const assertedId = bufferToBase64(assertion.rawId);
+        let assertedId;
+        if (isSimulated) {
+          // Simulation : on prend le dernier utilisateur enregistré avec une empreinte
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          assertedId = bioUsers[bioUsers.length - 1].credentialId;
+        } else {
+          const challenge = new Uint8Array(32);
+          crypto.getRandomValues(challenge);
+          const allowCredentials = bioUsers.map(u => ({
+            id: Uint8Array.from(atob(u.credentialId), c => c.charCodeAt(0)),
+            type: 'public-key'
+          }));
+          const publicKeyOptions = { challenge, rpId: window.location.hostname, allowCredentials, userVerification: 'required', timeout: 60000 };
+          const assertion = await navigator.credentials.get({ publicKey: publicKeyOptions });
+          assertedId = bufferToBase64(assertion.rawId);
+        }
 
         // Trouver l'utilisateur correspondant
         const foundUser = bioUsers.find(u => u.credentialId === assertedId);
