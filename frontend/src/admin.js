@@ -1079,9 +1079,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="glass-panel p-8 rounded-[2.5rem] shadow-xl border border-white/20 overflow-x-auto">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="font-black text-lg uppercase tracking-wider">Registre du ${new Date().toLocaleDateString('fr-FR')}</h3>
-                        <button class="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
-                            <i data-lucide="qr-code" class="w-4 h-4"></i> Scanner Empreinte / QR
-                        </button>
+                        <div class="flex gap-3">
+                            <button onclick="printRHReport()" class="px-5 py-2.5 bg-gray-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 border border-gray-600">
+                                <i data-lucide="printer" class="w-4 h-4"></i> Imprimer Rapport
+                            </button>
+                            <button class="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
+                                <i data-lucide="qr-code" class="w-4 h-4"></i> Scanner Empreinte / QR
+                            </button>
+                        </div>
                     </div>
                     <table class="w-full text-left">
                         <thead class="text-[10px] text-gray-400 uppercase font-black tracking-widest border-b dark:border-gray-700">
@@ -1340,6 +1345,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 compte.statut = compte.statut === 'Actif' ? 'Inactif' : 'Actif';
                 saveDb(); renderRH();
             }
+        };
+
+        window.printRHReport = function() {
+            const printContent = document.querySelector('#rh-panel-pointages table').outerHTML;
+            const today = new Date().toLocaleDateString('fr-FR');
+            const printWindow = window.open('', '', 'height=600,width=800');
+            printWindow.document.write('<html><head><title>Rapport de Présence - ' + today + '</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write('body { font-family: Arial, sans-serif; padding: 20px; }');
+            printWindow.document.write('table { width: 100%; border-collapse: collapse; margin-top: 20px; }');
+            printWindow.document.write('th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }');
+            printWindow.document.write('th { background-color: #f2f2f2; }');
+            printWindow.document.write('h2 { text-align: center; }');
+            printWindow.document.write('</style></head><body>');
+            printWindow.document.write('<h2>Registre de Présence du ' + today + '</h2>');
+            printWindow.document.write(printContent);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
         };
 
         window.createCompte = function(e) {
