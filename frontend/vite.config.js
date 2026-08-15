@@ -1,10 +1,15 @@
 import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 import { resolve } from 'path'
 
 export default defineConfig({
+  server: {
+    host: '0.0.0.0', // Accessible sur le réseau local
+  },
   plugins: [
+    basicSsl(),
     tailwindcss(),
   ],
   build: {
