@@ -5,7 +5,7 @@ import './style.css';
 // ETAT GLOBAL (Mocked Database in LocalStorage)
 // ==========================================
 // DB VERSION: Increment this to force a reset on user browsers
-const DB_VERSION = 19;
+const DB_VERSION = 20;
 
 const defaultData = {
     version: DB_VERSION,
@@ -81,13 +81,14 @@ const defaultData = {
             { id: 10, nom: 'Kasongo', prenom: 'Luc', role: 'D.D', statut: 'Actif', ecole: 'Retrouvailles', email: 'l.kasongo@retrouvailles.cd', classes: [], login: 'L.KASONGO' }
         ],
         pointages: [
-            { id: 1, nom: 'Mutombo Patient', date: '2026-07-13', statut: 'Présent', arrivee: '07:30', role: 'Direction', ecole: 'Harmonie' },
-            { id: 2, nom: 'Kabila Joëlle', date: '2026-07-13', statut: 'Présent', arrivee: '07:45', role: 'Direction', ecole: 'Retrouvailles' },
-            { id: 3, nom: 'Baya Paul', date: '2026-07-13', statut: 'Retard', arrivee: '08:25', role: 'Enseignant', ecole: 'Retrouvailles' },
-            { id: 4, nom: 'Leki Christine', date: '2026-07-13', statut: 'Présent', arrivee: '07:55', role: 'Enseignant', ecole: 'Harmonie' },
-            { id: 5, nom: 'Nkole Jean-Pierre', date: '2026-07-13', statut: 'Absent', arrivee: '—', role: 'Préfet', ecole: 'Harmonie' },
-            { id: 6, nom: 'Tshilanda Marc', date: '2026-07-13', statut: 'Présent', arrivee: '07:40', role: 'Préfet', ecole: 'Retrouvailles' },
-            { id: 7, nom: 'Kabongo Marie', date: '2026-07-13', statut: 'Présent', arrivee: '08:00', role: 'Comptable', ecole: 'Harmonie' }
+            { id: 1, nom: 'Mutombo Patient', date: '2026-07-13', statut: 'Présent', arrivee: '07:30', role: 'Direction', ecole: 'Harmonie', retardMin: 0 },
+            { id: 2, nom: 'Kabila Joëlle', date: '2026-07-13', statut: 'Présent', arrivee: '07:45', role: 'Direction', ecole: 'Retrouvailles', retardMin: 0 },
+            { id: 3, nom: 'Baya Paul', date: '2026-07-13', statut: 'Retard', arrivee: '08:25', role: 'Enseignant', ecole: 'Retrouvailles', retardMin: 25 },
+            { id: 4, nom: 'Leki Christine', date: '2026-07-13', statut: 'Présent', arrivee: '07:55', role: 'Enseignant', ecole: 'Harmonie', retardMin: 0 },
+            { id: 5, nom: 'Nkole Jean-Pierre', date: '2026-07-13', statut: 'Absent', arrivee: '—', role: 'Préfet', ecole: 'Harmonie', retardMin: 0 },
+            { id: 6, nom: 'Tshilanda Marc', date: '2026-07-13', statut: 'Présent', arrivee: '07:40', role: 'Préfet', ecole: 'Retrouvailles', retardMin: 0 },
+            { id: 7, nom: 'Kabongo Marie', date: '2026-07-13', statut: 'Présent', arrivee: '08:00', role: 'Comptable', ecole: 'Harmonie', retardMin: 0 },
+            { id: 8, nom: 'Ilunga Robert', date: '2026-07-13', statut: 'Retard', arrivee: '08:18', role: 'Sur école', ecole: 'Harmonie', retardMin: 18 }
         ],
         journalDirection: [
             { id: 1, auteur: 'Mutombo Patient', role: 'Direction', action: 'Inscription approuvée', detail: 'Dossier REG-001 — Nkole Jonathan validé', heure: '09:15', date: '2026-07-13', ecole: 'Harmonie', type: 'success' },
@@ -237,6 +238,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const today = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
         const isGS = db.ecoleActive === 'Retrouvailles';
 
+        const retardsList = allPointages.filter(p => p.statut === 'Retard');
+        const retardsCount = retardsList.length;
+        const presentsCount = allPointages.filter(p => p.statut === 'Présent' || p.statut === 'Terminé').length;
+        const absentsCount = allPointages.filter(p => p.statut === 'Absent').length;
+
         ui.content.innerHTML = `
             <div class="mb-8 flex justify-between items-start">
                 <div>
@@ -257,22 +263,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${createKPI('Effectif Inscrits', inst.pedagogie.eleves.length, 'users', 'text-blue-400', 'bg-blue-500/10')}
             </div>
 
-            <!-- Secondary KPIs -->
+            <!-- Secondary KPIs with Highlighted Late Metric -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div class="glass-panel p-5 rounded-2xl border border-white/10 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center"><i data-lucide="message-square" class="w-6 h-6 text-purple-400"></i></div>
-                    <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">SMS Envoyés</p><h4 class="text-2xl font-black text-white">${inst.comms.smsEnvoyes}</h4></div>
-                </div>
-                <div class="glass-panel p-5 rounded-2xl border border-white/10 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center"><i data-lucide="smartphone" class="w-6 h-6 text-green-400"></i></div>
-                    <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">WhatsApp</p><h4 class="text-2xl font-black text-white">${inst.comms.whatsappEnvoyes}</h4></div>
-                </div>
                 <div class="glass-panel p-5 rounded-2xl border border-white/10 flex items-center gap-4">
                     <div class="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center"><i data-lucide="user-check" class="w-6 h-6 text-cyan-400"></i></div>
                     <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Taux Présence</p><h4 class="text-2xl font-black text-white">${presenceRate}%</h4></div>
                 </div>
+                <div class="glass-panel p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5 flex items-center gap-4 relative overflow-hidden">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center"><i data-lucide="clock-alert" class="w-6 h-6 text-amber-400 animate-pulse"></i></div>
+                    <div>
+                        <p class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Nombre de Retards</p>
+                        <h4 class="text-2xl font-black text-amber-400">${retardsCount} <span class="text-xs font-normal text-gray-400">agent(s)</span></h4>
+                    </div>
+                    ${retardsCount > 0 ? '<span class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>' : ''}
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-rose-500/20 bg-rose-500/5 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-rose-500/10 flex items-center justify-center"><i data-lucide="user-x" class="w-6 h-6 text-rose-400"></i></div>
+                    <div><p class="text-[10px] font-black text-rose-400 uppercase tracking-widest">Absences</p><h4 class="text-2xl font-black text-white">${absentsCount}</h4></div>
+                </div>
                 <div class="glass-panel p-5 rounded-2xl border border-white/10 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-rose-500/10 flex items-center justify-center"><i data-lucide="school" class="w-6 h-6 text-rose-400"></i></div>
+                    <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center"><i data-lucide="school" class="w-6 h-6 text-purple-400"></i></div>
                     <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Classes Actives</p><h4 class="text-2xl font-black text-white">${inst.pedagogie.classes.length}</h4></div>
                 </div>
             </div>
@@ -323,30 +333,53 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
 
+                <!-- ALERTE RETARDATAIRES DU JOUR (SI > 0) -->
+                ${retardsCount > 0 ? `
+                    <div class="p-4 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 animate-fade-in">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h5 class="text-sm font-black text-amber-400 uppercase tracking-wide">
+                                    Attention : ${retardsCount} Retard${retardsCount > 1 ? 's' : ''} Détecté${retardsCount > 1 ? 's' : ''} ce matin
+                                </h5>
+                                <p class="text-xs text-gray-300 mt-0.5">
+                                    ${retardsList.map(r => `<strong>${r.nom}</strong> (${r.arrivee}${r.retardMin ? ` +${r.retardMin}m` : ''})`).join(', ')}
+                                </p>
+                            </div>
+                        </div>
+                        <button onclick="alert('Notification SMS de rappel envoyée à tous les retardataires du jour (${retardsCount} agents)')" 
+                            class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black rounded-xl text-xs flex items-center gap-1.5 shrink-0 transition">
+                            <i data-lucide="send" class="w-3.5 h-3.5"></i> Alerter par SMS
+                        </button>
+                    </div>
+                ` : ''}
+
                 <!-- Live Presence Summary Metrics -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                     <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
                         <div>
                             <p class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Présents (Pointés)</p>
-                            <h4 class="text-2xl font-black text-white mt-1">${allPointages.filter(p => p.statut === 'Présent' || p.statut === 'Terminé').length}</h4>
+                            <h4 class="text-2xl font-black text-white mt-1">${presentsCount}</h4>
                         </div>
                         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-xs">
-                            ${allPointages.length > 0 ? Math.round((allPointages.filter(p => p.statut === 'Présent' || p.statut === 'Terminé').length / allPointages.length) * 100) : 0}%
+                            ${allPointages.length > 0 ? Math.round((presentsCount / allPointages.length) * 100) : 0}%
                         </div>
                     </div>
-                    <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+                    <div class="p-4 rounded-2xl bg-amber-500/20 border-2 border-amber-500/50 flex items-center justify-between shadow-lg shadow-amber-500/10">
                         <div>
-                            <p class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Retards</p>
-                            <h4 class="text-2xl font-black text-white mt-1">${allPointages.filter(p => p.statut === 'Retard').length}</h4>
+                            <p class="text-[10px] font-black text-amber-300 uppercase tracking-widest">Nombre de Retards</p>
+                            <h4 class="text-3xl font-black text-amber-400 mt-1">${retardsCount}</h4>
                         </div>
-                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/30 flex items-center justify-center text-amber-300 font-black">
                             <i data-lucide="clock" class="w-5 h-5"></i>
                         </div>
                     </div>
                     <div class="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-between">
                         <div>
                             <p class="text-[10px] font-black text-rose-400 uppercase tracking-widest">Absents</p>
-                            <h4 class="text-2xl font-black text-white mt-1">${allPointages.filter(p => p.statut === 'Absent').length}</h4>
+                            <h4 class="text-2xl font-black text-white mt-1">${absentsCount}</h4>
                         </div>
                         <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center text-rose-400">
                             <i data-lucide="user-x" class="w-5 h-5"></i>
@@ -401,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const roleBadge = roleColorsMap[p.role] || 'bg-gray-500/20 text-gray-300 border border-gray-500/30';
                                 
                                 return `
-                                    <tr class="hover:bg-white/5 transition-colors">
+                                    <tr class="hover:bg-white/5 transition-colors ${isLate ? 'bg-amber-500/5' : ''}">
                                         <td class="py-3 px-4">
                                             <div class="flex items-center gap-3">
                                                 <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white flex items-center justify-center font-black text-xs shadow-inner">
@@ -418,10 +451,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                                 ${p.role || 'Personnel'}
                                             </span>
                                         </td>
-                                        <td class="py-3 px-4 font-mono font-bold ${isAbsent ? 'text-gray-500' : 'text-emerald-300'}">
+                                        <td class="py-3 px-4 font-mono font-bold ${isAbsent ? 'text-gray-500' : isLate ? 'text-amber-400' : 'text-emerald-300'}">
                                             <div class="flex items-center gap-1.5">
-                                                <i data-lucide="clock" class="w-3.5 h-3.5 text-gray-400"></i>
+                                                <i data-lucide="${isLate ? 'clock-alert' : 'clock'}" class="w-3.5 h-3.5 ${isLate ? 'text-amber-400' : 'text-gray-400'}"></i>
                                                 ${p.arrivee || '—'}
+                                                ${isLate && p.retardMin ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-300 font-bold">+${p.retardMin}m</span>` : ''}
                                             </div>
                                         </td>
                                         <td class="py-3 px-4">
@@ -436,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                             </span>
                                         </td>
                                         <td class="py-3 px-4 text-right">
-                                            <button onclick="alert('Pointage validé par Super-Admin pour ${p.nom}')" 
+                                            <button onclick="alert('Pointage de ${p.nom} : Arrivée à ${p.arrivee} (${p.statut})')" 
                                                 class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 hover:text-white border border-white/10 transition">
                                                 Détails
                                             </button>
