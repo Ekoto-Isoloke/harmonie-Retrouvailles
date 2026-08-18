@@ -187,6 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'dashboard': renderDashboard(); break;
             case 'presence-journaliere': renderPresenceJournaliere(); break;
             case 'pedagogie': renderPedagogie(); break;
+            case 'palmares': renderPalmares(); break;
+            case 'resultats': renderResultats(); break;
             case 'rh': renderRH(); break;
             case 'finance': renderFinance(); break;
             case 'communication': renderCommunication(); break;
@@ -196,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'gestion-comptes': renderGestionComptes(); break;
         }
         if (window.lucide) lucide.createIcons();
+        updateBadgePrevisions();
     };
 
     ui.nav.forEach(item => {
@@ -911,228 +914,507 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     }
 
+    // ==========================================
+    // HELPERS PEDAGOGIQUES
+    // ==========================================
+    function getAllPrevisionsMeta() {
+        // Reads all prevision_meta_* keys from localStorage to aggregate teacher submissions
+        const allKeys = Object.keys(localStorage).filter(k => k.startsWith('prevision_meta_'));
+        return allKeys.map(k => {
+            try { return { key: k.replace('prevision_meta_', ''), ...JSON.parse(localStorage.getItem(k)) }; }
+            catch(e) { return null; }
+        }).filter(Boolean);
+    }
+
+    function getAllCotations() {
+        // Reads all cotations_* keys from localStorage
+        const allKeys = Object.keys(localStorage).filter(k => k.startsWith('cotations_'));
+        return allKeys.map(k => {
+            try { return { enseignant: k.replace('cotations_', ''), notes: JSON.parse(localStorage.getItem(k)) }; }
+            catch(e) { return null; }
+        }).filter(Boolean);
+    }
+
+    function getAllPrevisionData(login) {
+        try { return JSON.parse(localStorage.getItem('prevision_' + login)) || {}; }
+        catch(e) { return {}; }
+    }
+
+    function updateBadgePrevisions() {
+        const metas = getAllPrevisionsMeta();
+        const pending = metas.filter(m => m.statut === 'soumis').length;
+        const badge = document.getElementById('badge-previsions');
+        if (badge) {
+            badge.textContent = pending;
+            badge.classList.toggle('hidden', pending === 0);
+        }
+    }
+
+    function mentionFromPct(pct) {
+        if (pct >= 80) return { label: 'Très Bien', css: 'text-emerald-400', icon: '🏆' };
+        if (pct >= 70) return { label: 'Bien', css: 'text-green-400', icon: '👍' };
+        if (pct >= 60) return { label: 'Satisfaisant', css: 'text-blue-400', icon: '✅' };
+        if (pct >= 50) return { label: 'Passable', css: 'text-amber-400', icon: '⚠️' };
+        return { label: 'Insuffisant', css: 'text-red-400', icon: '❌' };
+    }
+
     function renderPedagogie() {
         const inst = db.institutions[db.ecoleActive];
         const isRetro = db.ecoleActive === 'Retrouvailles';
+        const enseignants = db.rh.comptes.filter(c => c.ecole === db.ecoleActive && c.role === 'Enseignant');
+
+        // Read previsions submitted by teachers from localStorage
+        const previsionsMeta = getAllPrevisionsMeta();
+        const filteredMeta = previsionsMeta;
+
+        // Stats
+        const total = enseignants.length;
+        const soumis = filteredMeta.filter(m => m.statut === 'soumis').length;
+        const approuves = filteredMeta.filter(m => m.statut === 'approuve').length;
+        const rejetes = filteredMeta.filter(m => m.statut === 'rejete').length;
 
         // Define action listeners
+        window.approuverPrevision = function(login) {
+            const key = 'prevision_meta_' + login;
+            try {
+                const meta = JSON.parse(localStorage.getItem(key)) || {};
+                meta.statut = 'approuve';
+                meta.dateValidation = new Date().toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric'});
+                localStorage.setItem(key, JSON.stringify(meta));
+            } catch(e) {}
+            renderPedagogie();
+        };
+
+        window.rejeterPrevision = function(login) {
+            const commentaire = prompt('Motif de rejet (optionnel) :');
+            const key = 'prevision_meta_' + login;
+            try {
+                const meta = JSON.parse(localStorage.getItem(key)) || {};
+                meta.statut = 'rejete';
+                meta.commentaireDirection = commentaire || '';
+                meta.dateValidation = new Date().toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric'});
+                localStorage.setItem(key, JSON.stringify(meta));
+            } catch(e) {}
+            renderPedagogie();
+        };
+
+        window.voirPrevision = function(login) {
+            const meta = getAllPrevisionsMeta().find(m => m.key === login) || {};
+            const data = getAllPrevisionData(login);
+            const filled = Object.keys(data).filter(k => k.endsWith('_chapitres') && data[k]).length;
+            alert(`📋 PRÉVISION DE ${(meta.key||login).toUpperCase()}\n\nMatière : ${meta.matiere || '—'}\nClasse : ${meta.classe || '—'}\nVolume horaire : ${meta.volumeHoraire || '—'}\nSemaines remplies : ${filled}/42\nStatut : ${meta.statut || 'brouillon'}\nDate soumission : ${meta.dateSoumission || '—'}`);
+        };
+
         window.approuverInscription = function (id) {
             inst.pedagogie.nouvellesInscriptions = inst.pedagogie.nouvellesInscriptions.filter(i => i.id !== id);
             saveDb();
             renderPedagogie();
         };
 
-        // Sample bulletin data for demonstration
-        const sampleBulletin = {
-            eleve: 'MUKENDI KABUYA David',
-            classe: isRetro ? '3ème Humanités (Scientifique)' : '4ème Primaire',
-            trimestre: '2ème Trimestre',
-            matieres: isRetro ? [
-                { cours: 'Mathématiques', max: 50, pts: 42, appreciation: 'Bien' },
-                { cours: 'Physique-Chimie', max: 50, pts: 38, appreciation: 'Assez Bien' },
-                { cours: 'Biologie', max: 30, pts: 26, appreciation: 'Bien' },
-                { cours: 'Français', max: 50, pts: 45, appreciation: 'Très Bien' },
-                { cours: 'Histoire-Géo', max: 30, pts: 22, appreciation: 'Assez Bien' },
-                { cours: 'Anglais', max: 30, pts: 24, appreciation: 'Bien' },
-                { cours: 'ECM', max: 20, pts: 18, appreciation: 'Excellent' },
-                { cours: 'Informatique', max: 20, pts: 19, appreciation: 'Excellent' },
-                { cours: 'Sport & EPS', max: 20, pts: 17, appreciation: 'Bien' }
-            ] : [
-                { cours: 'Calcul/Arithmétique', max: 50, pts: 40, appreciation: 'Bien' },
-                { cours: 'Langue Française', max: 50, pts: 43, appreciation: 'Très Bien' },
-                { cours: 'Éveil Scientifique', max: 30, pts: 26, appreciation: 'Bien' },
-                { cours: 'Histoire-Géo', max: 20, pts: 17, appreciation: 'Bien' },
-                { cours: 'EPS', max: 20, pts: 18, appreciation: 'Très Bien' },
-                { cours: 'Morale/Religion', max: 30, pts: 26, appreciation: 'Excellent' }
-            ]
-        };
-        const totalPts = sampleBulletin.matieres.reduce((s, m) => s + m.pts, 0);
-        const totalMax = sampleBulletin.matieres.reduce((s, m) => s + m.max, 0);
-        const pct = Math.round((totalPts / totalMax) * 100);
-
         ui.content.innerHTML = `
-            <div class="mb-8 flex justify-between items-end">
-                <div>
-                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Pédagogie & Palmarès EPST</h2>
-                    <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">${db.ecoleActive} — Gestion académique EPST Kinshasa</p>
-                </div>
-                <button onclick="document.getElementById('modal-bulletin').classList.remove('hidden')" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-gray-950 font-black rounded-xl shadow-lg hover:shadow-xl transition flex items-center gap-2 text-sm">
-                    <i data-lucide="file-text" class="w-4 h-4"></i> Aperçu Bulletin
-                </button>
-            </div>
-
-            <!-- Modal Bulletin -->
-            <div id="modal-bulletin" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-                <div class="bg-white text-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
-                    <div class="p-6 bg-blue-900 text-white text-center">
-                        <div class="text-lg font-black uppercase">${db.ecoleActive === 'Retrouvailles' ? 'Groupe Scolaire Retrouvailles' : 'Complexe Scolaire Harmonie'}</div>
-                        <div class="text-sm mt-1">Bulletin Scolaire Officiel — ${sampleBulletin.trimestre} — Année 2025-2026</div>
+            <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center">
+                        <i data-lucide="book-open-check" class="w-6 h-6 text-amber-400"></i>
                     </div>
-                    <div class="p-6">
-                        <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
-                            <div><strong>Élève :</strong> ${sampleBulletin.eleve}</div>
-                            <div><strong>Classe :</strong> ${sampleBulletin.classe}</div>
-                        </div>
-                        <table class="w-full text-sm border border-gray-200 rounded-xl overflow-hidden mb-4">
-                            <thead class="bg-gray-100 text-xs font-black uppercase text-gray-600">
-                                <tr>
-                                    <th class="p-2 text-left">Cours</th>
-                                    <th class="p-2 text-center">/ Max</th>
-                                    <th class="p-2 text-center">Points</th>
-                                    <th class="p-2 text-center">%</th>
-                                    <th class="p-2 text-left">Appréciation</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                ${sampleBulletin.matieres.map(m => `
-                                <tr>
-                                    <td class="p-2 font-semibold">${m.cours}</td>
-                                    <td class="p-2 text-center text-gray-500">${m.max}</td>
-                                    <td class="p-2 text-center font-black ${m.pts/m.max >= 0.7 ? 'text-green-600' : m.pts/m.max >= 0.5 ? 'text-amber-600' : 'text-red-600'}">${m.pts}</td>
-                                    <td class="p-2 text-center">${Math.round(m.pts/m.max*100)}%</td>
-                                    <td class="p-2 text-xs">${m.appreciation}</td>
-                                </tr>`).join('')}
-                            </tbody>
-                            <tfoot class="bg-blue-50 font-black">
-                                <tr>
-                                    <td class="p-2">TOTAL GÉNÉRAL</td>
-                                    <td class="p-2 text-center">${totalMax}</td>
-                                    <td class="p-2 text-center text-blue-700">${totalPts}</td>
-                                    <td class="p-2 text-center text-blue-700">${pct}%</td>
-                                    <td class="p-2 text-xs">${pct >= 70 ? '✅ Admis(e)' : pct >= 50 ? '⚠️ Passable' : '❌ Insuffisant'}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                        <div class="flex justify-end gap-3">
-                            <button onclick="document.getElementById('modal-bulletin').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50">Fermer</button>
-                            <button onclick="window.print()" class="px-5 py-2 bg-blue-700 text-white rounded-lg text-sm font-bold hover:bg-blue-600 flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Imprimer</button>
-                        </div>
+                    <div>
+                        <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Pédagogie</h2>
+                        <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">${db.ecoleActive} — Suivi des prévisions & programme des enseignants</p>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
-                <!-- Nouvelles Inscriptions (Probation) -->
-                <div class="glass-panel p-8 rounded-[2.5rem] shadow-xl border border-white/20">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="font-black text-xl uppercase tracking-wider flex items-center gap-2">
-                            <i data-lucide="user-plus" class="text-brand-500 w-6 h-6"></i> Demandes en probation
-                        </h3>
-                        <span class="bg-red-100 text-red-600 text-xs font-black px-3 py-1 rounded-full">${inst.pedagogie.nouvellesInscriptions.length} Nouveaux</span>
-                    </div>
-                    
-                    ${inst.pedagogie.nouvellesInscriptions.length === 0 ?
-                '<p class="text-center text-sm text-gray-500 italic py-10">Aucune demande en probation.</p>' :
-                `<div class="space-y-4">
-                            ${inst.pedagogie.nouvellesInscriptions.map(insc => `
-                                <div class="bg-[#112240]/50 dark:bg-gray-800 p-5 rounded-2xl border dark:border-gray-700 flex justify-between items-center transition-all hover:shadow-md">
-                                    <div>
-                                        <div class="font-bold text-gray-900 dark:text-white text-lg">${insc.nom}</div>
-                                        <div class="text-xs text-gray-400 mt-1 uppercase font-semibold">
-                                            Demandé pour: ${insc.classe} ${insc.option ? `| ${insc.option}` : ''}
-                                        </div>
-                                        <div class="text-[10px] text-gray-400 mt-1">Ref: ${insc.id} • Fait le ${insc.date}</div>
+            <!-- KPIs Prévisions -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mb-3"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i></div>
+                    <div class="text-2xl font-black">${total}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Enseignants</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-amber-500/20 bg-amber-500/5">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mb-3"><i data-lucide="clock" class="w-5 h-5 text-amber-400"></i></div>
+                    <div class="text-2xl font-black text-amber-400">${soumis}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">En attente validation</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-3"><i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i></div>
+                    <div class="text-2xl font-black text-emerald-400">${approuves}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Approuvées</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center mb-3"><i data-lucide="x-circle" class="w-5 h-5 text-rose-400"></i></div>
+                    <div class="text-2xl font-black text-rose-400">${rejetes}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Rejetées</div>
+                </div>
+            </div>
+
+            <!-- Prévisions soumises par les enseignants (live depuis localStorage) -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/10 mb-8">
+                <h3 class="font-black text-base uppercase tracking-wider mb-6 flex items-center gap-2">
+                    <i data-lucide="map" class="w-5 h-5 text-amber-400"></i>
+                    Prévisions de Matières — Suivi & Validation
+                    ${soumis > 0 ? `<span class="ml-2 px-2 py-0.5 bg-amber-500 text-[#0a192f] text-xs font-black rounded-full">${soumis} à valider</span>` : ''}
+                </h3>
+
+                ${filteredMeta.length === 0 ? `
+                <div class="text-center py-12">
+                    <i data-lucide="inbox" class="w-12 h-12 text-gray-600 mx-auto mb-4"></i>
+                    <p class="text-gray-400 font-bold">Aucune prévision soumise</p>
+                    <p class="text-xs text-gray-500 mt-2">Les prévisions apparaîtront ici dès qu'un enseignant les soumettra depuis son Espace.</p>
+                </div>
+                ` : `
+                <div class="space-y-4">
+                    ${filteredMeta.map(meta => {
+                        const data = getAllPrevisionData(meta.key);
+                        const filled = Object.keys(data).filter(k => k.endsWith('_chapitres') && data[k]).length;
+                        const pct = Math.round((filled / 42) * 100);
+                        const statutColor = meta.statut === 'approuve' ? 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30' :
+                                            meta.statut === 'rejete' ? 'text-rose-400 bg-rose-500/20 border-rose-500/30' :
+                                            meta.statut === 'soumis' ? 'text-amber-400 bg-amber-500/20 border-amber-500/30' :
+                                            'text-gray-400 bg-white/10 border-white/20';
+                        const statutLabel = meta.statut === 'approuve' ? '✓ Approuvé' :
+                                            meta.statut === 'rejete' ? '✗ Rejeté' :
+                                            meta.statut === 'soumis' ? '⏳ En attente' : 'Brouillon';
+                        return `
+                        <div class="p-5 bg-white/5 border border-white/8 rounded-2xl hover:bg-white/8 transition">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-sm">
+                                        ${meta.key.split('.').map(p => p[0]||'').join('').toUpperCase().slice(0,2)}
                                     </div>
-                                    <div class="flex gap-2">
-                                        <button onclick="approuverInscription('${insc.id}')" class="p-3 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition-colors" title="Approuver et Intégrer">
-                                            <i data-lucide="check" class="w-5 h-5"></i>
-                                        </button>
-                                        <button onclick="approuverInscription('${insc.id}')" class="p-3 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors" title="Rejeter">
-                                            <i data-lucide="x" class="w-5 h-5"></i>
-                                        </button>
+                                    <div>
+                                        <p class="font-black text-sm">${meta.key}</p>
+                                        <p class="text-xs text-gray-400 mt-0.5">
+                                            ${meta.matiere ? `<span class="text-white font-bold">${meta.matiere}</span> — ` : ''}${meta.classe || '—'}
+                                        </p>
+                                        ${meta.dateSoumission ? `<p class="text-[10px] text-gray-500 mt-0.5">Soumis le : ${meta.dateSoumission}</p>` : ''}
+                                        ${meta.commentaireDirection ? `<p class="text-[10px] text-rose-400 mt-0.5 italic">Motif : ${meta.commentaireDirection}</p>` : ''}
                                     </div>
                                 </div>
-                            `).join('')}
-                        <div class="mt-8 bg-[#112240]/50/80 dark:bg-gray-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between border border-gray-100 dark:border-gray-700 shadow-inner no-print">
-                            <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-semibold mb-4 sm:mb-0 uppercase tracking-wider">
-                                <i data-lucide="info" class="w-4 h-4 text-brand-500"></i>
-                                Exporter la liste d'attente
+                                <div class="flex flex-col gap-3 min-w-[200px]">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[10px] text-gray-400 uppercase font-bold">Programme</span>
+                                        <span class="text-xs font-black text-white">${filled}/42 sem. (${pct}%)</span>
+                                    </div>
+                                    <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%; background: linear-gradient(90deg, #f59e0b, #10b981)"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${statutColor}">${statutLabel}</span>
+                                        <div class="flex gap-2">
+                                            <button onclick="voirPrevision('${meta.key}')" class="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition" title="Voir détails">
+                                                <i data-lucide="eye" class="w-4 h-4 text-gray-300"></i>
+                                            </button>
+                                            ${meta.statut === 'soumis' ? `
+                                            <button onclick="approuverPrevision('${meta.key}')" class="p-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg transition" title="Approuver">
+                                                <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                                            </button>
+                                            <button onclick="rejeterPrevision('${meta.key}')" class="p-1.5 bg-rose-500/20 hover:bg-rose-500/30 rounded-lg transition" title="Rejeter">
+                                                <i data-lucide="x" class="w-4 h-4 text-rose-400"></i>
+                                            </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex flex-wrap gap-3 justify-end w-full sm:w-auto">
-                                <button class="group flex flex-1 sm:flex-none justify-center items-center gap-2 px-5 py-2.5 bg-[#112240]/80 dark:bg-gray-700 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md font-bold rounded-xl transition-all duration-300 hover:scale-105 active:scale-95" onclick="window.print()">
-                                    <i data-lucide="printer" class="w-4 h-4 text-gray-500 group-hover:text-gray-800 dark:text-gray-400 dark:group-hover:text-white"></i> 
-                                    Imprimer
-                                </button>
-                                <button class="group flex flex-1 sm:flex-none justify-center items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/20 hover:shadow-red-500/40 font-bold rounded-xl transition-all duration-300 hover:scale-105 active:scale-95" onclick="alert('Génération du PDF...')">
-                                    <i data-lucide="file-text" class="w-4 h-4 text-white/80 group-hover:text-white"></i> 
-                                    Format PDF
-                                </button>
-                                <button class="group flex flex-1 sm:flex-none justify-center items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/20 hover:shadow-green-500/40 font-bold rounded-xl transition-all duration-300 hover:scale-105 active:scale-95" onclick="alert('Export Excel...')">
-                                    <i data-lucide="sheet" class="w-4 h-4 text-white/80 group-hover:text-white"></i> 
-                                    Format Excel
-                                </button>
-                            </div>
-                        </div>`
-            }
-                </div>
+                        </div>`;
+                    }).join('')}
+                </div>`}
+            </div>
 
-                <!-- Palmarès / Performances -->
-                <div class="glass-panel p-8 rounded-[2.5rem] shadow-xl border border-white/20">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="font-black text-xl uppercase tracking-wider flex items-center gap-2">
-                            <i data-lucide="award" class="text-gold-500 w-6 h-6"></i> Palmarès Général
-                        </h3>
-                        <button class="text-xs bg-gold-100 text-gold-700 font-bold px-4 py-2 rounded-lg hover:bg-gold-200 transition">Générer Bulletin</button>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div class="p-4 bg-[#112240]/80 dark:bg-gray-700 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
-                            <span class="font-bold uppercase text-sm">Effectif Total</span>
-                            <span class="font-black text-xl text-brand-600">${inst.pedagogie.eleves.length}</span>
-                        </div>
-                        <div class="p-4 bg-[#112240]/80 dark:bg-gray-700 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
-                            <span class="font-bold uppercase text-sm">Classes Actives</span>
-                            <span class="font-black text-xl text-blue-600">${inst.pedagogie.classes.length}</span>
-                        </div>
-                        ${db.ecoleActive === 'Retrouvailles' ? `
-                        <div class="p-4 bg-[#112240]/80 dark:bg-gray-700 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
-                            <span class="font-bold uppercase text-sm">Sections & Options</span>
-                            <span class="font-black text-xl text-purple-600">${inst.pedagogie.sections.length}</span>
-                        </div>
-                        ` : ''}
-                    </div>
+            <!-- Inscriptions en attente -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/10">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="font-black text-base uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="user-plus" class="w-5 h-5 text-blue-400"></i>
+                        Demandes d'Inscription en Probation
+                    </h3>
+                    <span class="px-3 py-1 bg-rose-500/20 text-rose-400 text-xs font-black rounded-full border border-rose-500/30">${inst.pedagogie.nouvellesInscriptions.length} En attente</span>
+                </div>
+                ${inst.pedagogie.nouvellesInscriptions.length === 0
+                    ? '<p class="text-center text-sm text-gray-500 italic py-8">Aucune demande en probation.</p>'
+                    : `<div class="space-y-3">
+                        ${inst.pedagogie.nouvellesInscriptions.map(insc => `
+                        <div class="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/8 transition border border-white/5">
+                            <div>
+                                <p class="font-bold">${insc.nom}</p>
+                                <p class="text-xs text-gray-400 mt-1">${insc.classe} ${insc.option ? `— ${insc.option}` : ''}</p>
+                                <p class="text-[10px] text-gray-500 mt-0.5">Réf: ${insc.id} • ${insc.date}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="approuverInscription('${insc.id}')" class="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl hover:bg-emerald-500/30 transition" title="Approuver">
+                                    <i data-lucide="check" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="approuverInscription('${insc.id}')" class="p-2.5 bg-rose-500/20 text-rose-400 rounded-xl hover:bg-rose-500/30 transition" title="Rejeter">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>`).join('')}
+                    </div>`}
+            </div>
+        `;
+    }
+
+    // ==========================================
+    // PALMARÈS — Liste élèves par classe/option/section
+    // ==========================================
+    function renderPalmares() {
+        const inst = db.institutions[db.ecoleActive];
+        const isRetro = db.ecoleActive === 'Retrouvailles';
+        const eleves = inst.pedagogie.eleves || [];
+        const classes = inst.pedagogie.classes || [];
+
+        // Aggregate stats
+        const byClasse = {};
+        eleves.forEach(e => {
+            const key = e.classe || 'Non classé';
+            if (!byClasse[key]) byClasse[key] = [];
+            byClasse[key].push(e);
+        });
+
+        ui.content.innerHTML = `
+            <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Palmarès Officiel</h2>
+                    <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">${db.ecoleActive} — Listes des élèves par classe & section</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="window.print()" class="px-5 py-2.5 bg-white/10 border border-white/15 text-white font-bold rounded-xl hover:bg-white/20 transition text-sm flex items-center gap-2">
+                        <i data-lucide="printer" class="w-4 h-4 text-amber-400"></i> Imprimer Registre
+                    </button>
                 </div>
             </div>
-            
-            <div class="glass-panel p-8 rounded-[2.5rem] shadow-xl border border-white/20">
-                <h3 class="font-black text-xl uppercase tracking-wider mb-6">Liste des Inscrits</h3>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mb-3"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i></div>
+                    <div class="text-2xl font-black">${eleves.length}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Effectif Total</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mb-3"><i data-lucide="layers" class="w-5 h-5 text-amber-400"></i></div>
+                    <div class="text-2xl font-black">${classes.length}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Classes Actives</div>
+                </div>
+                ${isRetro ? `
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-3"><i data-lucide="git-branch" class="w-5 h-5 text-purple-400"></i></div>
+                    <div class="text-2xl font-black">${(inst.pedagogie.sections || []).length}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Sections</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-3"><i data-lucide="tag" class="w-5 h-5 text-emerald-400"></i></div>
+                    <div class="text-2xl font-black">${(inst.pedagogie.optionsTech || []).length + (inst.pedagogie.optionsNonTech || []).length}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Options</div>
+                </div>` : `
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-3"><i data-lucide="user-check" class="w-5 h-5 text-emerald-400"></i></div>
+                    <div class="text-2xl font-black">${eleves.filter(e => e.paye > 0).length}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Dossiers Actifs</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center mb-3"><i data-lucide="alert-circle" class="w-5 h-5 text-rose-400"></i></div>
+                    <div class="text-2xl font-black">${inst.pedagogie.nouvellesInscriptions.length}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">En Probation</div>
+                </div>`}
+            </div>
+
+            <!-- Par Classe -->
+            ${Object.entries(byClasse).map(([cls, elevesInClasse]) => `
+            <div class="glass-panel p-6 rounded-2xl border border-white/10 mb-6">
+                <div class="flex items-center justify-between mb-5">
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-400 font-black text-sm">${cls}</span>
+                        <span class="text-xs text-gray-400">${elevesInClasse.length} élève${elevesInClasse.length > 1 ? 's' : ''}</span>
+                    </div>
+                    <button onclick="window.print()" class="text-xs text-gray-400 hover:text-white transition"><i data-lucide="printer" class="w-4 h-4 inline"></i></button>
+                </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left mb-6">
-                        <thead class="text-xs text-gray-400 uppercase font-black border-b dark:border-gray-700">
-                            <tr><th class="pb-4">Nom de l'élève</th><th class="pb-4">Classe</th><th class="pb-4 text-right no-print">Action</th></tr>
+                    <table class="w-full text-left">
+                        <thead class="text-[10px] text-gray-400 uppercase tracking-widest border-b border-white/10">
+                            <tr>
+                                <th class="pb-3">#</th>
+                                <th class="pb-3">Nom & Prénom</th>
+                                <th class="pb-3">Classe</th>
+                                ${isRetro ? '<th class="pb-3">Section</th><th class="pb-3">Option</th>' : ''}
+                                <th class="pb-3 text-right">Frais payés</th>
+                            </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                            ${inst.pedagogie.eleves.map(e => `
-                                <tr>
-                                    <td class="py-4 font-bold">${e.nom}</td>
-                                    <td class="py-4 text-sm">${e.classe} ${e.option ? `(${e.option})` : ''}</td>
-                                    <td class="py-4 text-right no-print">
-                                        <button class="text-blue-500 hover:text-blue-700 font-bold text-xs uppercase px-3 py-1 bg-blue-50 rounded-lg">Dossier</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
+                        <tbody class="divide-y divide-white/5">
+                            ${elevesInClasse.map((e, i) => `
+                            <tr class="hover:bg-white/3 transition">
+                                <td class="py-3 text-xs text-gray-500 font-mono">${String(i+1).padStart(2,'0')}</td>
+                                <td class="py-3 font-bold">${e.nom}</td>
+                                <td class="py-3 text-sm text-gray-300">${e.classe}</td>
+                                ${isRetro ? `<td class="py-3 text-sm">${e.section || '—'}</td><td class="py-3 text-sm">${e.option || '—'}</td>` : ''}
+                                <td class="py-3 text-right">
+                                    <span class="px-2 py-1 rounded-lg text-xs font-black ${e.paye > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${e.paye > 0 ? e.paye + ' $' : 'En attente'}</span>
+                                </td>
+                            </tr>`).join('')}
                         </tbody>
                     </table>
                 </div>
+            </div>`).join('')}
 
-                <!-- Export actions for the Registered list -->
-                <div class="mt-8 bg-[#112240]/50/80 dark:bg-gray-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between border border-gray-100 dark:border-gray-700 shadow-inner no-print">
-                    <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-semibold mb-4 sm:mb-0 uppercase tracking-wider">
-                        <i data-lucide="users" class="w-4 h-4 text-blue-500"></i>
-                        Générer un registre officiel
+            ${Object.keys(byClasse).length === 0 ? `
+            <div class="glass-panel p-16 rounded-2xl border border-white/10 text-center">
+                <i data-lucide="users" class="w-12 h-12 text-gray-600 mx-auto mb-4"></i>
+                <p class="text-gray-400 font-bold">Aucun élève enregistré pour ${db.ecoleActive}</p>
+                <p class="text-xs text-gray-500 mt-2">Les élèves inscrits apparaîtront automatiquement ici.</p>
+            </div>` : ''}
+        `;
+    }
+
+    // ==========================================
+    // RÉSULTATS — Cotations & Bulletins EPST
+    // ==========================================
+    function renderResultats() {
+        const inst = db.institutions[db.ecoleActive];
+        const enseignants = db.rh.comptes.filter(c => c.ecole === db.ecoleActive && c.role === 'Enseignant');
+        const allCotations = getAllCotations();
+
+        // Build a flat list of all grades across all teachers
+        let allEleves = [];
+        allCotations.forEach(entry => {
+            const meta = getAllPrevisionsMeta().find(m => m.key === entry.enseignant);
+            Object.entries(entry.notes).forEach(([nom, notes]) => {
+                const i1 = notes.interro1 ?? 0, i2 = notes.interro2 ?? 0;
+                const d1 = notes.devoir1 ?? 0, d2 = notes.devoir2 ?? 0;
+                const ex1 = notes.exam1 ?? 0, ex2 = notes.exam2 ?? 0;
+                const total = Math.round(((i1+i2)/20*20 + (d1+d2)/40*20 + ex1/30*30 + ex2/30*30) / 90 * 100);
+                allEleves.push({ nom, i1, i2, d1, d2, ex1, ex2, total, enseignant: entry.enseignant, matiere: meta ? meta.matiere : '—' });
+            });
+        });
+
+        const moyenne = allEleves.length ? Math.round(allEleves.reduce((s, e) => s + e.total, 0) / allEleves.length) : 0;
+        const tauxReussite = allEleves.length ? Math.round(allEleves.filter(e => e.total >= 50).length / allEleves.length * 100) : 0;
+        const enDifficulte = allEleves.filter(e => e.total < 50).length;
+        const meilleursEleve = allEleves.length ? allEleves.reduce((best, e) => e.total > best.total ? e : best, allEleves[0]) : null;
+
+        ui.content.innerHTML = `
+            <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center">
+                        <i data-lucide="bar-chart-2" class="w-6 h-6 text-purple-400"></i>
                     </div>
-                    <div class="flex flex-wrap gap-3 justify-end w-full sm:w-auto">
-                        <button class="group flex flex-1 sm:flex-none justify-center items-center gap-2 px-6 py-3 bg-[#112240]/80 dark:bg-gray-700 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md font-black rounded-xl transition-all duration-300 hover:scale-105 active:scale-95" onclick="window.print()">
-                            <i data-lucide="printer" class="w-4 h-4 text-gray-500 group-hover:text-gray-800 dark:text-gray-400 dark:group-hover:text-white"></i> 
-                            Archivage Impression
-                        </button>
-                        <button class="group flex flex-1 sm:flex-none justify-center items-center gap-2 px-6 py-3 bg-gradient-to-br from-gray-900 to-gray-800 dark:from-white dark:to-gray-100 text-white dark:text-gray-900 shadow-xl shadow-gray-900/20 font-black rounded-xl transition-all duration-300 hover:scale-105 active:scale-95" onclick="alert('Préparation du document PDF Officiel...')">
-                            <i data-lucide="file-down" class="w-4 h-4 text-brand-300 dark:text-brand-600"></i> 
-                            Télécharger PDF Sécurisé
-                        </button>
+                    <div>
+                        <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Résultats & Cotations</h2>
+                        <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">${db.ecoleActive} — Système EPST — MEN RDC</p>
                     </div>
                 </div>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="window.print()" class="px-5 py-2.5 bg-white/10 border border-white/15 text-white font-bold rounded-xl hover:bg-white/20 transition text-sm flex items-center gap-2">
+                        <i data-lucide="printer" class="w-4 h-4 text-purple-400"></i> Bulletins Officiels
+                    </button>
+                </div>
             </div>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-3"><i data-lucide="percent" class="w-5 h-5 text-purple-400"></i></div>
+                    <div class="text-2xl font-black">${moyenne}%</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Moyenne Générale</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-3"><i data-lucide="trending-up" class="w-5 h-5 text-emerald-400"></i></div>
+                    <div class="text-2xl font-black">${tauxReussite}%</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Taux de Réussite</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center mb-3"><i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400"></i></div>
+                    <div class="text-2xl font-black">${enDifficulte}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">En Difficulté</div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mb-3"><i data-lucide="award" class="w-5 h-5 text-amber-400"></i></div>
+                    <div class="text-2xl font-black">${meilleursEleve ? meilleursEleve.total + '%' : '—'}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">${meilleursEleve ? meilleursEleve.nom.split(' ')[0] : 'Meilleur Élève'}</div>
+                </div>
+            </div>
+
+            ${allEleves.length > 0 ? `
+            <!-- Grille de cotation -->
+            <div class="glass-panel p-4 rounded-2xl border border-white/10 mb-6">
+                <h3 class="font-black text-xs uppercase tracking-widest text-gray-400 mb-4">Barème EPST</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20"><p class="text-[10px] font-black text-amber-400 uppercase">Interrogations</p><p class="text-base font-black">2 × /10 = /20</p></div>
+                    <div class="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20"><p class="text-[10px] font-black text-blue-400 uppercase">Devoirs</p><p class="text-base font-black">2 × /20 = /40</p></div>
+                    <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20"><p class="text-[10px] font-black text-emerald-400 uppercase">Examen S1</p><p class="text-base font-black">/30</p></div>
+                    <div class="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20"><p class="text-[10px] font-black text-purple-400 uppercase">Examen S2</p><p class="text-base font-black">/30</p></div>
+                </div>
+            </div>
+
+            <!-- Tableau des résultats -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/10 overflow-x-auto">
+                <h3 class="font-black text-base uppercase tracking-wider mb-6">Registre des Cotations — ${db.ecoleActive}</h3>
+                <table class="w-full min-w-[900px] text-left">
+                    <thead class="text-[10px] text-gray-400 uppercase tracking-widest border-b border-white/10">
+                        <tr>
+                            <th class="pb-4">Élève</th>
+                            <th class="pb-4">Matière</th>
+                            <th class="pb-4 text-center text-amber-400" colspan="2">Interro /10</th>
+                            <th class="pb-4 text-center text-blue-400" colspan="2">Devoir /20</th>
+                            <th class="pb-4 text-center text-emerald-400">Exam S1 /30</th>
+                            <th class="pb-4 text-center text-purple-400">Exam S2 /30</th>
+                            <th class="pb-4 text-center">Total %</th>
+                            <th class="pb-4 text-center">Mention</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        ${allEleves.map(e => {
+                            const m = mentionFromPct(e.total);
+                            return `<tr class="hover:bg-white/3 transition">
+                                <td class="py-3 font-bold">${e.nom}</td>
+                                <td class="py-3 text-xs text-gray-400">${e.matiere}</td>
+                                <td class="py-3 text-center text-amber-300 font-black">${e.i1}</td>
+                                <td class="py-3 text-center text-amber-300 font-black">${e.i2}</td>
+                                <td class="py-3 text-center text-blue-300 font-black">${e.d1}</td>
+                                <td class="py-3 text-center text-blue-300 font-black">${e.d2}</td>
+                                <td class="py-3 text-center text-emerald-300 font-black">${e.ex1}</td>
+                                <td class="py-3 text-center text-purple-300 font-black">${e.ex2}</td>
+                                <td class="py-3 text-center">
+                                    <span class="text-lg font-black ${m.css}">${e.total}%</span>
+                                </td>
+                                <td class="py-3 text-center">
+                                    <span class="px-2 py-1 rounded-full text-xs font-black ${e.total >= 60 ? 'bg-emerald-500/20 text-emerald-400' : e.total >= 50 ? 'bg-amber-500/20 text-amber-400' : 'bg-rose-500/20 text-rose-400'}">${m.icon} ${m.label}</span>
+                                </td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Alertes -->
+            ${enDifficulte > 0 ? `
+            <div class="mt-6 p-5 bg-rose-500/10 border border-rose-500/30 rounded-2xl">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-rose-500/20 rounded-xl flex items-center justify-center"><i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400"></i></div>
+                    <div>
+                        <p class="font-black text-sm text-rose-400 uppercase tracking-wide">Élèves en Difficulté — Intervention Requise</p>
+                        <p class="text-xs text-gray-300 mt-0.5">${enDifficulte} élève${enDifficulte > 1 ? 's' : ''} avec un résultat inférieur à 50%</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    ${allEleves.filter(e => e.total < 50).map(e => `
+                    <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                        <div><p class="font-bold text-sm">${e.nom}</p><p class="text-xs text-gray-400">${e.matiere}</p></div>
+                        <span class="px-3 py-1 bg-rose-500/20 text-rose-400 text-xs font-black rounded-full">${e.total}% — ${mentionFromPct(e.total).label}</span>
+                    </div>`).join('')}
+                </div>
+            </div>` : ''}
+            ` : `
+            <!-- Pas de cotations -->
+            <div class="glass-panel p-16 rounded-2xl border border-white/10 text-center">
+                <i data-lucide="bar-chart-2" class="w-12 h-12 text-gray-600 mx-auto mb-4"></i>
+                <p class="text-gray-300 font-black text-lg">Aucune cotation enregistrée</p>
+                <p class="text-xs text-gray-500 mt-2">Les notes saisies par les enseignants dans leur Espace apparaîtront automatiquement ici.</p>
+                <div class="mt-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl max-w-md mx-auto">
+                    <p class="text-xs text-amber-400 font-bold">💡 Comment ça marche ?</p>
+                    <p class="text-xs text-gray-300 mt-1">Chaque enseignant se connecte à son Espace Enseignant → Cotation des Élèves, saisit les notes, et elles remontent ici en temps réel.</p>
+                </div>
+            </div>`}
         `;
     }
 
