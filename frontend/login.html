@@ -490,10 +490,130 @@
               </div>
             </div>
 
-            <div>
-              <label class="block text-[11px] text-gray-400 mb-1">Cours Dispensé(s) *</label>
-              <input type="text" id="reg-courses" value="Informatique, ECM, Anglais"
-                placeholder="Ex: Informatique, Biologie, ECM..." required class="field-input-plain">
+            <!-- Section Dynamique : Cours Dispensés pour G.S. Retrouvailles (Direct) -->
+            <div id="section-courses-retrouvailles" class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-[11px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <i data-lucide="book-open" class="w-3.5 h-3.5 text-blue-400"></i>
+                  Cours Dispensé(s) — Système EPST RDC (Humanités &amp; EB)
+                </label>
+                <span id="selected-courses-count-main" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">0 cours choisi</span>
+              </div>
+              
+              <!-- Selected Chips Display -->
+              <div id="selected-chips-main" class="flex flex-wrap gap-1.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 min-h-[42px] max-h-32 overflow-y-auto">
+                <span class="text-[11px] text-gray-500 italic flex items-center gap-1 py-0.5 px-1">
+                  <i data-lucide="info" class="w-3 h-3 text-gray-500"></i> Cliquez sur les cours ci-dessous pour les sélectionner
+                </span>
+              </div>
+
+              <!-- Categories & Search -->
+              <div class="p-3 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2.5">
+                <div class="relative">
+                  <i data-lucide="search" class="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-gray-500"></i>
+                  <input type="text" id="course-search-main" oninput="filterCoursesSearch(this.value, 'main')" placeholder="Rechercher un cours (ex: Math, Informatique, Chimie, ECM...)" class="w-full pl-8 pr-3 py-1.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:border-blue-500 outline-none">
+                </div>
+
+                <!-- Category Pills -->
+                <div class="flex flex-wrap gap-1" id="category-pills-main">
+                  <button type="button" onclick="setCourseCategory('all', 'main')" class="cat-pill-main active px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wide bg-blue-600 text-white transition-all">Tous</button>
+                  <button type="button" onclick="setCourseCategory('tronc_commun', 'main')" class="cat-pill-main px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Tronc Commun &amp; EB</button>
+                  <button type="button" onclick="setCourseCategory('sciences', 'main')" class="cat-pill-main px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Sciences</button>
+                  <button type="button" onclick="setCourseCategory('commerciale', 'main')" class="cat-pill-main px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Commerciale &amp; Info</button>
+                  <button type="button" onclick="setCourseCategory('litteraire_pedagogique', 'main')" class="cat-pill-main px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Littéraire &amp; Pédag.</button>
+                  <button type="button" onclick="setCourseCategory('technique', 'main')" class="cat-pill-main px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Technique Ind.</button>
+                  <button type="button" onclick="setCourseCategory('sante_agro', 'main')" class="cat-pill-main px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Santé &amp; Agro</button>
+                </div>
+
+                <!-- Badges Grid -->
+                <div id="course-badges-main" class="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-1 no-scrollbar">
+                  <!-- Injected by JS -->
+                </div>
+              </div>
+
+              <!-- Manual / Synchronized Input -->
+              <input type="hidden" id="reg-courses" value="">
+            </div>
+
+            <!-- Section Dynamique : C.S. Harmonie (Option Double Poste G.S. Retrouvailles) -->
+            <div id="section-harmonie-dual" class="hidden space-y-3 p-4 rounded-2xl bg-gradient-to-br from-amber-500/[0.04] to-transparent border border-amber-500/20">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <i data-lucide="building" class="w-4 h-4 text-amber-400"></i>
+                  </div>
+                  <div>
+                    <p class="text-xs font-black text-white">Occupez-vous également un poste au G.S. Retrouvailles ?</p>
+                    <p class="text-[11px] text-gray-400 mt-0.5">Enseignement secondaire, Éducation de Base ou Humanités</p>
+                  </div>
+                </div>
+                
+                <!-- Toggle Oui / Non -->
+                <div class="flex p-0.5 bg-black/40 rounded-xl border border-white/10 shrink-0">
+                  <button type="button" id="btn-dual-no" onclick="setDualRole(false)" class="px-3 py-1 rounded-lg text-xs font-black transition-all bg-amber-500 text-black shadow">Non</button>
+                  <button type="button" id="btn-dual-yes" onclick="setDualRole(true)" class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all">Oui</button>
+                </div>
+              </div>
+
+              <!-- Unfolded fields if Oui -->
+              <div id="harmonie-dual-fields" class="hidden pt-3 border-t border-amber-500/20 space-y-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-amber-300 uppercase tracking-wider mb-1.5">
+                    Rôle / Fonction au G.S. Retrouvailles *
+                  </label>
+                  <div class="relative">
+                    <i data-lucide="briefcase" class="absolute left-3.5 top-3.5 w-4 h-4 text-amber-400"></i>
+                    <select id="reg-dual-role" class="field-input appearance-none border-amber-500/30">
+                      <option value="Enseignant" selected>Enseignant (Secondaire / Humanités)</option>
+                      <option value="Préfet">Préfet des Études</option>
+                      <option value="D.E">Directeur des Études (D.E)</option>
+                      <option value="D.D">Directeur de Discipline (D.D)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Secondary courses selector for dual role -->
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label class="block text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <i data-lucide="book-open" class="w-3.5 h-3.5 text-amber-400"></i>
+                      Cours Dispensé(s) au G.S. Retrouvailles *
+                    </label>
+                    <span id="selected-courses-count-dual" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">0 cours choisi</span>
+                  </div>
+
+                  <!-- Selected Chips Display for Dual -->
+                  <div id="selected-chips-dual" class="flex flex-wrap gap-1.5 p-2.5 rounded-xl bg-black/40 border border-amber-500/20 min-h-[42px] max-h-32 overflow-y-auto">
+                    <span class="text-[11px] text-gray-500 italic flex items-center gap-1 py-0.5 px-1">
+                      <i data-lucide="info" class="w-3 h-3 text-gray-500"></i> Sélectionnez vos cours enseignés au secondaire
+                    </span>
+                  </div>
+
+                  <!-- Categories & Search for Dual -->
+                  <div class="p-3 rounded-2xl bg-black/30 border border-amber-500/20 space-y-2.5">
+                    <div class="relative">
+                      <i data-lucide="search" class="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-gray-500"></i>
+                      <input type="text" id="course-search-dual" oninput="filterCoursesSearch(this.value, 'dual')" placeholder="Rechercher un cours pour Retrouvailles..." class="w-full pl-8 pr-3 py-1.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:border-amber-500 outline-none">
+                    </div>
+
+                    <!-- Category Pills for Dual -->
+                    <div class="flex flex-wrap gap-1" id="category-pills-dual">
+                      <button type="button" onclick="setCourseCategory('all', 'dual')" class="cat-pill-dual active px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wide bg-amber-500 text-black transition-all">Tous</button>
+                      <button type="button" onclick="setCourseCategory('tronc_commun', 'dual')" class="cat-pill-dual px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Tronc Commun &amp; EB</button>
+                      <button type="button" onclick="setCourseCategory('sciences', 'dual')" class="cat-pill-dual px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Sciences</button>
+                      <button type="button" onclick="setCourseCategory('commerciale', 'dual')" class="cat-pill-dual px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Commerciale &amp; Info</button>
+                      <button type="button" onclick="setCourseCategory('litteraire_pedagogique', 'dual')" class="cat-pill-dual px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Littéraire &amp; Pédag.</button>
+                      <button type="button" onclick="setCourseCategory('technique', 'dual')" class="cat-pill-dual px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Technique Ind.</button>
+                      <button type="button" onclick="setCourseCategory('sante_agro', 'dual')" class="cat-pill-dual px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all">Santé &amp; Agro</button>
+                    </div>
+
+                    <!-- Badges Grid for Dual -->
+                    <div id="course-badges-dual" class="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-1 no-scrollbar">
+                      <!-- Injected by JS -->
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- 5. Sécurité (Mot de passe) -->
@@ -694,6 +814,220 @@
         login.classList.add('hidden'); reg.classList.remove('hidden');
         tr.className = 'flex-1 py-2.5 rounded-xl text-xs transition-all tab-active';
         tl.className = 'flex-1 py-2.5 rounded-xl text-xs transition-all tab-idle';
+        renderCourseBadges('main');
+        updateSelectedChips('main');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // =================================================================
+    // CATALOGUE COMPLET DES COURS RDC (EPST — HUMANITÉS & EB)
+    // =================================================================
+    const RDC_COURSES_CATALOG = {
+      'tronc_commun': {
+        label: 'Tronc Commun & EB',
+        courses: [
+          'Français (Grammaire & Expression)', 'Anglais', 'Mathématiques Générales',
+          'Histoire Générale & RDC', 'Géographie Physique & Humaine',
+          'Éducation Civique et Morale (ECM)', 'Informatique & TIC',
+          'Dessin & Arts Plastiques', 'Musique',
+          'Éducation Physique et Sportive (EPS)', 'Religion & Morale'
+        ]
+      },
+      'sciences': {
+        label: 'Sciences & Mathématiques',
+        courses: [
+          'Mathématiques / Analyse', 'Algèbre & Trigonométrie', 'Géométrie dans l\'Espace',
+          'Physique Générale', 'Mécanique & Optique', 'Électromagnétisme',
+          'Chimie Générale & Minérale', 'Chimie Organique', 'Biologie Générale',
+          'Botanique & Zoologie', 'Anatomie & Physiologie', 'Géologie & Minéralogie'
+        ]
+      },
+      'commerciale': {
+        label: 'Commerciale, Gestion & Info',
+        courses: [
+          'Comptabilité Générale', 'Comptabilité Analytique & Sociétés',
+          'Correspondance Commerciale', 'Économie Politique', 'Droit Commercial & Fiscal',
+          'Organisation des Entreprises', 'Statistique Appliquée', 'Informatique de Gestion',
+          'Algorithmique & Programmation', 'Bureautique & Secrétariat', 'Sténodactylographie'
+        ]
+      },
+      'litteraire_pedagogique': {
+        label: 'Littéraire & Pédagogie',
+        courses: [
+          'Littérature Française & Africaine', 'Dissertation & Critique', 'Latin',
+          'Philosophie & Logique', 'Psychologie Générale & de l\'Enfant',
+          'Pédagogie Générale & Pratique', 'Didactique Générale & Spéciale',
+          'Législation & Déontologie Scolaire', 'Sciences Humaines & Société'
+        ]
+      },
+      'technique': {
+        label: 'Technique & Industrielle',
+        courses: [
+          'Électricité Générale & Industrielle', 'Électronique Fondamentale & Digitale',
+          'Schémas & Installations Électriques', 'Mécanique Générale & Machines Outils',
+          'Résistance des Matériaux (RDM)', 'Dessin Technique & DAO',
+          'Technologie de Construction & Bâtiment', 'Topographie & Métré'
+        ]
+      },
+      'sante_agro': {
+        label: 'Santé, Social & Agro-Alimentaire',
+        courses: [
+          'Soins Infirmiers & Pratique Hospitalière', 'Anatomie Médicale',
+          'Pharmacologie Élémentaire', 'Puériculture & Développement Infantile',
+          'Nutrition & Diététique', 'Coupe, Couture & Stylisme', 'Esthétique & Cosmétologie',
+          'Agriculture Générale & Phytotechnie', 'Élevage & Zootechnie', 'Pisciculture & Aquaculture'
+        ]
+      }
+    };
+
+    let selectedCoursesMain = new Set(['Informatique & TIC', 'Éducation Civique et Morale (ECM)', 'Anglais']);
+    let selectedCoursesDual = new Set();
+    let currentCatMain = 'all';
+    let currentCatDual = 'all';
+    let isDualRoleActive = false;
+
+    function renderCourseBadges(target = 'main', searchQuery = '') {
+      const container = document.getElementById(`course-badges-${target}`);
+      if (!container) return;
+      const selectedSet = target === 'main' ? selectedCoursesMain : selectedCoursesDual;
+      const currentCat = target === 'main' ? currentCatMain : currentCatDual;
+      
+      let html = '';
+      const q = (searchQuery || '').toLowerCase().trim();
+
+      Object.entries(RDC_COURSES_CATALOG).forEach(([catKey, cat]) => {
+        if (currentCat !== 'all' && currentCat !== catKey) return;
+
+        cat.courses.forEach(course => {
+          if (q && !course.toLowerCase().includes(q)) return;
+          const isSelected = selectedSet.has(course);
+          const isHarmonieTheme = target === 'dual';
+          
+          const selectedClasses = isHarmonieTheme
+            ? 'bg-amber-500 text-black font-black border-amber-400 shadow-md shadow-amber-500/20'
+            : 'bg-blue-600 text-white font-black border-blue-400 shadow-md shadow-blue-500/20';
+          
+          const idleClasses = 'bg-white/[0.04] text-gray-300 border-white/10 hover:border-white/30 hover:bg-white/[0.08]';
+
+          html += `
+            <button type="button" onclick="toggleCourseSelect('${course.replace(/'/g, "\\'")}', '${target}')"
+              class="px-2.5 py-1 rounded-lg text-xs border transition-all duration-150 flex items-center gap-1.5 ${isSelected ? selectedClasses : idleClasses}">
+              <span>${course}</span>
+              ${isSelected ? '<i data-lucide="check" class="w-3 h-3"></i>' : '<i data-lucide="plus" class="w-3 h-3 text-gray-500"></i>'}
+            </button>
+          `;
+        });
+      });
+
+      if (!html) {
+        html = '<p class="text-xs text-gray-500 py-3 px-2 italic">Aucun cours trouvé pour cette recherche.</p>';
+      }
+
+      container.innerHTML = html;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function toggleCourseSelect(course, target = 'main') {
+      const selectedSet = target === 'main' ? selectedCoursesMain : selectedCoursesDual;
+      if (selectedSet.has(course)) {
+        selectedSet.delete(course);
+      } else {
+        selectedSet.add(course);
+      }
+      updateSelectedChips(target);
+      const searchInput = document.getElementById(`course-search-${target}`);
+      renderCourseBadges(target, searchInput ? searchInput.value : '');
+    }
+
+    function removeCourse(course, target = 'main') {
+      const selectedSet = target === 'main' ? selectedCoursesMain : selectedCoursesDual;
+      selectedSet.delete(course);
+      updateSelectedChips(target);
+      const searchInput = document.getElementById(`course-search-${target}`);
+      renderCourseBadges(target, searchInput ? searchInput.value : '');
+    }
+
+    function updateSelectedChips(target = 'main') {
+      const chipsContainer = document.getElementById(`selected-chips-${target}`);
+      const countEl = document.getElementById(`selected-courses-count-${target}`);
+      const hiddenInput = target === 'main' ? document.getElementById('reg-courses') : null;
+      const selectedSet = target === 'main' ? selectedCoursesMain : selectedCoursesDual;
+      
+      const count = selectedSet.size;
+      if (countEl) {
+        countEl.textContent = `${count} cours choisi${count > 1 ? 's' : ''}`;
+      }
+
+      if (hiddenInput) {
+        hiddenInput.value = Array.from(selectedSet).join(', ');
+      }
+
+      if (!chipsContainer) return;
+
+      if (count === 0) {
+        chipsContainer.innerHTML = `
+          <span class="text-[11px] text-gray-500 italic flex items-center gap-1 py-0.5 px-1">
+            <i data-lucide="info" class="w-3 h-3 text-gray-500"></i> Cliquez sur les cours ci-dessous pour les sélectionner
+          </span>
+        `;
+      } else {
+        let chipsHtml = '';
+        selectedSet.forEach(c => {
+          const chipColor = target === 'dual' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+          chipsHtml += `
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold border ${chipColor}">
+              <span>${c}</span>
+              <button type="button" onclick="removeCourse('${c.replace(/'/g, "\\'")}', '${target}')" class="hover:text-red-400 p-0.5 transition">
+                <i data-lucide="x" class="w-3 h-3"></i>
+              </button>
+            </span>
+          `;
+        });
+        chipsContainer.innerHTML = chipsHtml;
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function setCourseCategory(catKey, target = 'main') {
+      if (target === 'main') currentCatMain = catKey;
+      else currentCatDual = catKey;
+
+      const pills = document.querySelectorAll(`.cat-pill-${target}`);
+      pills.forEach(p => {
+        p.className = `cat-pill-${target} px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition-all`;
+      });
+      
+      if (event && event.target) {
+        const activeBg = target === 'dual' ? 'bg-amber-500 text-black' : 'bg-blue-600 text-white';
+        event.target.className = `cat-pill-${target} active px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wide ${activeBg} transition-all`;
+      }
+
+      const searchInput = document.getElementById(`course-search-${target}`);
+      renderCourseBadges(target, searchInput ? searchInput.value : '');
+    }
+
+    function filterCoursesSearch(query, target = 'main') {
+      renderCourseBadges(target, query);
+    }
+
+    function setDualRole(active) {
+      isDualRoleActive = active;
+      const btnNo = document.getElementById('btn-dual-no');
+      const btnYes = document.getElementById('btn-dual-yes');
+      const fields = document.getElementById('harmonie-dual-fields');
+      
+      if (active) {
+        btnYes.className = 'px-3 py-1 rounded-lg text-xs font-black transition-all bg-amber-500 text-black shadow';
+        btnNo.className = 'px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all';
+        fields?.classList.remove('hidden');
+        renderCourseBadges('dual');
+      } else {
+        btnNo.className = 'px-3 py-1 rounded-lg text-xs font-black transition-all bg-amber-500 text-black shadow';
+        btnYes.className = 'px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all';
+        fields?.classList.add('hidden');
+        selectedCoursesDual.clear();
+        updateSelectedChips('dual');
       }
       if (window.lucide) lucide.createIcons();
     }
@@ -717,17 +1051,18 @@
         }
       });
 
-      // Dynamic filtering of roles, options, and course suggestions per institution
       const roleSelect = document.getElementById('reg-role');
       const optionSelect = document.getElementById('reg-option');
-      const coursesInput = document.getElementById('reg-courses');
       const badgeStatus = document.getElementById('inst-badge-status');
       const roleInstLabel = document.getElementById('role-inst-label');
+      
+      const secRetrouvaillesCourses = document.getElementById('section-courses-retrouvailles');
+      const secHarmonieDual = document.getElementById('section-harmonie-dual');
 
       if (roleInstLabel) roleInstLabel.textContent = name;
 
       if (name === 'Harmonie') {
-        // Harmonie
+        // Harmonie : Masquer les cours directs & Proposer le cumul poste Retrouvailles
         if (badgeStatus) {
           badgeStatus.className = 'text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20';
           badgeStatus.textContent = '📍 C.S. Harmonie (Maternelle & Primaire)';
@@ -735,27 +1070,25 @@
 
         if (roleSelect) {
           roleSelect.innerHTML = `
-        <option value="Directeur (D.P)" selected>Directeur (D.P)</option>
-        <option value="Sur École">Sur École</option>
-        <option value="D.D">Directeur de Discipline (D.D)</option>
-        <option value="Enseignant">Enseignant</option>
-      `;
+            <option value="Directeur (D.P)" selected>Directeur (D.P)</option>
+            <option value="Sur École">Sur École</option>
+            <option value="D.D">Directeur de Discipline (D.D)</option>
+            <option value="Enseignant">Enseignant (Instituteur / Institutrice)</option>
+          `;
         }
 
         if (optionSelect) {
           optionSelect.innerHTML = `
-        <option value="Enseignement Général Primaire" selected>Enseignement Général Primaire</option>
-        <option value="Éducation Petite Enfance">Éducation de la Petite Enfance (Maternelle)</option>
-        <option value="Pédagogie Générale">Pédagogie Générale (D6)</option>
-      `;
+            <option value="Enseignement Général Primaire" selected>Enseignement Général Primaire</option>
+            <option value="Éducation Petite Enfance">Éducation de la Petite Enfance (Maternelle)</option>
+            <option value="Pédagogie Générale">Pédagogie Générale (D6)</option>
+          `;
         }
 
-        if (coursesInput) {
-          coursesInput.value = "Calcul/Arithmétique, Grammaire, Éveil Scientifique, Calligraphie";
-          coursesInput.placeholder = "Ex: Calcul, Grammaire, Éveil Scientifique, Calligraphie, ECM...";
-        }
+        secRetrouvaillesCourses?.classList.add('hidden');
+        secHarmonieDual?.classList.remove('hidden');
       } else {
-        // Retrouvailles
+        // Retrouvailles : Afficher le catalogue complet des cours EPST RDC
         if (badgeStatus) {
           badgeStatus.className = 'text-[10px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20';
           badgeStatus.textContent = '📍 G.S. Retrouvailles (EB & Humanités)';
@@ -763,30 +1096,32 @@
 
         if (roleSelect) {
           roleSelect.innerHTML = `
-        <option value="Préfet" selected>Préfet</option>
-        <option value="D.E">Directeur des Études (D.E)</option>
-        <option value="D.D">Directeur de Discipline (D.D)</option>
-        <option value="Enseignant">Enseignant</option>
-      `;
+            <option value="Préfet" selected>Préfet</option>
+            <option value="D.E">Directeur des Études (D.E)</option>
+            <option value="D.D">Directeur de Discipline (D.D)</option>
+            <option value="Enseignant">Enseignant</option>
+          `;
         }
 
         if (optionSelect) {
           optionSelect.innerHTML = `
-        <option value="Biologie-Chimie" selected>Biologie-Chimie</option>
-        <option value="Mathématique-Physique">Mathématique-Physique</option>
-        <option value="Électricité Industrielle">Électricité Industrielle (Technique)</option>
-        <option value="Commerciale & Gestion">Commerciale & Gestion (Technique)</option>
-        <option value="Mécanique Générale">Mécanique Générale (Technique)</option>
-        <option value="Littéraire">Littéraire & Philologie</option>
-        <option value="Sciences Humaines">Sciences Humaines</option>
-      `;
+            <option value="Biologie-Chimie" selected>Biologie-Chimie</option>
+            <option value="Mathématique-Physique">Mathématique-Physique</option>
+            <option value="Électricité Industrielle">Électricité Industrielle (Technique)</option>
+            <option value="Commerciale & Gestion">Commerciale & Gestion (Technique)</option>
+            <option value="Mécanique Générale">Mécanique Générale (Technique)</option>
+            <option value="Littéraire">Littéraire & Philologie</option>
+            <option value="Sciences Humaines">Sciences Humaines</option>
+          `;
         }
 
-        if (coursesInput) {
-          coursesInput.value = "Informatique, ECM, Anglais";
-          coursesInput.placeholder = "Ex: Informatique, Biologie, Mathématiques, Physique, ECM...";
-        }
+        secRetrouvaillesCourses?.classList.remove('hidden');
+        secHarmonieDual?.classList.add('hidden');
+        renderCourseBadges('main');
       }
+
+      if (window.lucide) lucide.createIcons();
+    }
 
       if (window.lucide) lucide.createIcons();
     }
@@ -972,7 +1307,6 @@
       const institution = document.getElementById('reg-institution').value;
       const phone = document.getElementById('reg-phone').value;
       const address = document.getElementById('reg-address').value;
-      const courses = document.getElementById('reg-courses').value;
       const pwd = document.getElementById('reg-pwd').value;
       const pwdConf = document.getElementById('reg-pwd-confirm').value;
 
@@ -987,6 +1321,21 @@
         return;
       }
 
+      let finalCourses = '';
+      let dualRoleData = null;
+
+      if (institution === 'Harmonie') {
+        if (isDualRoleActive) {
+          const dualRole = document.getElementById('reg-dual-role')?.value || 'Enseignant';
+          finalCourses = Array.from(selectedCoursesDual).join(', ');
+          dualRoleData = { role: dualRole, ecole: 'Retrouvailles', courses: finalCourses };
+        } else {
+          finalCourses = '';
+        }
+      } else {
+        finalCourses = Array.from(selectedCoursesMain).join(', ');
+      }
+
       const parts = fullname.trim().split(' ');
       const prenom = parts.pop() || '';
       const nom = parts.join(' ') || '';
@@ -994,7 +1343,10 @@
       const newUser = {
         id: Date.now(), nom, prenom, email, password: pwd, role,
         ecole: institution || 'Retrouvailles',
-        phone, address, courses,
+        phone, address,
+        courses: finalCourses,
+        hasDualRole: isDualRoleActive && institution === 'Harmonie',
+        dualRole: dualRoleData,
         biometric: true,
         credentialId: bioCredentialId // Passkey WebAuthn
       };
