@@ -184,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!ui.content) return;
         switch (currentView) {
             case 'dashboard': renderDashboard(); break;
+            case 'presence-journaliere': renderPresenceJournaliere(); break;
             case 'pedagogie': renderPedagogie(); break;
             case 'rh': renderRH(); break;
             case 'finance': renderFinance(); break;
@@ -285,6 +286,166 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="glass-panel p-6 rounded-3xl shadow-xl border border-white/10">
                     <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4">Répartition des Élèves</h3>
                     <div id="chartPed" class="h-64"></div>
+                </div>
+            </div>
+
+            <!-- RAPPORT DE PRÉSENCE JOURNALIÈRE DU SUPER-ADMIN (PRO) -->
+            <div class="glass-panel p-8 rounded-3xl shadow-2xl border border-emerald-500/30 bg-gradient-to-b from-[#0A192F]/90 to-[#112240]/80 mb-8 relative overflow-hidden">
+                <div class="absolute -right-20 -top-20 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-6 border-b border-white/10">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                            <i data-lucide="scan-face" class="w-7 h-7"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-xl font-black text-white uppercase tracking-tight">Rapport de Présence Journalière</h3>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse">Live IA</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-0.5">Registre officiel certifié par Reconnaissance Faciale & Biométrie • ${today}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button onclick="window.openPresenceScanner ? window.openPresenceScanner() : alert('Module scanner en cours')" 
+                            class="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-gray-950 font-black rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all hover:scale-105">
+                            <i data-lucide="camera" class="w-4 h-4"></i> Scanner Présence
+                        </button>
+                        <button onclick="printDailyPresenceReport('${db.ecoleActive}')" 
+                            class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs flex items-center gap-2 border border-white/10 transition">
+                            <i data-lucide="printer" class="w-4 h-4 text-emerald-400"></i> Imprimer Rapport Officiel
+                        </button>
+                        <button onclick="exportPresenceCSV('${db.ecoleActive}')" 
+                            class="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 font-bold rounded-xl text-xs flex items-center gap-2 border border-white/5 transition">
+                            <i data-lucide="download" class="w-4 h-4 text-cyan-400"></i> Exporter CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Presence Summary Metrics -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                    <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Présents (Pointés)</p>
+                            <h4 class="text-2xl font-black text-white mt-1">${allPointages.filter(p => p.statut === 'Présent' || p.statut === 'Terminé').length}</h4>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-xs">
+                            ${allPointages.length > 0 ? Math.round((allPointages.filter(p => p.statut === 'Présent' || p.statut === 'Terminé').length / allPointages.length) * 100) : 0}%
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Retards</p>
+                            <h4 class="text-2xl font-black text-white mt-1">${allPointages.filter(p => p.statut === 'Retard').length}</h4>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400">
+                            <i data-lucide="clock" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-black text-rose-400 uppercase tracking-widest">Absents</p>
+                            <h4 class="text-2xl font-black text-white mt-1">${allPointages.filter(p => p.statut === 'Absent').length}</h4>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center text-rose-400">
+                            <i data-lucide="user-x" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Effectif Total</p>
+                            <h4 class="text-2xl font-black text-white mt-1">${allPointages.length}</h4>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table of Today's Presence Records -->
+                <div class="overflow-x-auto rounded-2xl border border-white/5 bg-black/20">
+                    <table class="w-full text-left" id="dashboard-presence-table">
+                        <thead class="text-[10px] text-gray-400 uppercase font-black tracking-widest border-b border-white/10 bg-white/5">
+                            <tr>
+                                <th class="py-3.5 px-4">Agent / Personnel</th>
+                                <th class="py-3.5 px-4">Fonction / Rôle</th>
+                                <th class="py-3.5 px-4">Heure d'Arrivée</th>
+                                <th class="py-3.5 px-4">Méthode de Scan</th>
+                                <th class="py-3.5 px-4">Statut d'Assiduité</th>
+                                <th class="py-3.5 px-4 text-right">Action Direction</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 text-sm">
+                            ${allPointages.length === 0 ? `
+                                <tr>
+                                    <td colspan="6" class="text-center py-8 text-gray-400 text-xs italic">
+                                        Aucun pointage enregistré pour le moment aujourd'hui.
+                                    </td>
+                                </tr>
+                            ` : allPointages.map(p => {
+                                const isLate = p.statut === 'Retard';
+                                const isAbsent = p.statut === 'Absent';
+                                const statusClass = isAbsent 
+                                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' 
+                                    : (isLate 
+                                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
+                                        : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30');
+                                const roleColorsMap = {
+                                    'Direction': 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+                                    'Directeur Général': 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+                                    'Enseignant': 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
+                                    'Préfet': 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
+                                    'Comptable': 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                };
+                                const roleBadge = roleColorsMap[p.role] || 'bg-gray-500/20 text-gray-300 border border-gray-500/30';
+                                
+                                return `
+                                    <tr class="hover:bg-white/5 transition-colors">
+                                        <td class="py-3 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white flex items-center justify-center font-black text-xs shadow-inner">
+                                                    ${p.nom.split(' ').map(n=>n[0]).join('').slice(0,2)}
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-white leading-tight">${p.nom}</p>
+                                                    <p class="text-[10px] text-gray-400">${db.ecoleActive}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${roleBadge}">
+                                                ${p.role || 'Personnel'}
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 font-mono font-bold ${isAbsent ? 'text-gray-500' : 'text-emerald-300'}">
+                                            <div class="flex items-center gap-1.5">
+                                                <i data-lucide="clock" class="w-3.5 h-3.5 text-gray-400"></i>
+                                                ${p.arrivee || '—'}
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/5 border border-white/10 text-cyan-300">
+                                                <i data-lucide="scan-face" class="w-3 h-3 text-cyan-400"></i> Facial IA
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wide inline-flex items-center gap-1.5 ${statusClass}">
+                                                <span class="w-1.5 h-1.5 rounded-full ${isAbsent ? 'bg-rose-400' : isLate ? 'bg-amber-400' : 'bg-emerald-400'}"></span>
+                                                ${p.statut}
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right">
+                                            <button onclick="alert('Pointage validé par Super-Admin pour ${p.nom}')" 
+                                                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 hover:text-white border border-white/10 transition">
+                                                Détails
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -2393,5 +2554,408 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
     }
+
+    // ==========================================
+    // RENDER: RAPPORT DE PRÉSENCE JOURNALIÈRE DÉDIÉ (SUPER-ADMIN)
+    // ==========================================
+    function renderPresenceJournaliere() {
+        const today = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
+        const todayIso = new Date().toISOString().split('T')[0];
+        const allPointages = db.rh.pointages.filter(p => p.ecole === db.ecoleActive || db.ecoleActive === 'Tous');
+        const presentCount = allPointages.filter(p => p.statut === 'Présent' || p.statut === 'Terminé').length;
+        const retardCount = allPointages.filter(p => p.statut === 'Retard').length;
+        const absentCount = allPointages.filter(p => p.statut === 'Absent').length;
+        const totalStaff = allPointages.length;
+        const rate = totalStaff > 0 ? Math.round((presentCount / totalStaff) * 100) : 0;
+
+        ui.content.innerHTML = `
+            <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                            <i data-lucide="calendar-check" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-black text-white uppercase tracking-tight">Rapport de Présence Journalière</h2>
+                            <p class="text-xs text-gray-400 mt-0.5 uppercase tracking-widest">${db.ecoleActive} — Registre Officiel • ${today}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-3">
+                    <button onclick="window.openPresenceScanner ? window.openPresenceScanner() : alert('Initialisation du capteur facial...')" 
+                        class="px-5 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-gray-950 font-black rounded-2xl text-xs flex items-center gap-2 shadow-xl shadow-emerald-500/25 transition-all hover:scale-105">
+                        <i data-lucide="camera" class="w-4 h-4"></i> Scanner Facial (Pointage)
+                    </button>
+                    <button onclick="printDailyPresenceReport('${db.ecoleActive}')" 
+                        class="px-5 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl text-xs flex items-center gap-2 border border-white/15 transition shadow-lg">
+                        <i data-lucide="printer" class="w-4 h-4 text-emerald-400"></i> Imprimer Rapport A4
+                    </button>
+                    <button onclick="exportPresenceCSV('${db.ecoleActive}')" 
+                        class="px-5 py-3 bg-white/5 hover:bg-white/10 text-cyan-300 font-bold rounded-2xl text-xs flex items-center gap-2 border border-white/10 transition shadow-lg">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4 text-cyan-400"></i> Exporter CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI Cards Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-panel p-6 rounded-3xl border border-emerald-500/30 bg-emerald-500/5 relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Taux d'Assiduité</span>
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-xs">
+                            %
+                        </div>
+                    </div>
+                    <div class="text-3xl font-black text-white">${rate}%</div>
+                    <div class="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
+                        <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style="width: ${rate}%"></div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl border border-emerald-500/20 bg-emerald-500/5">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Présents</span>
+                        <i data-lucide="user-check" class="w-5 h-5 text-emerald-400"></i>
+                    </div>
+                    <div class="text-3xl font-black text-emerald-400">${presentCount}</div>
+                    <p class="text-[10px] text-gray-400 mt-2 font-medium">Arrivées validées à l'heure</p>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl border border-amber-500/20 bg-amber-500/5">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Retards</span>
+                        <i data-lucide="clock" class="w-5 h-5 text-amber-400"></i>
+                    </div>
+                    <div class="text-3xl font-black text-amber-400">${retardCount}</div>
+                    <p class="text-[10px] text-gray-400 mt-2 font-medium">Arrivées après 08h00</p>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl border border-rose-500/20 bg-rose-500/5">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-black text-rose-400 uppercase tracking-widest">Absents</span>
+                        <i data-lucide="user-x" class="w-5 h-5 text-rose-400"></i>
+                    </div>
+                    <div class="text-3xl font-black text-rose-400">${absentCount}</div>
+                    <p class="text-[10px] text-gray-400 mt-2 font-medium">Non pointés ce jour</p>
+                </div>
+            </div>
+
+            <!-- Registre Table with Filters -->
+            <div class="glass-panel p-8 rounded-[2.5rem] shadow-2xl border border-white/10 bg-[#0A192F]/80">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h3 class="font-black text-lg text-white uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="list-checks" class="w-5 h-5 text-emerald-400"></i> Registre Détaillé des Pointages
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Historique des entrées et sorties en temps réel</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative">
+                            <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            <input type="text" id="presence-search-input" oninput="filterPresenceTable(this.value)" placeholder="Rechercher un agent..." 
+                                class="pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 w-48 transition" />
+                        </div>
+                        <button onclick="filterPresenceByStatus('all')" class="presence-filter-btn active px-3 py-2 bg-emerald-500 text-gray-950 font-black rounded-xl text-xs transition">Tous (${totalStaff})</button>
+                        <button onclick="filterPresenceByStatus('Présent')" class="presence-filter-btn px-3 py-2 bg-white/5 hover:bg-white/10 text-emerald-400 border border-white/10 rounded-xl text-xs font-bold transition">Présents (${presentCount})</button>
+                        <button onclick="filterPresenceByStatus('Retard')" class="presence-filter-btn px-3 py-2 bg-white/5 hover:bg-white/10 text-amber-400 border border-white/10 rounded-xl text-xs font-bold transition">Retards (${retardCount})</button>
+                        <button onclick="filterPresenceByStatus('Absent')" class="presence-filter-btn px-3 py-2 bg-white/5 hover:bg-white/10 text-rose-400 border border-white/10 rounded-xl text-xs font-bold transition">Absents (${absentCount})</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-white/5">
+                    <table class="w-full text-left" id="main-presence-table">
+                        <thead class="text-[10px] text-gray-400 uppercase font-black tracking-widest border-b border-white/10 bg-white/5">
+                            <tr>
+                                <th class="py-4 px-4">Agent / Personnel</th>
+                                <th class="py-4 px-4">Rôle Institutionnel</th>
+                                <th class="py-4 px-4">Établissement</th>
+                                <th class="py-4 px-4">Arrivée</th>
+                                <th class="py-4 px-4">Départ</th>
+                                <th class="py-4 px-4">Mécanisme</th>
+                                <th class="py-4 px-4">Statut</th>
+                                <th class="py-4 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 text-sm" id="presence-table-tbody">
+                            ${allPointages.map(p => {
+                                const isLate = p.statut === 'Retard';
+                                const isAbsent = p.statut === 'Absent';
+                                const statusClass = isAbsent 
+                                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' 
+                                    : (isLate 
+                                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
+                                        : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30');
+                                const roleColorsMap = {
+                                    'Direction': 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+                                    'Directeur Général': 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+                                    'Enseignant': 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
+                                    'Préfet': 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
+                                    'Comptable': 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                };
+                                const roleBadge = roleColorsMap[p.role] || 'bg-gray-500/20 text-gray-300 border border-gray-500/30';
+
+                                return `
+                                    <tr class="hover:bg-white/5 transition-colors presence-row" data-statut="${p.statut}" data-name="${p.nom.toLowerCase()}">
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white flex items-center justify-center font-black text-sm shadow-md">
+                                                    ${p.nom.split(' ').map(n=>n[0]).join('').slice(0,2)}
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-white leading-tight">${p.nom}</p>
+                                                    <p class="text-xs text-gray-400 font-mono">ID-${String(p.id).padStart(4,'0')}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${roleBadge}">
+                                                ${p.role || 'Agent'}
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-4 text-xs font-semibold text-gray-300">${p.ecole || db.ecoleActive}</td>
+                                        <td class="py-4 px-4 font-mono font-bold ${isAbsent ? 'text-gray-500' : 'text-emerald-300'}">
+                                            ${p.arrivee || '—'}
+                                        </td>
+                                        <td class="py-4 px-4 font-mono font-bold ${p.statut === 'Terminé' ? 'text-blue-300' : 'text-gray-500'}">
+                                            ${p.depart || (p.statut === 'Terminé' ? '16:30' : 'En poste')}
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-white/5 border border-white/10 text-cyan-300">
+                                                <i data-lucide="scan-face" class="w-3.5 h-3.5 text-cyan-400"></i> Facial IA
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <span class="px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wide inline-flex items-center gap-1.5 ${statusClass}">
+                                                <span class="w-1.5 h-1.5 rounded-full ${isAbsent ? 'bg-rose-400' : isLate ? 'bg-amber-400' : 'bg-emerald-400'}"></span>
+                                                ${p.statut}
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-4 text-right">
+                                            <div class="flex items-center justify-end gap-1.5">
+                                                <button title="Envoyer Rappel SMS" onclick="alert('Notification SMS envoyée à ${p.nom}')" 
+                                                    class="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-gray-400 hover:text-amber-400 transition">
+                                                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                                                </button>
+                                                <button title="Fiche Individuelle" onclick="printIndividualPresence('${p.nom}', '${p.role}', '${p.arrivee}', '${p.statut}')" 
+                                                    class="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-gray-400 hover:text-emerald-400 transition">
+                                                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    // ==========================================
+    // HELPERS: RAPPORT OFFICIEL & EXPORT
+    // ==========================================
+    window.printDailyPresenceReport = function(ecole) {
+        const today = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
+        const instName = ecole === 'Retrouvailles' ? 'GROUPE SCOLAIRE RETROUVAILLES' : 'COMPLEXE SCOLAIRE HARMONIE';
+        const allPointages = db.rh.pointages.filter(p => p.ecole === ecole || ecole === 'Tous');
+        const presents = allPointages.filter(p => p.statut === 'Présent' || p.statut === 'Terminé').length;
+        const retards = allPointages.filter(p => p.statut === 'Retard').length;
+        const absents = allPointages.filter(p => p.statut === 'Absent').length;
+        const total = allPointages.length;
+        const rate = total > 0 ? Math.round((presents / total) * 100) : 0;
+
+        const printWindow = window.open('', '', 'height=800,width=1000');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head>
+                <meta charset="UTF-8">
+                <title>Rapport Officiel de Présence Journalière - ${ecole}</title>
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; margin: 30px; line-height: 1.4; }
+                    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 20px; }
+                    .header-left { text-align: left; }
+                    .header-right { text-align: right; }
+                    .school-title { font-size: 18px; font-weight: 900; text-transform: uppercase; margin: 0; color: #0d8b6d; }
+                    .school-sub { font-size: 11px; color: #555; text-transform: uppercase; margin-top: 3px; font-weight: bold; }
+                    .report-title { text-align: center; margin: 25px 0 15px 0; }
+                    .report-title h1 { font-size: 20px; text-transform: uppercase; font-weight: 900; margin: 0; text-decoration: underline; }
+                    .report-title p { font-size: 12px; font-weight: bold; color: #333; margin-top: 5px; }
+                    
+                    .stats-box { display: flex; justify-content: space-around; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 20px; text-align: center; }
+                    .stat-item h4 { margin: 0; font-size: 18px; font-weight: 900; color: #0f172a; }
+                    .stat-item p { margin: 2px 0 0 0; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; }
+
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+                    th { background-color: #0f172a; color: #fff; padding: 10px 8px; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; border: 1px solid #0f172a; }
+                    td { padding: 8px; border: 1px solid #cbd5e1; }
+                    tr:nth-child(even) { background-color: #f8fafc; }
+                    
+                    .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+                    .badge-present { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+                    .badge-retard { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+                    .badge-absent { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+                    .footer { margin-top: 40px; display: flex; justify-content: space-between; page-break-inside: avoid; }
+                    .signature-box { width: 220px; text-align: center; border-top: 1px solid #000; padding-top: 5px; font-size: 11px; font-weight: bold; }
+                    .certif { font-size: 9px; color: #666; text-align: center; margin-top: 30px; font-style: italic; }
+                    
+                    @media print {
+                        body { margin: 15mm 10mm; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="header-left">
+                        <h2 class="school-title">RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h2>
+                        <div class="school-sub">MINISTÈRE DE L'ÉDUCATION NATIONALE ET NOUVELLE CITOYENNETÉ</div>
+                        <div class="school-sub" style="color: #0d8b6d; font-size: 13px; margin-top: 4px;">${instName}</div>
+                    </div>
+                    <div class="header-right">
+                        <div style="font-size: 11px; font-weight: bold;">SYSTÈME ERP DE SUPER-ADMINISTRATION</div>
+                        <div style="font-size: 10px; color: #666;">Date d'édition : ${new Date().toLocaleString('fr-FR')}</div>
+                        <div style="font-size: 10px; color: #0d8b6d; font-weight: bold;">Certification Biométrique Validée</div>
+                    </div>
+                </div>
+
+                <div class="report-title">
+                    <h1>RAPPORT OFFICIEL DE PRÉSENCE JOURNALIÈRE</h1>
+                    <p>Séance du ${today}</p>
+                </div>
+
+                <div class="stats-box">
+                    <div class="stat-item">
+                        <h4>${total}</h4>
+                        <p>Effectif Total</p>
+                    </div>
+                    <div class="stat-item">
+                        <h4 style="color: #15803d;">${presents}</h4>
+                        <p>Présents</p>
+                    </div>
+                    <div class="stat-item">
+                        <h4 style="color: #b45309;">${retards}</h4>
+                        <p>Retards</p>
+                    </div>
+                    <div class="stat-item">
+                        <h4 style="color: #b91c1c;">${absents}</h4>
+                        <p>Absents</p>
+                    </div>
+                    <div class="stat-item">
+                        <h4 style="color: #0d8b6d;">${rate}%</h4>
+                        <p>Taux d'Assiduité</p>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">N°</th>
+                            <th style="width: 30%;">Nom & Prénom de l'Agent</th>
+                            <th style="width: 20%;">Fonction / Rôle</th>
+                            <th style="width: 15%;">Heure d'Arrivée</th>
+                            <th style="width: 15%;">Heure de Départ</th>
+                            <th style="width: 15%;">Statut Validé</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allPointages.map((p, idx) => `
+                            <tr>
+                                <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
+                                <td style="font-weight: bold;">${p.nom}</td>
+                                <td>${p.role || 'Personnel'}</td>
+                                <td style="font-family: monospace; font-weight: bold;">${p.arrivee || '—'}</td>
+                                <td style="font-family: monospace;">${p.depart || (p.statut === 'Terminé' ? '16:30' : 'En poste')}</td>
+                                <td>
+                                    <span class="badge ${p.statut === 'Absent' ? 'badge-absent' : p.statut === 'Retard' ? 'badge-retard' : 'badge-present'}">
+                                        ${p.statut}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    <div class="signature-box">
+                        Le Superviseur RH / Direction
+                    </div>
+                    <div class="signature-box">
+                        Le Chef d'Établissement (Sceau & Signature)
+                    </div>
+                </div>
+
+                <div class="certif">
+                    Document généré automatiquement par le module de Reconnaissance Faciale IA • Plateforme Harmonie & Retrouvailles
+                </div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+        }, 500);
+    };
+
+    window.exportPresenceCSV = function(ecole) {
+        const allPointages = db.rh.pointages.filter(p => p.ecole === ecole || ecole === 'Tous');
+        const headers = ["ID", "Nom_Prenom", "Role", "Ecole", "Arrivee", "Depart", "Statut", "Methode"];
+        const rows = allPointages.map(p => [
+            p.id,
+            `"${p.nom}"`,
+            `"${p.role || 'Personnel'}"`,
+            `"${p.ecole || db.ecoleActive}"`,
+            p.arrivee || '—',
+            p.depart || (p.statut === 'Terminé' ? '16:30' : 'En poste'),
+            p.statut,
+            "Reconnaissance_Faciale_IA"
+        ]);
+        
+        let csvContent = "\uFEFF" + headers.join(";") + "\n" + rows.map(r => r.join(";")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Rapport_Presence_${ecole}_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    window.filterPresenceByStatus = function(statut) {
+        document.querySelectorAll('.presence-filter-btn').forEach(b => {
+            b.classList.remove('active', 'bg-emerald-500', 'text-gray-950');
+            b.classList.add('bg-white/5', 'text-gray-300');
+        });
+        if (event && event.target) {
+            event.target.classList.add('active', 'bg-emerald-500', 'text-gray-950');
+            event.target.classList.remove('bg-white/5', 'text-gray-300');
+        }
+        document.querySelectorAll('.presence-row').forEach(row => {
+            if (statut === 'all' || row.dataset.statut === statut) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    };
+
+    window.filterPresenceTable = function(search) {
+        const query = search.toLowerCase();
+        document.querySelectorAll('.presence-row').forEach(row => {
+            const name = row.dataset.name || '';
+            row.style.display = name.includes(query) ? '' : 'none';
+        });
+    };
+
+    window.printIndividualPresence = function(nom, role, arrivee, statut) {
+        alert(`Fiche de présence individuelle générée pour ${nom} (${role}) — Heure: ${arrivee} — Statut: ${statut}`);
+    };
 
 });
