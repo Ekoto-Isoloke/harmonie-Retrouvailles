@@ -2,10 +2,6 @@
   "name": "harmonie-retrouvailles",
   "version": "1.0.0",
   "scripts": {
-    "build": "cd frontend && npm install && npm run build",
-    "install": "cd frontend && npm install"
-  },
-  "dependencies": {
-    "puppeteer": "^25.8.0"
+    "build": "npm --prefix frontend install && npm --prefix frontend run build"
   }
 }
