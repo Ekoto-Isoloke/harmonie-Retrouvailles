@@ -125,20 +125,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // SECURITY CHECK 2: Strict RBAC - Only Super-Admin & Direction can access Super-Admin dashboard
-    const isSuperAdmin = ['Super-Admin', 'Direction', 'Directeur', 'Directeur (D.P)', 'D.P', 'Direction Générale'].includes(user.role);
+    // SECURITY CHECK 2: Strict RBAC - Only Super-Admin & Direction Générale can access Super-Admin dashboard (Finances & Configuration Globale)
+    const isSuperAdmin = ['Super-Admin', 'Direction Générale'].includes(user.role);
 
     if (!isSuperAdmin) {
-        // Enseignant & Personnel pédagogique
-        if (['Enseignant', 'Professeur', 'Sur École'].includes(user.role)) {
-            alert(`ℹ️ REDIRECTION PÉDAGOGIQUE\n\nBienvenue ${user.prenom} ${user.nom} (${user.role}).\nVous êtes redirigé vers votre Espace Enseignant / Personnel.`);
-            window.location.href = '/teacher-dashboard.html';
+        // Direction Pédagogique & Discipline (D.P, Préfet, D.E, D.D, Sur École)
+        if (['Préfet', 'D.E', 'D.D', 'Directeur (D.P)', 'D.P', 'Directeur', 'Sur École'].includes(user.role)) {
+            alert(`ℹ️ REDIRECTION DIRECTION & PÉDAGOGIE\n\nBienvenue ${user.prenom} ${user.nom} (${user.role}).\nVous êtes redirigé vers votre Espace Officiel de Direction.`);
+            window.location.href = '/prefet-dashboard.html';
             return;
         }
-        // Préfet / DE / DD
-        if (['Préfet', 'D.E', 'D.D'].includes(user.role)) {
-            alert(`ℹ️ REDIRECTION DISCIPLINE & PRÉFECTURE\n\nBienvenue ${user.prenom} ${user.nom} (${user.role}).\nVous êtes redirigé vers votre Espace Discipline & Préfecture.`);
-            window.location.href = '/prefet-dashboard.html';
+        // Enseignant & Personnel pédagogique
+        if (['Enseignant', 'Professeur', 'Instituteur', 'Institutrice'].includes(user.role)) {
+            alert(`ℹ️ REDIRECTION PÉDAGOGIQUE\n\nBienvenue ${user.prenom} ${user.nom} (${user.role}).\nVous êtes redirigé vers votre Espace Enseignant.`);
+            window.location.href = '/teacher-dashboard.html';
             return;
         }
         // Comptable

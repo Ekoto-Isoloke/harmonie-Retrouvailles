@@ -84,7 +84,8 @@
 
     // Normalisation du rôle et de l'école
     const role = user.role;
-    const ecole = user.ecole || 'Retrouvailles';
+    const isDP = ['Directeur (D.P)', 'D.P', 'Directeur'].includes(role);
+    const ecole = isDP ? 'Harmonie' : (user.ecole || 'Retrouvailles');
     const isRetrouvailles = ecole === 'Retrouvailles';
 
     // Mise à jour de l'identité
@@ -93,7 +94,7 @@
     document.getElementById('prefet-role').textContent = `${role} • ${ecole}`;
     const initials = ((user.prenom || '')[0] || '') + ((user.nom || '')[0] || '');
     document.getElementById('prefet-avatar').textContent = initials.toUpperCase() || 'AG';
-    document.getElementById('sidebar-role-title').textContent = role === 'Préfet' ? 'Préfecture' : role === 'D.E' ? 'Dir. Études' : role === 'D.D' ? 'Discipline' : 'Surveillance';
+    document.getElementById('sidebar-role-title').textContent = role === 'Préfet' ? 'Préfecture' : role === 'D.E' ? 'Dir. Études' : role === 'D.D' ? 'Discipline' : isDP ? 'Dir. Primaire' : 'Surveillance';
     document.getElementById('sidebar-inst-badge').textContent = ecole === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles';
 
     // ══════════════════════════════════════════════════════════════
@@ -102,7 +103,7 @@
     const allEleves = JSON.parse(localStorage.getItem('hr_eleves_db')) || [];
     const eleves = allEleves.filter(e => e.ecole === ecole && e.statut !== 'Rejeté');
     const allUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
-    const enseignants = allUsers.filter(u => u.ecole === ecole && ['Enseignant', 'Professeur', 'Sur École'].includes(u.role));
+    const enseignants = allUsers.filter(u => u.ecole === ecole && ['Enseignant', 'Professeur', 'Instituteur', 'Institutrice', 'Sur École'].includes(u.role));
 
     // Base de données Discipline Locale
     if (!localStorage.getItem('hr_incidents_db')) {
@@ -144,6 +145,15 @@
     // ══════════════════════════════════════════════════════════════
     // CONFIGURATION DE LA NAVIGATION PAR RÔLE
     // ══════════════════════════════════════════════════════════════
+    const dpNav = [
+      { id: 'accueil', label: 'Contrôle Général Primaire', icon: 'shield' },
+      { id: 'charge_horaire', label: 'Charge Horaire des Instituteurs', icon: 'clock' },
+      { id: 'enafep', label: 'Candidats ENAFEP (6ème)', icon: 'graduation-cap' },
+      { id: 'deliberation', label: 'Palmarès & Jurys Primaire', icon: 'scale' },
+      { id: 'rapports_sur_ecole', label: 'Rapports Sur-École & D.D', icon: 'file-check' },
+      { id: 'correspondances', label: 'Correspondances Sous-Division', icon: 'send' }
+    ];
+
     const navConfigs = {
       'Préfet': [
         { id: 'accueil', label: 'Contrôle Général', icon: 'shield' },
@@ -153,6 +163,9 @@
         { id: 'rapports_de_dd', label: 'Rapports D.E & D.D', icon: 'file-check' },
         { id: 'correspondances', label: 'Correspondances EPST', icon: 'send' }
       ],
+      'D.P': dpNav,
+      'Directeur (D.P)': dpNav,
+      'Directeur': dpNav,
       'D.E': [
         { id: 'accueil', label: 'Tableau Pédagogique', icon: 'book-open' },
         { id: 'affectations', label: 'Affecter Classes & Horaires', icon: 'user-plus' },
@@ -178,7 +191,7 @@
     };
 
     // Configuration par défaut selon le rôle
-    const currentNav = navConfigs[role] || navConfigs['Préfet'];
+    const currentNav = navConfigs[role] || (isDP ? dpNav : navConfigs['Préfet']);
     let currentView = 'accueil';
 
     // Rendu du menu de gauche
@@ -211,16 +224,16 @@
         <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                Poste Officiel : ${role}
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${isDP ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'}">
+                Poste Officiel : ${isDP ? 'Directeur de l\'École Primaire (D.P)' : role}
               </span>
               <span class="text-xs text-gray-400">• ${ecole === 'Harmonie' ? 'C.S. Harmonie (Maternelle & Primaire)' : 'G.S. Retrouvailles (Secondaire & Humanités)'}</span>
             </div>
-            <h2 class="text-3xl font-black uppercase tracking-tight mt-1">Espace ${role} — ${currentNav.find(n => n.id === currentView)?.label || 'Administration'}</h2>
+            <h2 class="text-3xl font-black uppercase tracking-tight mt-1">Espace ${isDP ? 'Directeur Primaire' : role} — ${currentNav.find(n => n.id === currentView)?.label || 'Administration'}</h2>
             <p class="text-xs text-gray-400 uppercase tracking-widest mt-0.5">${today} • Registre Pédagogique & Disciplinaire</p>
           </div>
           <div class="flex items-center gap-3">
-            <div class="px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center gap-2">
+            <div class="px-4 py-2 ${isDP ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-purple-500/10 border border-purple-500/20'} rounded-xl flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               <span class="text-xs font-bold text-gray-300">${eleves.length} Élève(s) actif(s)</span>
             </div>
@@ -236,6 +249,13 @@
         else if (currentView === 'deliberation') html += viewPrefetDeliberation();
         else if (currentView === 'rapports_de_dd') html += viewPrefetRapports();
         else if (currentView === 'correspondances') html += viewPrefetCorrespondances();
+      } else if (isDP) {
+        if (currentView === 'accueil') html += viewDPAccueil();
+        else if (currentView === 'charge_horaire') html += viewDPChargeHoraire();
+        else if (currentView === 'enafep') html += viewDPENAFEP();
+        else if (currentView === 'deliberation') html += viewDPPalmares();
+        else if (currentView === 'rapports_sur_ecole') html += viewDPRapports();
+        else if (currentView === 'correspondances') html += viewDPCorrespondances();
       } else if (role === 'D.E') {
         if (currentView === 'accueil') html += viewDEAccueil();
         else if (currentView === 'affectations') html += viewDEAffectations();
@@ -261,6 +281,320 @@
 
       main.innerHTML = html;
       if (window.lucide) lucide.createIcons();
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // VUES : DIRECTEUR DE L'ÉCOLE PRIMAIRE (D.P - C.S. HARMONIE)
+    // ══════════════════════════════════════════════════════════════
+    function viewDPAccueil() {
+      const elevesPrimaire = allEleves.filter(e => e.ecole === 'Harmonie' && e.statut !== 'Rejeté');
+      const candidatsEnafep = elevesPrimaire.filter(e => e.classe && e.classe.includes('6'));
+      const instituteurs = allUsers.filter(u => u.ecole === 'Harmonie' && ['Enseignant', 'Instituteur', 'Institutrice', 'Professeur', 'Sur École'].includes(u.role));
+      const incidentsHarm = incidentsDb.filter(i => i.ecole === 'Harmonie');
+
+      return `
+        <!-- KPIs Directeur Primaire -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div class="kpi-card">
+            <div class="text-xs font-black text-emerald-400 uppercase tracking-widest mb-1">Effectif Primaire & Maternelle</div>
+            <div class="text-3xl font-black text-white">${elevesPrimaire.length || 38}</div>
+            <p class="text-[10px] text-gray-400 mt-1">Élèves inscrits C.S. Harmonie</p>
+          </div>
+          <div class="kpi-card">
+            <div class="text-xs font-black text-purple-400 uppercase tracking-widest mb-1">Candidats ENAFEP (6ème)</div>
+            <div class="text-3xl font-black text-purple-400">${candidatsEnafep.length || 18}</div>
+            <p class="text-[10px] text-gray-400 mt-1">Fiches d'identification ENAFEP</p>
+          </div>
+          <div class="kpi-card">
+            <div class="text-xs font-black text-amber-400 uppercase tracking-widest mb-1">Corps Enseignant</div>
+            <div class="text-3xl font-black text-amber-400">${instituteurs.length || 8}</div>
+            <p class="text-[10px] text-gray-400 mt-1">Instituteurs & Maîtresses</p>
+          </div>
+          <div class="kpi-card">
+            <div class="text-xs font-black text-blue-400 uppercase tracking-widest mb-1">Discipline & Climat</div>
+            <div class="text-3xl font-black text-blue-400">${incidentsHarm.length}</div>
+            <p class="text-[10px] text-gray-400 mt-1">Incidents notifiés par le D.D</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Rapport d'Encadrement Pédagogique (Sur École) -->
+          <div class="glass p-6 rounded-3xl border border-white/10">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2 text-emerald-300">
+                <i data-lucide="book-open" class="w-4 h-4"></i> Surveillance Pédagogique (Sur École)
+              </h3>
+              <button onclick="switchView('charge_horaire')" class="text-xs text-emerald-400 hover:underline">Voir Charge Horaire</button>
+            </div>
+            <div class="space-y-3">
+              <div class="p-3.5 bg-white/5 border border-white/5 rounded-2xl">
+                <div class="flex justify-between items-center text-xs font-bold mb-1.5">
+                  <span class="text-white">Conformité Fiches & Journaux de Classe</span>
+                  <span class="text-emerald-400">100%</span>
+                </div>
+                <div class="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                  <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style="width: 100%"></div>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-2">Toutes les préparations hebdomadaires sont visées par le Sur École.</p>
+              </div>
+              <div class="p-3.5 bg-white/5 border border-white/5 rounded-2xl">
+                <div class="flex justify-between items-center text-xs font-bold mb-1.5">
+                  <span class="text-white">Ponctualité & Présence Matinale</span>
+                  <span class="text-emerald-400">96.5%</span>
+                </div>
+                <div class="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                  <div class="bg-gradient-to-r from-teal-500 to-cyan-400 h-full rounded-full" style="width: 96.5%"></div>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-2">Pointage matinal dès 07h15 dans la cour de rassemblement.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Supervision Disciplinaire Primaire (D.D) -->
+          <div class="glass p-6 rounded-3xl border border-white/10">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2 text-amber-300">
+                <i data-lucide="shield" class="w-4 h-4"></i> Registre Disciplinaire Primaire (D.D)
+              </h3>
+              <button onclick="switchView('rapports_sur_ecole')" class="text-xs text-amber-400 hover:underline">Consulter</button>
+            </div>
+            <div class="space-y-2.5">
+              ${incidentsHarm.length > 0 ? incidentsHarm.slice(0, 3).map(i => `
+                <div class="p-3 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <p class="text-xs font-bold text-white">${i.eleve} <span class="text-[10px] text-gray-400 font-normal">(${i.classe})</span></p>
+                    <p class="text-[10px] text-gray-400">${i.motif} • ${i.sanction}</p>
+                  </div>
+                  <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${i.statut === 'Clos' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}">${i.statut}</span>
+                </div>
+              `).join('') : `
+                <div class="p-6 text-center text-xs text-gray-400 italic">
+                  Aucun incident disciplinaire signalé au primaire. Climat scolaire serein.
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function viewDPChargeHoraire() {
+      const instituteurs = allUsers.filter(u => u.ecole === 'Harmonie' && ['Enseignant', 'Instituteur', 'Institutrice', 'Professeur', 'Sur École'].includes(u.role));
+      const titularites = JSON.parse(localStorage.getItem('hr_titularites_primaire_db')) || [];
+
+      return `
+        <div class="glass p-6 rounded-3xl border border-white/10">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h3 class="font-black text-lg text-white uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="clock" class="w-5 h-5 text-emerald-400"></i> Charge Horaire des Instituteurs (C.S. Harmonie)
+              </h3>
+              <p class="text-xs text-gray-400">Contrôle officiel de la charge hebdomadaire selon les normes de l'EPST (28h / semaine pour les titulaires du primaire)</p>
+            </div>
+            <button onclick="window.print()" class="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-bold text-xs rounded-xl flex items-center gap-2 transition">
+              <i data-lucide="printer" class="w-4 h-4"></i> Imprimer Tableau Officiel
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[10px] uppercase text-gray-400 border-b border-white/10 pb-3">
+                <tr>
+                  <th class="pb-3 px-3">Instituteur / Titulaire</th>
+                  <th class="pb-3 px-3">Qualification Pédagogique</th>
+                  <th class="pb-3 px-3">Classe Titulaire (Sur École)</th>
+                  <th class="pb-3 px-3">Régime Horaire Officiel</th>
+                  <th class="pb-3 px-3 text-center">Volume Hebdo</th>
+                  <th class="pb-3 px-3 text-right">Statut EPST</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                ${instituteurs.map(inst => {
+                  const tit = titularites.find(t => t.teacherEmail === inst.email || (t.teacherName && t.teacherName.includes(inst.nom)));
+                  const classe = tit ? tit.classe : (inst.classeTitulaire || 'Non affecté');
+                  const schedule = tit ? tit.schedule : (inst.schedule || 'Lundi au Vendredi (07h30 - 12h30)');
+                  const hours = tit ? tit.weeklyHours : (schedule.includes('20h') ? 20 : 28);
+                  const isAssigned = !!tit || !!inst.classeTitulaire;
+
+                  return `
+                    <tr class="hover:bg-white/5">
+                      <td class="py-3 px-3 font-bold text-white">${inst.prenom} ${inst.nom}</td>
+                      <td class="py-3 px-3 text-gray-300">${inst.degree || 'D6 Humanités Pédagogiques / Gradué ISP'}</td>
+                      <td class="py-3 px-3">
+                        ${isAssigned 
+                          ? `<span class="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">${classe}</span>`
+                          : '<span class="text-gray-500 italic">En attente d\'attribution par Sur École</span>'
+                        }
+                      </td>
+                      <td class="py-3 px-3 text-gray-300">${schedule}</td>
+                      <td class="py-3 px-3 text-center font-mono font-black text-sm ${isAssigned ? 'text-emerald-400' : 'text-gray-500'}">
+                        ${isAssigned ? hours + 'h / sem.' : '0h'}
+                      </td>
+                      <td class="py-3 px-3 text-right">
+                        ${isAssigned 
+                          ? '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">Temps Plein (Conforme 28h)</span>'
+                          : '<span class="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase">Non Affecté</span>'
+                        }
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function viewDPENAFEP() {
+      const candidats = allEleves.filter(e => e.ecole === 'Harmonie' && e.classe && (e.classe.includes('6') || e.classe.includes('ENAFEP')));
+      return `
+        <div class="glass p-6 rounded-3xl border border-white/10 mb-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h3 class="font-black text-lg text-white uppercase tracking-wider">Candidats ENAFEP (6ème Primaire)</h3>
+              <p class="text-xs text-gray-400">Examen National de Fin d'Études Primaires — Validation des fiches de candidature pour l'Inspection</p>
+            </div>
+            <button onclick="alert('Exportation du bordereau officiel ENAFEP pour la Sous-Division...')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exporter Bordereau ENAFEP
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[10px] uppercase text-gray-400 border-b border-white/10 pb-3">
+                <tr>
+                  <th class="pb-3 px-3">Matricule</th>
+                  <th class="pb-3 px-3">Nom, Postnom & Prénom</th>
+                  <th class="pb-3 px-3">Sexe</th>
+                  <th class="pb-3 px-3">Classe</th>
+                  <th class="pb-3 px-3">Fiche ENAFEP</th>
+                  <th class="pb-3 px-3 text-right">Statut Inspection</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                ${candidats.length > 0 ? candidats.map(c => `
+                  <tr class="hover:bg-white/5">
+                    <td class="py-3 px-3 font-mono font-bold text-emerald-400">${c.matricule || 'MAT-2026-PRIM'}</td>
+                    <td class="py-3 px-3 font-bold text-white">${c.nom} ${c.postnom || ''} ${c.prenom || ''}</td>
+                    <td class="py-3 px-3 text-gray-300">${c.sexe || 'M'}</td>
+                    <td class="py-3 px-3 font-bold text-purple-400">6ème Primaire</td>
+                    <td class="py-3 px-3 text-green-400">✓ Conforme</td>
+                    <td class="py-3 px-3 text-right"><span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">Inscrit ENAFEP</span></td>
+                  </tr>
+                `).join('') : `
+                  <tr>
+                    <td colspan="6" class="py-8 text-center text-gray-400 italic">Aucun élève inscrit en 6ème primaire pour le moment. Dès l'inscription en 6ème, les élèves apparaissent automatiquement ici.</td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function viewDPPalmares() {
+      return `
+        <div class="glass p-8 rounded-3xl border border-white/10 max-w-3xl">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">
+              <i data-lucide="scale" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-black uppercase text-white">Palmarès & Délibération du Primaire</h3>
+              <p class="text-xs text-gray-400">Validation trimestrielle des bulletins scolaires et procès-verbal de passage de classe</p>
+            </div>
+          </div>
+          <div class="space-y-4 mb-6">
+            <div class="p-4 bg-white/5 rounded-2xl border border-white/5">
+              <label class="block text-xs font-bold text-gray-300 mb-2">Classe à Délibérer</label>
+              <select class="w-full px-4 py-2.5 bg-[#0a192f] border border-white/10 rounded-xl text-xs text-white outline-none">
+                <option>6ème Primaire (ENAFEP)</option>
+                <option>5ème Primaire</option>
+                <option>4ème Primaire</option>
+                <option>3ème Primaire</option>
+                <option>2ème Primaire</option>
+                <option>1ère Primaire</option>
+              </select>
+            </div>
+            <div class="p-4 bg-white/5 rounded-2xl border border-white/5">
+              <label class="block text-xs font-bold text-gray-300 mb-2">Observations de la Direction Primaire</label>
+              <textarea rows="4" placeholder="Mentionnez les taux de réussite par branche (Français, Mathématiques, Éveil), les moyennes générales et l'approbation du D.P..." class="w-full px-4 py-3 bg-[#0a192f] border border-white/10 rounded-xl text-xs text-white outline-none resize-none"></textarea>
+            </div>
+          </div>
+          <button onclick="alert('Procès-Verbal de Palmarès validé et visé par le Directeur Primaire (D.P) !')" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-emerald-500/20">
+            Viser & Clôturer le Palmarès Officiel
+          </button>
+        </div>
+      `;
+    }
+
+    function viewDPRapports() {
+      return `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="glass p-6 rounded-3xl border border-white/10">
+            <h3 class="font-black text-sm uppercase tracking-wider text-emerald-300 mb-4 flex items-center gap-2">
+              <i data-lucide="file-text" class="w-4 h-4"></i> Rapports Pédagogiques du Sur École
+            </h3>
+            <div class="space-y-3">
+              <div class="p-4 bg-white/5 rounded-2xl border border-white/5">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="font-bold text-xs text-white">Rapport Quotidien de Surveillance</span>
+                  <span class="text-[10px] text-gray-400">19/08/2026</span>
+                </div>
+                <p class="text-xs text-gray-300">Pointage des 6 instituteurs effectué à 07h15. Tous les cahiers de préparation sont visés. Propreté des cours irréprochable.</p>
+                <span class="mt-2 inline-block text-[9px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">Approuvé par le D.P</span>
+              </div>
+            </div>
+          </div>
+          <div class="glass p-6 rounded-3xl border border-white/10">
+            <h3 class="font-black text-sm uppercase tracking-wider text-amber-300 mb-4 flex items-center gap-2">
+              <i data-lucide="shield-alert" class="w-4 h-4"></i> Rapports de Discipline Primaire (D.D)
+            </h3>
+            <div class="space-y-3">
+              <div class="p-4 bg-white/5 rounded-2xl border border-white/5">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="font-bold text-xs text-white">Rapport Disciplinaire & Assiduité</span>
+                  <span class="text-[10px] text-gray-400">19/08/2026</span>
+                </div>
+                <p class="text-xs text-gray-300">Cour de récréation sécurisée. Aucun accident ni bagarre signalée. 1 retard excusé pour raison médicale.</p>
+                <span class="mt-2 inline-block text-[9px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">Pris acte</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function viewDPCorrespondances() {
+      return `
+        <div class="glass p-6 rounded-3xl border border-white/10 max-w-3xl">
+          <h3 class="font-black text-sm uppercase tracking-wider text-emerald-300 mb-4 flex items-center gap-2">
+            <i data-lucide="send" class="w-4 h-4"></i> Transmission Administrative (Sous-Division EPST / Inspection Primaire)
+          </h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-300 mb-1.5">Destinataire Officiel</label>
+              <select class="w-full px-4 py-2.5 bg-[#0a192f] border border-white/10 rounded-xl text-xs text-white outline-none">
+                <option>Sous-Division Urbaine de l'EPST (Kinshasa)</option>
+                <option>Inspection Principale de l'Enseignement Primaire</option>
+                <option>Direction Générale (Super-Administrateur ERP)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-300 mb-1.5">Objet de la note</label>
+              <input type="text" placeholder="Ex: Statistiques de rentrée scolaire et effectifs ENAFEP 2026" class="w-full px-4 py-2.5 bg-[#0a192f] border border-white/10 rounded-xl text-xs text-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-300 mb-1.5">Corps de la note de service</label>
+              <textarea rows="5" placeholder="Rédigez la note officielle du Directeur de l'École Primaire..." class="w-full px-4 py-3 bg-[#0a192f] border border-white/10 rounded-xl text-xs text-white outline-none resize-none"></textarea>
+            </div>
+            <button onclick="alert('Note officielle transmise avec succès à la Sous-Division !')" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 font-bold text-xs text-white rounded-xl shadow-lg transition">
+              Transmettre le Courrier Officiel
+            </button>
+          </div>
+        </div>
+      `;
     }
 
     // ══════════════════════════════════════════════════════════════
