@@ -1161,8 +1161,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPalmares() {
         const inst = db.institutions[db.ecoleActive];
         const isRetro = db.ecoleActive === 'Retrouvailles';
-        const eleves = inst.pedagogie.eleves || [];
-        const classes = inst.pedagogie.classes || [];
+        
+        // ── Charger les vrais élèves depuis l'inscription ──
+        const allEleves = JSON.parse(localStorage.getItem('hr_eleves_db')) || [];
+        const eleves = allEleves.filter(e => e.ecole === db.ecoleActive && e.statut !== 'Rejeté');
+        const classes = [...new Set(eleves.map(e => e.classe).filter(Boolean))];
 
         // Aggregate stats
         const byClasse = {};

@@ -112,23 +112,52 @@
 
     const fullName = [user.prenom, user.nom].filter(Boolean).join(' ');
     document.getElementById('teacher-name').textContent = fullName || 'Inconnu';
-    document.getElementById('teacher-role').textContent = user.role || 'Agent';
+    document.getElementById('teacher-role').textContent = `${user.role || 'Agent'} — ${user.ecole === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}`;
     const initials = ((user.prenom || '')[0] || '') + ((user.nom || '')[0] || '');
     document.getElementById('teacher-avatar').textContent = initials.toUpperCase() || '?';
 
-    const teacherClasses = (user.classes && user.classes.length > 0)
-      ? user.classes
-      : ['3ème Humanités — Math-Physique', '2ème Humanités — Chimie-Bio', '1ère Primaire'];
+    // ── Charger les cours RÉELS du profil utilisateur ──
+    const userCourses = Array.isArray(user.courses) ? user.courses : (user.courses ? user.courses.split(',').map(c => c.trim()).filter(Boolean) : []);
+    const teacherClasses = userCourses.length > 0
+      ? userCourses
+      : (user.classes && user.classes.length > 0 ? user.classes : ['Aucun cours affecté']);
 
-    const mockEleves = [
-      { nom: 'MUKENDI KABUYA', statut: 'present' },
-      { nom: 'BAYA PAUL JR', statut: 'absent' },
-      { nom: 'TSHILANDA ALICE', statut: 'present' },
-      { nom: 'KABONGO MERVEILLE', statut: 'retard' },
-      { nom: 'LEKI MARC', statut: 'present' },
-      { nom: 'ILUNGA CHRISTIAN', statut: 'present' },
-      { nom: 'MBUYI RACHEL', statut: 'present' },
-    ];
+    // ── Charger les VRAIS élèves depuis hr_eleves_db (filtrés par institution) ──
+    function getElevesForInstitution() {
+      const allEleves = JSON.parse(localStorage.getItem('hr_eleves_db')) || [];
+      return allEleves.filter(e => e.ecole === user.ecole && e.statut !== 'Rejeté');
+    }
+    
+    function getElevesList() {
+      const eleves = getElevesForInstitution();
+      if (eleves.length > 0) {
+        return eleves.map(e => ({
+          nom: [e.nom, e.postnom, e.prenom].filter(Boolean).join(' ').toUpperCase(),
+          classe: e.classe || '',
+          section: e.section || '',
+          option: e.option || '',
+          statut: 'present',
+          matricule: e.matricule || '',
+          paye: e.paye || 0
+        }));
+      }
+      // Fallback mock si aucun élève inscrit
+      return [
+        { nom: 'MUKENDI KABUYA', statut: 'present', classe: '', section: '', option: '' },
+        { nom: 'BAYA PAUL JR', statut: 'absent', classe: '', section: '', option: '' },
+        { nom: 'TSHILANDA ALICE', statut: 'present', classe: '', section: '', option: '' },
+        { nom: 'KABONGO MERVEILLE', statut: 'retard', classe: '', section: '', option: '' },
+        { nom: 'LEKI MARC', statut: 'present', classe: '', section: '', option: '' },
+        { nom: 'ILUNGA CHRISTIAN', statut: 'present', classe: '', section: '', option: '' },
+        { nom: 'MBUYI RACHEL', statut: 'present', classe: '', section: '', option: '' },
+      ];
+    }
+    const mockEleves = getElevesList();
+    
+    // ── Rôle : Déterminer les fonctions disponibles ──
+    const isEnseignant = ['Enseignant', 'Sur École'].includes(user.role);
+    const isPrefetDE = ['Préfet', 'D.E', 'D.D'].includes(user.role);
+    const isDirecteur = ['Directeur (D.P)', 'Direction', 'D.P'].includes(user.role);
 
     // Storage helpers
     function savePrevision(data) { localStorage.setItem('prevision_' + (user.login || user.nom || 'e'), JSON.stringify(data)); }

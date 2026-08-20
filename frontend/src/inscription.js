@@ -586,7 +586,28 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // ─────────────────────────────────────────────
-  // SOUMISSION
+  // HELPERS — Collecte des champs du formulaire
+  // ─────────────────────────────────────────────
+  function collectInputsBySection(container) {
+    var inputs = container.querySelectorAll('input, select, textarea');
+    var values = [];
+    inputs.forEach(function(el) {
+      if (el.type === 'file' || el.type === 'radio' || el.type === 'hidden') return;
+      values.push(el.value ? el.value.trim() : '');
+    });
+    return values;
+  }
+
+  function generateMatricule(institution) {
+    var prefix = institution === 'harmonie' ? 'H' : 'R';
+    var year = new Date().getFullYear();
+    var db = JSON.parse(localStorage.getItem('hr_eleves_db')) || [];
+    var count = db.filter(function(e) { return e.institution === institution && e.annee === year + '-' + (year + 1); }).length;
+    return 'MAT-' + prefix + '-' + year + '-' + String(count + 1).padStart(3, '0');
+  }
+
+  // ─────────────────────────────────────────────
+  // SOUMISSION — Enregistrement Réel
   // ─────────────────────────────────────────────
   form.addEventListener('submit', function (e) {
     e.preventDefault();
@@ -598,19 +619,151 @@ document.addEventListener('DOMContentLoaded', function () {
       invalids[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+
+    // ── Collecter toutes les données ──
+    var allInputs = dynamicFieldsContainer.querySelectorAll('input:not([type=file]):not([type=radio]):not([type=hidden]), select');
+    var vals = [];
+    allInputs.forEach(function(el) { vals.push(el.value ? el.value.trim() : ''); });
+
+    var year = new Date().getFullYear();
+    var annee = year + '-' + (year + 1);
+    var matricule = generateMatricule(currentInstitution);
+
+    // Photo base64
+    var photoData = '';
+    var photoPreview = document.getElementById('photo-preview');
+    if (photoPreview) {
+      var img = photoPreview.querySelector('img');
+      if (img) photoData = img.src || '';
+    }
+
+    var eleve = {
+      id: Date.now(),
+      matricule: matricule,
+      institution: currentInstitution, // 'harmonie' | 'retrouvailles'
+      ecole: currentInstitution === 'harmonie' ? 'Harmonie' : 'Retrouvailles',
+      demarche: currentDemarche,
+      annee: annee,
+      dateInscription: new Date().toISOString(),
+      statut: 'En attente',
+      paye: 0,
+      photo: photoData
+    };
+
+    if (currentInstitution === 'harmonie') {
+      // Identité : nom, postnom, prenom, sexe, dateNaissance, lieuNaissance
+      eleve.nom = vals[0] || '';
+      eleve.postnom = vals[1] || '';
+      eleve.prenom = vals[2] || '';
+      eleve.sexe = vals[3] || '';
+      eleve.dateNaissance = vals[4] || '';
+      eleve.lieuNaissance = vals[5] || '';
+      // Adresse : nationalite, province, district, avenue, quartier, commune, ville
+      eleve.nationalite = vals[6] || 'Congolaise (RDC)';
+      eleve.province = vals[7] || '';
+      eleve.district = vals[8] || '';
+      eleve.avenue = vals[9] || '';
+      eleve.quartier = vals[10] || '';
+      eleve.commune = vals[11] || '';
+      eleve.ville = vals[12] || 'Kinshasa';
+      // Filiation
+      eleve.pere = { nom: vals[13] || '', profession: vals[14] || '', telephone: vals[15] || '' };
+      eleve.mere = { nom: vals[16] || '', profession: vals[17] || '', telephone: vals[18] || '' };
+      eleve.emailParents = vals[19] || '';
+      // Cursus
+      eleve.ecoleProvenance = vals[20] || '';
+      eleve.provinceEcole = vals[21] || '';
+      eleve.pourcentage = vals[22] || '';
+      eleve.classe = vals[23] || '';
+      // Pas de section/option pour maternelle & primaire
+      eleve.section = null;
+      eleve.sousSection = null;
+      eleve.option = null;
+    } else {
+      // Retrouvailles
+      // Identité
+      eleve.nom = vals[0] || '';
+      eleve.postnom = vals[1] || '';
+      eleve.prenom = vals[2] || '';
+      eleve.sexe = vals[3] || '';
+      eleve.dateNaissance = vals[4] || '';
+      eleve.lieuNaissance = vals[5] || '';
+      // Adresse (sans district)
+      eleve.nationalite = vals[6] || 'Congolaise (RDC)';
+      eleve.province = vals[7] || '';
+      eleve.avenue = vals[8] || '';
+      eleve.quartier = vals[9] || '';
+      eleve.commune = vals[10] || '';
+      eleve.ville = vals[11] || 'Kinshasa';
+      // Filiation
+      eleve.pere = { nom: vals[12] || '', profession: vals[13] || '', telephone: vals[14] || '' };
+      eleve.mere = { nom: vals[15] || '', profession: vals[16] || '', telephone: vals[17] || '' };
+      eleve.emailParents = vals[18] || '';
+      // Cursus
+      eleve.ecoleProvenance = vals[19] || '';
+      eleve.codeEcoleOrigine = vals[20] || '';
+
+      // Orientation EPST
+      var classeSelect = document.getElementById('select-classe-humanite');
+      var optionSelect = document.getElementById('select-option-final');
+      eleve.classe = classeSelect ? classeSelect.options[classeSelect.selectedIndex].text : '';
+
+      // Section & Option
+      var selectedCard = document.querySelector('.orient-card.selected');
+      var selectedChip = document.querySelector('.sous-section-chip.selected, .sous-section-chip.selected-tech');
+      
+      if (selectedCard) {
+        eleve.section = selectedCard.getAttribute('data-famille') === 'technique' ? 'Technique' : 'Non Technique';
+      } else {
+        eleve.section = null;
+      }
+      
+      if (selectedChip) {
+        eleve.sousSection = selectedChip.querySelector('span:last-child') ? selectedChip.querySelector('span:last-child').textContent : '';
+      } else {
+        eleve.sousSection = null;
+      }
+
+      eleve.option = optionSelect && optionSelect.value ? optionSelect.options[optionSelect.selectedIndex].text : null;
+    }
+
+    // ── Sauvegarder dans localStorage ──
+    var db = JSON.parse(localStorage.getItem('hr_eleves_db')) || [];
+    db.push(eleve);
+    localStorage.setItem('hr_eleves_db', JSON.stringify(db));
+
+    // ── UI de confirmation ──
     btnSubmit.disabled = true;
-    btnSubmitText.textContent = 'Envoi en cours...';
+    btnSubmitText.textContent = 'Enregistrement en cours...';
     btnSubmitSpinner.classList.remove('hidden');
+
     setTimeout(function () {
       btnSubmit.disabled = false;
       btnSubmitSpinner.classList.add('hidden');
       btnSubmitText.textContent = "Soumettre le dossier d'inscription";
-      alert('Félicitations ! Votre dossier a été soumis avec succès.');
+
+      // Confirmation professionnelle
+      var instLabel = currentInstitution === 'harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles';
+      var msg = '✅ INSCRIPTION ENREGISTRÉE AVEC SUCCÈS\n\n';
+      msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+      msg += '📋 Matricule : ' + eleve.matricule + '\n';
+      msg += '👤 Élève : ' + eleve.nom + ' ' + (eleve.postnom || '') + ' ' + eleve.prenom + '\n';
+      msg += '🏫 Institution : ' + instLabel + '\n';
+      msg += '📚 Classe : ' + eleve.classe + '\n';
+      if (eleve.section) msg += '🔖 Section : ' + eleve.section + '\n';
+      if (eleve.option) msg += '🎯 Option : ' + eleve.option + '\n';
+      msg += '📅 Date : ' + new Date().toLocaleDateString('fr-FR') + '\n';
+      msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+      msg += 'Statut : EN ATTENTE DE VALIDATION par la Direction.\n';
+      msg += 'Conservez votre matricule pour le suivi.';
+
+      alert(msg);
+
       form.reset();
       stepDemarche.classList.add('hidden');
       form.classList.add('hidden');
       institutionRadios.forEach(function (r) { r.checked = false; });
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 2000);
+    }, 1800);
   });
 });

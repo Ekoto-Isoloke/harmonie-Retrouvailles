@@ -4,5 +4,8 @@
   "scripts": {
     "build": "cd frontend && npm install && npm run build",
     "install": "cd frontend && npm install"
+  },
+  "dependencies": {
+    "puppeteer": "^25.8.0"
   }
 }

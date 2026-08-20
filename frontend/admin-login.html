@@ -999,6 +999,8 @@ function handleRegister(e) {
   const institution = document.getElementById('reg-institution').value;
   const phone       = document.getElementById('reg-phone').value;
   const address     = document.getElementById('reg-address').value;
+  const degree      = document.getElementById('reg-degree')?.value || '';
+  const option      = document.getElementById('reg-option')?.value || '';
   const pwd         = document.getElementById('reg-pwd').value;
   const pwdConf     = document.getElementById('reg-pwd-confirm').value;
 
@@ -1013,19 +1015,18 @@ function handleRegister(e) {
     return;
   }
 
-  let finalCourses = '';
+  let finalCourses = [];
   let dualRoleData = null;
 
   if (institution === 'Harmonie') {
     if (isDualRoleActive) {
       const dualRole = document.getElementById('reg-dual-role')?.value || 'Enseignant';
-      finalCourses = Array.from(selectedCoursesDual).join(', ');
-      dualRoleData = { role: dualRole, ecole: 'Retrouvailles', courses: finalCourses };
-    } else {
-      finalCourses = '';
+      const dualCourses = Array.from(selectedCoursesDual);
+      dualRoleData = { role: dualRole, ecole: 'Retrouvailles', courses: dualCourses };
     }
+    finalCourses = [];
   } else {
-    finalCourses = Array.from(selectedCoursesMain).join(', ');
+    finalCourses = Array.from(selectedCoursesMain);
   }
 
   const parts  = fullname.trim().split(' ');
@@ -1036,10 +1037,14 @@ function handleRegister(e) {
     id: Date.now(), nom, prenom, email, password: pwd, role,
     ecole: institution || 'Retrouvailles',
     phone, address,
+    degree,
+    option,
     courses: finalCourses,
     hasDualRole: isDualRoleActive && institution === 'Harmonie',
     dualRole: dualRoleData,
-    biometric: isBioRegistered
+    biometric: isBioRegistered,
+    dateCreation: new Date().toISOString(),
+    statut: 'Actif'
   };
   
   db.push(newUser);
