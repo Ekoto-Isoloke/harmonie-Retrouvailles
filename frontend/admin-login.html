@@ -972,16 +972,6 @@ function handleLogin(e) {
     return;
   }
 
-  const superAdminRoles = ['Super-Admin'];
-  if (currentPortal === 'admin' && !superAdminRoles.includes(role)) {
-    showToast("⛔ Accès refusé: Ce portail est réservé au Super-Administrateur uniquement.", "error");
-    return;
-  }
-  if (role === 'Parent') {
-    showToast("Erreur: Les parents doivent utiliser l'Espace Parents.", "error");
-    return;
-  }
-
   localStorage.setItem('hr_user', JSON.stringify(foundUser));
   localStorage.setItem('hr_token', 'token_auth_2026');
 
@@ -1107,10 +1097,8 @@ async function biometricLogin() {
       return;
     }
 
-    // Vérification RBAC Admin strict
-    const adminRoles = ['Super-Admin', 'Direction', 'Directeur (D.P)', 'D.P'];
-    if (!adminRoles.includes(foundUser.role)) {
-      showToast('⛔ Accès refusé: Ce portail est réservé à la Direction et Super-Admin.', 'error');
+    if (foundUser.role === 'Parent') {
+      showToast('⛔ Accès refusé: Les parents doivent utiliser l\'Espace Parents.', 'error');
       return;
     }
 

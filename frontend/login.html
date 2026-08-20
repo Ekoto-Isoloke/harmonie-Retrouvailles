@@ -1262,20 +1262,9 @@
       const role = foundUser.role;
 
       // SECURITY: seul le portail Admin est r\u00e9serv\u00e9 au Super-Admin
-      // Le portail Direction accepte tout le personnel scolaire (Enseignant, Pr\u00e9fet, D.E, D.D, Sur \u00c9cole, Comptable, Direction)
-      // Les Parents sont strictement bloqu\u00e9s des deux portails
+      // Seuls les Parents sont réorientés vers l'Espace Parents
       if (role === 'Parent') {
-        showToast("\u26d4 Acc\u00e8s refus\u00e9: Les parents doivent utiliser l'Espace Parents.", "error");
-        return;
-      }
-
-      const superAdminRoles = ['Super-Admin'];
-      if (currentPortal === 'admin' && !superAdminRoles.includes(role)) {
-        showToast("\u26d4 Acc\u00e8s refus\u00e9: Ce portail est r\u00e9serv\u00e9 au Super-Administrateur uniquement.", "error");
-        return;
-      }
-      if (role === 'Parent') {
-        showToast("Erreur: Les parents doivent utiliser l'Espace Parents.", "error");
+        showToast("⛔ Accès refusé: Les parents doivent utiliser l'Espace Parents.", "error");
         return;
       }
 

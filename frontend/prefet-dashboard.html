@@ -203,11 +203,11 @@
     if (!user) {
       window.location.href = '/login.html';
     } else {
-      const allowedRoles = ['Préfet', 'D.E', 'D.D', 'Super-Admin', 'Direction'];
+      const allowedRoles = ['Préfet', 'D.E', 'D.D', 'Sur École', 'Directeur (D.P)', 'D.P', 'Directeur', 'Super-Admin', 'Direction', 'Direction Générale'];
       if (!allowedRoles.includes(user.role)) {
         alert("⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nVotre rôle ne vous donne pas accès à la Préfecture & Discipline.");
         if (user.role === 'Parent') window.location.href = '/parent-dashboard.html';
-        else if (user.role === 'Enseignant' || user.role === 'Sur École') window.location.href = '/teacher-dashboard.html';
+        else if (['Enseignant', 'Professeur'].includes(user.role)) window.location.href = '/teacher-dashboard.html';
         else if (user.role === 'Comptable') window.location.href = '/compta-dashboard.html';
         else window.location.href = '/login.html';
       } else {

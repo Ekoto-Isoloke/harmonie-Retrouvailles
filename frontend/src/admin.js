@@ -126,37 +126,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // SECURITY CHECK 2: Strict RBAC - Only Super-Admin & Direction can access Super-Admin dashboard
-    const isSuperAdmin = ['Super-Admin', 'Direction', 'Directeur', 'Direction Générale'].includes(user.role);
+    const isSuperAdmin = ['Super-Admin', 'Direction', 'Directeur', 'Directeur (D.P)', 'D.P', 'Direction Générale'].includes(user.role);
 
     if (!isSuperAdmin) {
-        // Enseignant attempt
-        if (user.role === 'Enseignant' || user.role === 'Professeur' || user.role === 'Sur École') {
-            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nUn enseignant (${user.prenom} ${user.nom}) ne peut pas se connecter au compte de la Direction ou du Super-Administrateur.\n\nVous êtes réorienté vers votre Espace Enseignant.`);
+        // Enseignant & Personnel pédagogique
+        if (['Enseignant', 'Professeur', 'Sur École'].includes(user.role)) {
+            alert(`ℹ️ REDIRECTION PÉDAGOGIQUE\n\nBienvenue ${user.prenom} ${user.nom} (${user.role}).\nVous êtes redirigé vers votre Espace Enseignant / Personnel.`);
             window.location.href = '/teacher-dashboard.html';
             return;
         }
-        // Préfet / DE / DD attempt
+        // Préfet / DE / DD
         if (['Préfet', 'D.E', 'D.D'].includes(user.role)) {
-            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nAccès réservé exclusivement à la Direction Générale et au Super-Administrateur.\n\nVous êtes réorienté vers votre Espace Discipline & Préfecture.`);
+            alert(`ℹ️ REDIRECTION DISCIPLINE & PRÉFECTURE\n\nBienvenue ${user.prenom} ${user.nom} (${user.role}).\nVous êtes redirigé vers votre Espace Discipline & Préfecture.`);
             window.location.href = '/prefet-dashboard.html';
             return;
         }
-        // Comptable attempt
+        // Comptable
         if (user.role === 'Comptable') {
-            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nVotre rôle ne vous autorise qu'à l'Espace Comptabilité.\n\nVous êtes réorienté vers votre Espace Comptabilité.`);
+            alert(`ℹ️ REDIRECTION COMPTABILITÉ\n\nBienvenue ${user.prenom} ${user.nom}.\nVous êtes redirigé vers votre Espace Comptabilité.`);
             window.location.href = '/compta-dashboard.html';
             return;
         }
-        // Parent attempt
+        // Parent
         if (user.role === 'Parent') {
-            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nUn compte parent ne peut jamais accéder au système d'administration de l'école.\n\nVous êtes réorienté vers votre Espace Parent.`);
+            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nUn compte parent ne peut pas accéder au système d'administration de l'école.\n\nVous êtes réorienté vers votre Espace Parent.`);
             window.location.href = '/parent-dashboard.html';
             return;
         }
 
-        // Fallback for any unknown role
-        alert(`⛔ ACCÈS REFUSÉ — Vous n'avez pas l'autorisation d'accéder à ce panneau.`);
-        window.location.href = '/login.html';
+        // Fallback for any unknown role: redirect to teacher or login without crash
+        window.location.href = '/teacher-dashboard.html';
         return;
     }
 
