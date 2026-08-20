@@ -116,11 +116,22 @@
     const initials = ((user.prenom || '')[0] || '') + ((user.nom || '')[0] || '');
     document.getElementById('teacher-avatar').textContent = initials.toUpperCase() || '?';
 
-    // ── Charger les cours RÉELS du profil utilisateur ──
+    // ── Charger les affectations RÉELLES faites par le D.E (Secondaire) ou Sur École (Primaire) ──
+    const affectationsRetr = JSON.parse(localStorage.getItem('hr_affectations_db')) || [];
+    const myAffs = affectationsRetr.filter(a => a.teacherEmail === user.email || (user.nom && a.teacherName && a.teacherName.includes(user.nom)));
+    
+    const titularitesHarm = JSON.parse(localStorage.getItem('hr_titularites_primaire_db')) || [];
+    const myTit = titularitesHarm.find(t => t.teacherEmail === user.email || (user.nom && t.teacherName && t.teacherName.includes(user.nom)));
+
+    const assignedClasses = myAffs.length > 0
+      ? myAffs.map(a => `${a.classe} (${a.course})`)
+      : (myTit ? [myTit.classe] : (user.assignedClasses || []));
+
     const userCourses = Array.isArray(user.courses) ? user.courses : (user.courses ? user.courses.split(',').map(c => c.trim()).filter(Boolean) : []);
-    const teacherClasses = userCourses.length > 0
-      ? userCourses
-      : (user.classes && user.classes.length > 0 ? user.classes : ['Aucun cours affecté']);
+    
+    const teacherClasses = assignedClasses.length > 0
+      ? assignedClasses
+      : (userCourses.length > 0 ? userCourses : (user.classes && user.classes.length > 0 ? user.classes : ['Non affecté']));
 
     // ── Charger les VRAIS élèves depuis hr_eleves_db (filtrés par institution) ──
     function getElevesForInstitution() {
@@ -756,15 +767,85 @@
 
     // ===== PLANNING =====
     function viewPlanning() {
-      const jours=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'];
-      const heures=['07h30','08h00','09h30','10h00','11h30','14h00','15h30'];
+      const jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+      const totalHeures = myAffs.reduce((sum, a) => sum + (parseInt(a.weeklyHours) || 0), 0) || (myTit ? myTit.weeklyHours : 0) || 18;
+      
       return `
-        <div class="mb-8"><h2 class="text-3xl font-black uppercase tracking-tighter">Mon Planning</h2><p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">Semaine du 7 au 11 Juillet 2026</p></div>
+        <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-3xl font-black uppercase tracking-tighter">Mon Emploi du Temps Officiel</h2>
+            <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">
+              ${user.ecole === 'Harmonie' ? 'Horaires Primaires & Maternelle (Attribués par Sur École)' : 'Classes & Horaires Secondaire (Affectés par le Directeur des Études)'}
+            </p>
+          </div>
+          <div class="px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-xl text-xs font-black text-purple-300">
+            Charge Totale : ${totalHeures}h / semaine
+          </div>
+        </div>
+
+        <!-- Récapitulatif des Classes Affectées -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          ${myAffs.length > 0 ? myAffs.map(a => `
+            <div class="glass p-4 rounded-2xl border border-white/10">
+              <div class="flex justify-between items-start mb-2">
+                <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 text-[10px] font-black uppercase">${a.course}</span>
+                <span class="font-mono text-xs font-bold text-emerald-400">${a.weeklyHours}h/sem</span>
+              </div>
+              <p class="text-sm font-black text-white">${a.classe}</p>
+              <p class="text-xs text-gray-400 mt-1">${a.day} • ${a.timeSlot}</p>
+            </div>
+          `).join('') : (myTit ? `
+            <div class="glass p-4 rounded-2xl border border-emerald-500/30 md:col-span-3">
+              <div class="flex justify-between items-start mb-2">
+                <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-black uppercase">Classe Titulaire</span>
+                <span class="font-mono text-sm font-bold text-emerald-400">${myTit.weeklyHours}h / semaine (Conforme EPST)</span>
+              </div>
+              <p class="text-lg font-black text-white">${myTit.classe}</p>
+              <p class="text-xs text-gray-300 mt-1">${myTit.schedule}</p>
+            </div>
+          ` : `
+            <div class="glass p-4 rounded-2xl border border-white/10 md:col-span-3 text-center text-xs text-gray-400 italic">
+              Vos cours choisis lors de l'inscription sont en cours de répartition par la Direction des Études / Sur École.
+            </div>
+          `)}
+        </div>
+
         <div class="glass p-6 rounded-2xl overflow-x-auto">
           <table class="w-full min-w-[700px]">
-            <thead class="text-[10px] text-gray-400 uppercase tracking-widest"><tr><th class="pb-4 text-left w-20">Heure</th>${jours.map(j=>'<th class="pb-4 text-center font-black">'+j+'</th>').join('')}</tr></thead>
-            <tbody class="divide-y divide-white/5">
-              ${heures.map((h,hi)=>`<tr><td class="py-3 text-xs font-mono text-gray-500">${h}</td>${jours.map((j,ji)=>{const c=[{ji:0,hi:1,label:(teacherClasses[0]||'Cl.1').split('—')[0].trim(),color:'amber'},{ji:1,hi:3,label:(teacherClasses[1]||'Cl.2').split('—')[0].trim(),color:'blue'},{ji:2,hi:5,label:(teacherClasses[2]||'Cl.3').split('—')[0].trim(),color:'green'},{ji:3,hi:1,label:(teacherClasses[0]||'Cl.1').split('—')[0].trim(),color:'amber'},{ji:4,hi:3,label:(teacherClasses[1]||'Cl.2').split('—')[0].trim(),color:'blue'}].find(c=>c.ji===ji&&c.hi===hi);return c?'<td class="py-2 px-1"><div class="bg-'+c.color+'-500/20 border border-'+c.color+'-500/30 text-'+c.color+'-400 rounded-xl px-2 py-2 text-center text-xs font-black">'+c.label+'</div></td>':'<td class="py-2"></td>';}).join('')}</tr>`).join('')}
+            <thead class="text-[10px] text-gray-400 uppercase tracking-widest">
+              <tr>
+                <th class="pb-4 text-left w-32">Tranche Horaire</th>
+                ${jours.map(j => `<th class="pb-4 text-center font-black">${j}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-xs">
+              <tr>
+                <td class="py-3 font-mono font-bold text-gray-400">07h30 - 09h10</td>
+                ${jours.map(j => {
+                  const match = myAffs.find(a => a.day === j && a.timeSlot.includes('07h30'));
+                  if (match) return `<td class="py-2 px-1 text-center"><div class="bg-purple-500/20 border border-purple-500/30 text-purple-300 rounded-xl px-2 py-2 font-black">${match.classe}<br><span class="text-[10px] font-normal text-gray-400">${match.course}</span></div></td>`;
+                  if (user.ecole === 'Harmonie' && j !== 'Samedi') return `<td class="py-2 px-1 text-center"><div class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-xl px-2 py-2 font-black">${myTit ? myTit.classe : 'Cours Primaire'}<br><span class="text-[10px] font-normal text-gray-400">Français / Math</span></div></td>`;
+                  return '<td class="py-2 text-center text-gray-600">-</td>';
+                }).join('')}
+              </tr>
+              <tr>
+                <td class="py-3 font-mono font-bold text-gray-400">09h20 - 11h00</td>
+                ${jours.map(j => {
+                  const match = myAffs.find(a => a.day === j && a.timeSlot.includes('09h20'));
+                  if (match) return `<td class="py-2 px-1 text-center"><div class="bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-xl px-2 py-2 font-black">${match.classe}<br><span class="text-[10px] font-normal text-gray-400">${match.course}</span></div></td>`;
+                  if (user.ecole === 'Harmonie' && j !== 'Samedi') return `<td class="py-2 px-1 text-center"><div class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-xl px-2 py-2 font-black">${myTit ? myTit.classe : 'Cours Primaire'}<br><span class="text-[10px] font-normal text-gray-400">Éveil / Sciences</span></div></td>`;
+                  return '<td class="py-2 text-center text-gray-600">-</td>';
+                }).join('')}
+              </tr>
+              <tr>
+                <td class="py-3 font-mono font-bold text-gray-400">11h30 - 13h10</td>
+                ${jours.map(j => {
+                  const match = myAffs.find(a => a.day === j && a.timeSlot.includes('11h30'));
+                  if (match) return `<td class="py-2 px-1 text-center"><div class="bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-xl px-2 py-2 font-black">${match.classe}<br><span class="text-[10px] font-normal text-gray-400">${match.course}</span></div></td>`;
+                  if (user.ecole === 'Harmonie' && j !== 'Samedi') return `<td class="py-2 px-1 text-center"><div class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-xl px-2 py-2 font-black">${myTit ? myTit.classe : 'Cours Primaire'}<br><span class="text-[10px] font-normal text-gray-400">Dessin / Éducation Civique</span></div></td>`;
+                  return '<td class="py-2 text-center text-gray-600">-</td>';
+                }).join('')}
+              </tr>
             </tbody>
           </table>
         </div>`;
