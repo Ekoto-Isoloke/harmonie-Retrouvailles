@@ -1557,9 +1557,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const teacherRows = allTeachers.length > 0 ? allTeachers.map(t => {
             let totalHeures = 0;
-            let classesHtml = '';
+            let classesSummary = '';
             let isConforme = false;
             let statutBadge = '';
+            const teacherKey = encodeURIComponent(t.email || `${t.prenom}_${t.nom}`);
 
             if (db.ecoleActive === 'Retrouvailles') {
                 const profAffs = affectationsDb.filter(a => a.teacherEmail === t.email || (t.nom && a.teacherName && a.teacherName.includes(t.nom)));
@@ -1567,24 +1568,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 globalHours += totalHeures;
 
                 if (profAffs.length > 0) {
-                    classesHtml = profAffs.map(a => `
-                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs mr-1.5 mb-1.5">
-                            <span class="font-bold">${a.classe}</span>
-                            <span class="text-gray-400">(${a.course})</span>
-                            <span class="font-mono font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded">${a.weeklyHours}h</span>
-                        </div>
-                    `).join('');
+                    const uniqueClasses = Array.from(new Set(profAffs.map(a => a.classe)));
+                    classesSummary = `<span class="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30 text-xs">${uniqueClasses.length} classe${uniqueClasses.length > 1 ? 's' : ''} affectée${uniqueClasses.length > 1 ? 's' : ''}</span>`;
                 } else if (t.classes && t.classes.length > 0) {
                     totalHeures = t.classes.length * 4;
                     globalHours += totalHeures;
-                    classesHtml = t.classes.map(cl => `
-                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs mr-1.5 mb-1.5">
-                            <span class="font-bold">${cl}</span>
-                            <span class="font-mono font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded">4h</span>
-                        </div>
-                    `).join('');
+                    classesSummary = `<span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30 text-xs">${t.classes.length} classe${t.classes.length > 1 ? 's' : ''}</span>`;
                 } else {
-                    classesHtml = '<span class="text-gray-500 italic text-xs">En attente d\'affectation par le D.E</span>';
+                    classesSummary = '<span class="text-gray-500 italic text-xs">Aucune classe</span>';
                 }
 
                 isConforme = totalHeures >= 18 && totalHeures <= 24;
@@ -1592,7 +1583,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (totalHeures === 0) enAttenteCount++;
 
                 statutBadge = isConforme 
-                    ? '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">Temps Plein (18h-24h)</span>'
+                    ? '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">Conforme (18h-24h)</span>'
                     : totalHeures > 24
                     ? '<span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase">Surcharge (>24h)</span>'
                     : totalHeures > 0
@@ -1608,55 +1599,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 globalHours += totalHeures;
 
                 if (classeTit) {
-                    classesHtml = `
-                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs">
-                            <span class="font-black text-sm">${classeTit}</span>
-                            <span class="text-gray-400">(${schedule})</span>
-                            <span class="font-mono font-black text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">${totalHeures}h / sem</span>
-                        </div>
-                    `;
+                    classesSummary = `<span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30 text-xs">Titulaire ${classeTit}</span>`;
                     isConforme = totalHeures === 28 || totalHeures === 20;
                     conformesCount++;
-                    statutBadge = '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">Titulaire Conforme (28h)</span>';
+                    statutBadge = '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">Conforme EPST (28h)</span>';
                 } else {
-                    classesHtml = '<span class="text-gray-500 italic text-xs">En attente d\'attribution par Sur École</span>';
+                    classesSummary = '<span class="text-gray-500 italic text-xs">En attente Sur École</span>';
                     enAttenteCount++;
                     statutBadge = '<span class="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase">Non Affecté</span>';
                 }
             }
 
-            const coursesDeclared = Array.isArray(t.courses) ? t.courses.join(', ') : (t.courses || t.option || (db.ecoleActive === 'Harmonie' ? 'Enseignement Primaire & Éveil' : 'Matières Secondaires'));
+            const coursesDeclared = Array.isArray(t.courses) ? t.courses.join(', ') : (t.courses || t.option || (db.ecoleActive === 'Harmonie' ? 'Enseignement Primaire' : 'Discipline Secondaire'));
 
             return `
-                <tr class="hover:bg-white/5 transition-colors">
+                <tr class="hover:bg-white/5 transition-colors cursor-pointer group" onclick="openTeacherWorkloadModal('${teacherKey}')">
                     <td class="py-4 px-3">
                         <div class="flex items-center gap-3">
                             <div class="w-9 h-9 rounded-xl ${db.ecoleActive === 'Harmonie' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-purple-500/20 text-purple-400'} flex items-center justify-center font-black text-xs">
                                 ${(t.prenom[0]||'')+(t.nom[0]||'')}
                             </div>
                             <div>
-                                <p class="font-bold text-white text-sm">${t.prenom} ${t.nom}</p>
+                                <p class="font-bold text-white text-sm group-hover:text-brand-400 transition">${t.prenom} ${t.nom}</p>
                                 <p class="text-xs text-gray-400">${t.email || t.login || 'enseignant@ecole.cd'}</p>
                             </div>
                         </div>
                     </td>
-                    <td class="py-4 px-3 text-xs text-gray-300 font-medium">
+                    <td class="py-4 px-3 text-xs text-gray-300 font-medium truncate max-w-[180px]" title="${coursesDeclared}">
                         ${coursesDeclared}
                     </td>
                     <td class="py-4 px-3">
-                        ${classesHtml}
+                        ${classesSummary}
                     </td>
                     <td class="py-4 px-3 text-center font-mono font-black text-base ${totalHeures > 0 ? (db.ecoleActive === 'Harmonie' ? 'text-emerald-400' : (isConforme ? 'text-emerald-400' : 'text-purple-300')) : 'text-gray-500'}">
-                        ${totalHeures > 0 ? `${totalHeures}h` : '0h'}
+                        ${totalHeures > 0 ? `${totalHeures}h / sem` : '0h'}
+                    </td>
+                    <td class="py-4 px-3 text-center">
+                        ${statutBadge}
                     </td>
                     <td class="py-4 px-3 text-right">
-                        ${statutBadge}
+                        <button onclick="event.stopPropagation(); openTeacherWorkloadModal('${teacherKey}')" class="px-3.5 py-1.5 bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 border border-brand-500/30 rounded-xl text-xs font-black transition inline-flex items-center gap-1.5">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i> Voir Charge
+                        </button>
                     </td>
                 </tr>
             `;
         }).join('') : `
             <tr>
-                <td colspan="5" class="py-12 text-center text-gray-400 italic">
+                <td colspan="6" class="py-12 text-center text-gray-400 italic">
                     Aucun enseignant enregistré pour ${db.ecoleActive}.
                 </td>
             </tr>
@@ -1904,9 +1894,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <tr>
                                     <th class="pb-4 px-3">Enseignant</th>
                                     <th class="pb-4 px-3">Discipline / Spécialité</th>
-                                    <th class="pb-4 px-3">Classes & Volumes par Classe</th>
-                                    <th class="pb-4 px-3 text-center">Charge Totale</th>
-                                    <th class="pb-4 px-3 text-right">Statut EPST</th>
+                                    <th class="pb-4 px-3">Affectations</th>
+                                    <th class="pb-4 px-3 text-center">Volume Hebdo</th>
+                                    <th class="pb-4 px-3 text-center">Statut EPST</th>
+                                    <th class="pb-4 px-3 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-white/5">
@@ -2072,6 +2063,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     </form>
                 </div>
             </div>
+
+            <!-- MODAL DETAIL CHARGE HORAIRE ENSEIGNANT -->
+            <div id="modal-teacher-workload" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+                <div class="glass-panel bg-[#0d1b2a] dark:bg-gray-900 rounded-[2.5rem] p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20">
+                    <div id="modal-teacher-workload-content">
+                        <!-- Rempli dynamiquement par openTeacherWorkloadModal -->
+                    </div>
+                </div>
+            </div>
         `;
 
         window.updateRoleOptions = function() {
@@ -2156,6 +2156,233 @@ document.addEventListener('DOMContentLoaded', () => {
             printWindow.document.write('<h2>Tableau de Surveillance de la Charge Horaire — ' + (db.ecoleActive === 'Harmonie' ? 'C.S. HARMONIE (Primaire & Maternelle)' : 'G.S. RETROUVAILLES (Secondaire & Humanités)') + '</h2>');
             printWindow.document.write('<p>Édité le ' + today + ' par la Direction Générale Super-Admin</p>');
             printWindow.document.write(printTable.outerHTML);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        };
+
+        window.openTeacherWorkloadModal = function(teacherKey) {
+            const key = decodeURIComponent(teacherKey);
+            const teacher = allTeachers.find(t => (t.email === key) || (`${t.prenom}_${t.nom}` === key));
+            if (!teacher) return;
+
+            const modal = document.getElementById('modal-teacher-workload');
+            const content = document.getElementById('modal-teacher-workload-content');
+            if (!modal || !content) return;
+
+            const jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+            let totalHeures = 0;
+            let rowsHtml = '';
+            let gridCells = '';
+
+            if (db.ecoleActive === 'Retrouvailles') {
+                const profAffs = affectationsDb.filter(a => a.teacherEmail === teacher.email || (teacher.nom && a.teacherName && a.teacherName.includes(teacher.nom)));
+                totalHeures = profAffs.reduce((sum, a) => sum + (parseInt(a.weeklyHours) || 0), 0) || (teacher.classes ? teacher.classes.length * 4 : 0);
+
+                if (profAffs.length > 0) {
+                    rowsHtml = profAffs.map(a => {
+                        const h = parseInt(a.weeklyHours) || 0;
+                        const pct = totalHeures > 0 ? Math.round((h / totalHeures) * 100) : 0;
+                        return `
+                            <tr class="hover:bg-white/5">
+                                <td class="py-3 px-3 font-bold text-white"><span class="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30">${a.classe}</span></td>
+                                <td class="py-3 px-3 font-semibold text-white">${a.course}</td>
+                                <td class="py-3 px-3 text-gray-400 font-mono">${a.day} (${a.timeSlot})</td>
+                                <td class="py-3 px-3 text-center font-mono font-black text-emerald-400">${h}h / sem</td>
+                                <td class="py-3 px-3 text-right">
+                                    <div class="inline-flex items-center gap-2">
+                                        <span class="font-bold text-gray-300 font-mono">${pct}%</span>
+                                        <div class="w-16 bg-white/10 h-1.5 rounded-full overflow-hidden inline-block"><div class="bg-purple-500 h-full rounded-full" style="width: ${pct}%"></div></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else if (teacher.classes && teacher.classes.length > 0) {
+                    rowsHtml = teacher.classes.map(cl => `
+                        <tr class="hover:bg-white/5">
+                            <td class="py-3 px-3 font-bold text-white"><span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30">${cl}</span></td>
+                            <td class="py-3 px-3 font-semibold text-white">${teacher.courses || 'Matière assignée'}</td>
+                            <td class="py-3 px-3 text-gray-400 font-mono">Horaires standards</td>
+                            <td class="py-3 px-3 text-center font-mono font-black text-emerald-400">4h / sem</td>
+                            <td class="py-3 px-3 text-right font-bold text-gray-300 font-mono">${Math.round(100/teacher.classes.length)}%</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    rowsHtml = `<tr><td colspan="5" class="py-6 text-center text-gray-400 italic">Aucun cours ni classe actuellement affectés par la Direction des Études.</td></tr>`;
+                }
+
+                gridCells = `
+                    <tr>
+                        <td class="py-3 font-mono font-bold text-gray-400">07h30 - 09h10</td>
+                        ${jours.map(j => {
+                            const match = profAffs.find(a => a.day === j && a.timeSlot.includes('07h30'));
+                            return match ? `<td class="py-2 px-1 text-center"><div class="bg-purple-500/20 border border-purple-500/30 text-purple-300 rounded-xl px-2 py-1.5 font-black text-[11px]">${match.classe}<br><span class="text-[9px] font-normal text-gray-400">${match.course}</span></div></td>` : '<td class="py-2 text-center text-gray-600">-</td>';
+                        }).join('')}
+                    </tr>
+                    <tr>
+                        <td class="py-3 font-mono font-bold text-gray-400">09h20 - 11h00</td>
+                        ${jours.map(j => {
+                            const match = profAffs.find(a => a.day === j && a.timeSlot.includes('09h20'));
+                            return match ? `<td class="py-2 px-1 text-center"><div class="bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-xl px-2 py-1.5 font-black text-[11px]">${match.classe}<br><span class="text-[9px] font-normal text-gray-400">${match.course}</span></div></td>` : '<td class="py-2 text-center text-gray-600">-</td>';
+                        }).join('')}
+                    </tr>
+                    <tr>
+                        <td class="py-3 font-mono font-bold text-gray-400">11h30 - 13h10</td>
+                        ${jours.map(j => {
+                            const match = profAffs.find(a => a.day === j && a.timeSlot.includes('11h30'));
+                            return match ? `<td class="py-2 px-1 text-center"><div class="bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-xl px-2 py-1.5 font-black text-[11px]">${match.classe}<br><span class="text-[9px] font-normal text-gray-400">${match.course}</span></div></td>` : '<td class="py-2 text-center text-gray-600">-</td>';
+                        }).join('')}
+                    </tr>
+                `;
+            } else {
+                // Harmonie (Primaire)
+                const tit = titularitesDb.find(a => a.teacherEmail === teacher.email || (teacher.nom && a.teacherName && a.teacherName.includes(teacher.nom)));
+                const classeTit = tit ? tit.classe : (teacher.classeTitulaire || (teacher.classes && teacher.classes[0]) || null);
+                const schedule = tit ? tit.schedule : (teacher.schedule || 'Lundi au Vendredi (07h30 - 12h30)');
+                totalHeures = tit ? tit.weeklyHours : (schedule.includes('20h') ? 20 : (classeTit ? 28 : 0));
+
+                if (classeTit) {
+                    rowsHtml = `
+                        <tr class="hover:bg-white/5">
+                            <td class="py-3 px-3 font-bold text-white"><span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">${classeTit}</span></td>
+                            <td class="py-3 px-3 font-semibold text-white">Toutes disciplines (Titularité Primaire)</td>
+                            <td class="py-3 px-3 text-gray-400 font-mono">${schedule}</td>
+                            <td class="py-3 px-3 text-center font-mono font-black text-emerald-400">${totalHeures}h / sem</td>
+                            <td class="py-3 px-3 text-right font-bold text-emerald-400">100% (Temps Plein)</td>
+                        </tr>
+                    `;
+                } else {
+                    rowsHtml = `<tr><td colspan="5" class="py-6 text-center text-gray-400 italic">En attente d'attribution de la classe titulaire par Sur École.</td></tr>`;
+                }
+
+                gridCells = `
+                    <tr>
+                        <td class="py-3 font-mono font-bold text-gray-400">07h30 - 09h10</td>
+                        ${jours.map(j => j !== 'Samedi' ? `<td class="py-2 px-1 text-center"><div class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-xl px-2 py-1.5 font-black text-[11px]">${classeTit || 'Primaire'}<br><span class="text-[9px] font-normal text-gray-400">Français / Math</span></div></td>` : '<td class="py-2 text-center text-gray-600">-</td>').join('')}
+                    </tr>
+                    <tr>
+                        <td class="py-3 font-mono font-bold text-gray-400">09h20 - 11h00</td>
+                        ${jours.map(j => j !== 'Samedi' ? `<td class="py-2 px-1 text-center"><div class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-xl px-2 py-1.5 font-black text-[11px]">${classeTit || 'Primaire'}<br><span class="text-[9px] font-normal text-gray-400">Éveil / Sciences</span></div></td>` : '<td class="py-2 text-center text-gray-600">-</td>').join('')}
+                    </tr>
+                    <tr>
+                        <td class="py-3 font-mono font-bold text-gray-400">11h30 - 12h30</td>
+                        ${jours.map(j => j !== 'Samedi' ? `<td class="py-2 px-1 text-center"><div class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-xl px-2 py-1.5 font-black text-[11px]">${classeTit || 'Primaire'}<br><span class="text-[9px] font-normal text-gray-400">Civisme / Dessin</span></div></td>` : '<td class="py-2 text-center text-gray-600">-</td>').join('')}
+                    </tr>
+                `;
+            }
+
+            content.innerHTML = `
+                <div class="flex items-start justify-between pb-6 border-b border-white/10 mb-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl ${db.ecoleActive === 'Harmonie' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-purple-500/20 text-purple-400'} flex items-center justify-center font-black text-xl shadow-inner">
+                            ${(teacher.prenom[0]||'')+(teacher.nom[0]||'')}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-2xl font-black text-white uppercase">${teacher.prenom} ${teacher.nom}</h3>
+                                <span class="px-2.5 py-0.5 rounded-full ${db.ecoleActive === 'Harmonie' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'} text-[10px] font-black uppercase">${db.ecoleActive}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">${teacher.email || 'enseignant@ecole.cd'} • <span class="text-gray-300 font-bold">${teacher.role}</span></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="printSingleTeacherWorkload('${encodeURIComponent(teacher.email || teacher.nom)}')" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Imprimer Fiche
+                        </button>
+                        <button onclick="document.getElementById('modal-teacher-workload').classList.add('hidden')" class="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl transition">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Volume Hebdomadaire</p>
+                        <p class="text-2xl font-black font-mono text-purple-300">${totalHeures}h <span class="text-xs font-normal text-gray-400">/ sem</span></p>
+                    </div>
+                    <div class="p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Institution</p>
+                        <p class="text-base font-black text-white mt-1">${db.ecoleActive}</p>
+                    </div>
+                    <div class="p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Norme EPST</p>
+                        <p class="text-sm font-black text-emerald-400 mt-1">${db.ecoleActive === 'Harmonie' ? '28h Titulaire' : '18h - 24h Prof'}</p>
+                    </div>
+                    <div class="p-4 bg-white/5 rounded-2xl border border-white/10 text-center">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Statut Conformité</p>
+                        <p class="text-sm font-black ${totalHeures >= 18 ? 'text-emerald-400' : 'text-amber-400'} mt-1">${totalHeures >= 18 ? '✓ Conforme' : '⏳ En Attente'}</p>
+                    </div>
+                </div>
+
+                <!-- Tableau Ventilation par Classe -->
+                <div class="mb-6">
+                    <h4 class="text-xs font-black uppercase text-gray-400 tracking-widest mb-3 flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-purple-400"></i> Ventilation de la Charge Horaire par Classe
+                    </h4>
+                    <div class="overflow-x-auto rounded-2xl border border-white/10">
+                        <table class="w-full text-left text-xs bg-white/5">
+                            <thead class="text-[10px] text-gray-400 uppercase font-black tracking-widest border-b border-white/10 pb-3">
+                                <tr>
+                                    <th class="py-3 px-3">Classe</th>
+                                    <th class="py-3 px-3">Discipline / Cours</th>
+                                    <th class="py-3 px-3">Jours & Horaires</th>
+                                    <th class="py-3 px-3 text-center">Volume</th>
+                                    <th class="py-3 px-3 text-right">Part (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                ${rowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Grille Hebdomadaire -->
+                <div>
+                    <h4 class="text-xs font-black uppercase text-gray-400 tracking-widest mb-3 flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i> Grille de l'Emploi du Temps Hebdomadaire
+                    </h4>
+                    <div class="overflow-x-auto rounded-2xl border border-white/10">
+                        <table class="w-full text-left text-xs bg-white/5">
+                            <thead class="text-[10px] text-gray-400 uppercase font-black tracking-widest border-b border-white/10">
+                                <tr>
+                                    <th class="py-3 px-2 w-28">Tranche</th>
+                                    ${jours.map(j => `<th class="py-3 px-1 text-center font-black">${j}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5 text-xs">
+                                ${gridCells}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        };
+
+        window.printSingleTeacherWorkload = function(teacherKey) {
+            const content = document.getElementById('modal-teacher-workload-content');
+            if (!content) return;
+            const printWindow = window.open('', '', 'height=700,width=900');
+            printWindow.document.write('<html><head><title>Fiche Individuelle de Charge Horaire</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write('body { font-family: Arial, sans-serif; padding: 25px; color: #111; }');
+            printWindow.document.write('table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px; font-size: 11px; }');
+            printWindow.document.write('th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }');
+            printWindow.document.write('th { background-color: #f0f0f0; text-transform: uppercase; font-size: 9px; }');
+            printWindow.document.write('button { display: none !important; }');
+            printWindow.document.write('</style></head><body>');
+            printWindow.document.write('<h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO — EPST</h1>');
+            printWindow.document.write('<h2>FICHE INDIVIDUELLE DE CHARGE HORAIRE PÉDAGOGIQUE</h2>');
+            printWindow.document.write(content.innerHTML);
             printWindow.document.write('</body></html>');
             printWindow.document.close();
             printWindow.focus();
