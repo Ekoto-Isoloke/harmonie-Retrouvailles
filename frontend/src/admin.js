@@ -1532,6 +1532,136 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const statutPColors = { 'Présent': 'bg-green-100 text-green-700', 'Retard': 'bg-amber-100 text-amber-700', 'Absent': 'bg-red-100 text-red-700' };
 
+        // Données Charge Horaire Enseignants (Harmonie vs Retrouvailles)
+        const allUsersDb = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+        const affectationsDb = JSON.parse(localStorage.getItem('hr_affectations_db')) || [];
+        const titularitesDb = JSON.parse(localStorage.getItem('hr_titularites_primaire_db')) || [];
+
+        // Fusion des enseignants de l'école active
+        const teacherComptes = allComptes.filter(c => ['Enseignant', 'Professeur', 'Sur école', 'Sur École', 'Instituteur', 'Institutrice'].includes(c.role));
+        const teacherUsers = allUsersDb.filter(u => u.ecole === db.ecoleActive && ['Enseignant', 'Professeur', 'Sur école', 'Sur École', 'Instituteur', 'Institutrice'].includes(u.role));
+        
+        // Map unique par email ou nom
+        const teachersMap = new Map();
+        [...teacherComptes, ...teacherUsers].forEach(t => {
+            const key = (t.email || `${t.prenom}_${t.nom}`).toLowerCase();
+            if (!teachersMap.has(key)) {
+                teachersMap.set(key, t);
+            }
+        });
+        const allTeachers = Array.from(teachersMap.values());
+
+        let globalHours = 0;
+        let conformesCount = 0;
+        let enAttenteCount = 0;
+
+        const teacherRows = allTeachers.length > 0 ? allTeachers.map(t => {
+            let totalHeures = 0;
+            let classesHtml = '';
+            let isConforme = false;
+            let statutBadge = '';
+
+            if (db.ecoleActive === 'Retrouvailles') {
+                const profAffs = affectationsDb.filter(a => a.teacherEmail === t.email || (t.nom && a.teacherName && a.teacherName.includes(t.nom)));
+                totalHeures = profAffs.reduce((sum, a) => sum + (parseInt(a.weeklyHours) || 0), 0);
+                globalHours += totalHeures;
+
+                if (profAffs.length > 0) {
+                    classesHtml = profAffs.map(a => `
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs mr-1.5 mb-1.5">
+                            <span class="font-bold">${a.classe}</span>
+                            <span class="text-gray-400">(${a.course})</span>
+                            <span class="font-mono font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded">${a.weeklyHours}h</span>
+                        </div>
+                    `).join('');
+                } else if (t.classes && t.classes.length > 0) {
+                    totalHeures = t.classes.length * 4;
+                    globalHours += totalHeures;
+                    classesHtml = t.classes.map(cl => `
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs mr-1.5 mb-1.5">
+                            <span class="font-bold">${cl}</span>
+                            <span class="font-mono font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded">4h</span>
+                        </div>
+                    `).join('');
+                } else {
+                    classesHtml = '<span class="text-gray-500 italic text-xs">En attente d\'affectation par le D.E</span>';
+                }
+
+                isConforme = totalHeures >= 18 && totalHeures <= 24;
+                if (isConforme) conformesCount++;
+                else if (totalHeures === 0) enAttenteCount++;
+
+                statutBadge = isConforme 
+                    ? '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">Temps Plein (18h-24h)</span>'
+                    : totalHeures > 24
+                    ? '<span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase">Surcharge (>24h)</span>'
+                    : totalHeures > 0
+                    ? '<span class="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-black uppercase">Temps Partiel (<18h)</span>'
+                    : '<span class="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase">Non Affecté</span>';
+
+            } else {
+                // Harmonie (Primaire & Maternelle)
+                const tit = titularitesDb.find(a => a.teacherEmail === t.email || (t.nom && a.teacherName && a.teacherName.includes(t.nom)));
+                const classeTit = tit ? tit.classe : (t.classeTitulaire || (t.classes && t.classes[0]) || null);
+                const schedule = tit ? tit.schedule : (t.schedule || 'Lundi au Vendredi (07h30 - 12h30)');
+                totalHeures = tit ? tit.weeklyHours : (schedule.includes('20h') ? 20 : (classeTit ? 28 : 0));
+                globalHours += totalHeures;
+
+                if (classeTit) {
+                    classesHtml = `
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs">
+                            <span class="font-black text-sm">${classeTit}</span>
+                            <span class="text-gray-400">(${schedule})</span>
+                            <span class="font-mono font-black text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">${totalHeures}h / sem</span>
+                        </div>
+                    `;
+                    isConforme = totalHeures === 28 || totalHeures === 20;
+                    conformesCount++;
+                    statutBadge = '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">Titulaire Conforme (28h)</span>';
+                } else {
+                    classesHtml = '<span class="text-gray-500 italic text-xs">En attente d\'attribution par Sur École</span>';
+                    enAttenteCount++;
+                    statutBadge = '<span class="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase">Non Affecté</span>';
+                }
+            }
+
+            const coursesDeclared = Array.isArray(t.courses) ? t.courses.join(', ') : (t.courses || t.option || (db.ecoleActive === 'Harmonie' ? 'Enseignement Primaire & Éveil' : 'Matières Secondaires'));
+
+            return `
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="py-4 px-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl ${db.ecoleActive === 'Harmonie' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-purple-500/20 text-purple-400'} flex items-center justify-center font-black text-xs">
+                                ${(t.prenom[0]||'')+(t.nom[0]||'')}
+                            </div>
+                            <div>
+                                <p class="font-bold text-white text-sm">${t.prenom} ${t.nom}</p>
+                                <p class="text-xs text-gray-400">${t.email || t.login || 'enseignant@ecole.cd'}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-3 text-xs text-gray-300 font-medium">
+                        ${coursesDeclared}
+                    </td>
+                    <td class="py-4 px-3">
+                        ${classesHtml}
+                    </td>
+                    <td class="py-4 px-3 text-center font-mono font-black text-base ${totalHeures > 0 ? (db.ecoleActive === 'Harmonie' ? 'text-emerald-400' : (isConforme ? 'text-emerald-400' : 'text-purple-300')) : 'text-gray-500'}">
+                        ${totalHeures > 0 ? `${totalHeures}h` : '0h'}
+                    </td>
+                    <td class="py-4 px-3 text-right">
+                        ${statutBadge}
+                    </td>
+                </tr>
+            `;
+        }).join('') : `
+            <tr>
+                <td colspan="5" class="py-12 text-center text-gray-400 italic">
+                    Aucun enseignant enregistré pour ${db.ecoleActive}.
+                </td>
+            </tr>
+        `;
+
         ui.content.innerHTML = `
             <div class="mb-8 flex items-end justify-between">
                 <div>
@@ -1549,6 +1679,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button id="rh-tab-hierarchie" onclick="rhTab('hierarchie')" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700">🏢 Organigramme</button>
                 <button id="rh-tab-pointages" onclick="rhTab('pointages')" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700">🕐 Pointages du Jour</button>
                 <button id="rh-tab-classes" onclick="rhTab('classes')" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700">📚 Attribution des Classes</button>
+                <button id="rh-tab-charge" onclick="rhTab('charge')" class="px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700">⏱️ Charge Horaire des Enseignants</button>
             </div>
 
             <!-- TAB: COMPTES & ACCES -->
@@ -1710,6 +1841,78 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         `).join('')}
                         ${allComptes.filter(c => c.role === 'Enseignant').length === 0 ? '<p class="text-center text-gray-400 italic py-10">Aucun enseignant enregistré pour cette institution.</p>' : ''}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: CHARGE HORAIRE DES ENSEIGNANTS -->
+            <div id="rh-panel-charge" class="hidden">
+                <div class="glass-panel p-8 rounded-[2.5rem] shadow-xl border border-white/20">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${db.ecoleActive === 'Harmonie' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'}">
+                                    Institution : ${db.ecoleActive === 'Harmonie' ? 'C.S. Harmonie (Maternelle & Primaire)' : 'G.S. Retrouvailles (Secondaire & Humanités)'}
+                                </span>
+                                <span class="text-xs text-gray-400">• Surveillance EPST</span>
+                            </div>
+                            <h3 class="font-black text-xl uppercase tracking-wider text-white flex items-center gap-2">
+                                <i data-lucide="clock" class="w-6 h-6 text-brand-500"></i>
+                                Surveillance de la Charge Horaire par Enseignant
+                            </h3>
+                            <p class="text-xs text-gray-400 mt-1">
+                                ${db.ecoleActive === 'Harmonie' 
+                                    ? 'Surveillance du régime officiel (28h/semaine) et des classes titulaires attribuées par Sur École.' 
+                                    : 'Surveillance des volumes horaires (18h-24h/semaine) et des cours/classes affectés par le Directeur des Études (D.E).'}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="printChargeReport()" class="px-5 py-2.5 bg-[#112240]/80 hover:bg-gray-800 text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2 border border-white/20 text-xs">
+                                <i data-lucide="printer" class="w-4 h-4"></i> Imprimer Tableau Officiel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stats rapides Charge Horaire -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                        <div class="p-5 bg-white/5 rounded-2xl border border-white/10">
+                            <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Corps Enseignant</p>
+                            <p class="text-3xl font-black text-white">${allTeachers.length}</p>
+                            <p class="text-[10px] text-gray-400 mt-1">Enseignants ${db.ecoleActive}</p>
+                        </div>
+                        <div class="p-5 bg-white/5 rounded-2xl border border-white/10">
+                            <p class="text-xs font-black text-emerald-400 uppercase tracking-widest mb-1">Conformité EPST</p>
+                            <p class="text-3xl font-black text-emerald-400">${conformesCount}</p>
+                            <p class="text-[10px] text-gray-400 mt-1">${db.ecoleActive === 'Harmonie' ? '28h / sem. Titulaire' : '18h à 24h / sem.'}</p>
+                        </div>
+                        <div class="p-5 bg-white/5 rounded-2xl border border-white/10">
+                            <p class="text-xs font-black text-brand-400 uppercase tracking-widest mb-1">Volume Global</p>
+                            <p class="text-3xl font-black text-brand-400 font-mono">${globalHours}h</p>
+                            <p class="text-[10px] text-gray-400 mt-1">Heures dispensées / sem.</p>
+                        </div>
+                        <div class="p-5 bg-white/5 rounded-2xl border border-white/10">
+                            <p class="text-xs font-black text-amber-400 uppercase tracking-widest mb-1">En Attente</p>
+                            <p class="text-3xl font-black text-amber-400">${enAttenteCount}</p>
+                            <p class="text-[10px] text-gray-400 mt-1">Non encore affectés</p>
+                        </div>
+                    </div>
+
+                    <!-- Tableau de Charge Horaire Détaillé par Enseignant & par Classe -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs" id="table-charge-horaire">
+                            <thead class="text-[10px] text-gray-400 uppercase font-black tracking-widest border-b border-white/10 pb-4">
+                                <tr>
+                                    <th class="pb-4 px-3">Enseignant</th>
+                                    <th class="pb-4 px-3">Discipline / Spécialité</th>
+                                    <th class="pb-4 px-3">Classes & Volumes par Classe</th>
+                                    <th class="pb-4 px-3 text-center">Charge Totale</th>
+                                    <th class="pb-4 px-3 text-right">Statut EPST</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                ${teacherRows}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1891,8 +2094,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Tabs logic
         window.rhTab = function(tab) {
-            ['comptes','pointages','classes','hierarchie'].forEach(t => {
-                document.getElementById('rh-panel-' + t).classList.toggle('hidden', t !== tab);
+            ['comptes','pointages','classes','hierarchie','charge'].forEach(t => {
+                const panel = document.getElementById('rh-panel-' + t);
+                if (panel) panel.classList.toggle('hidden', t !== tab);
                 const btn = document.getElementById('rh-tab-' + t);
                 if (btn) {
                     btn.className = t === tab
@@ -1900,6 +2104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         : 'px-6 py-2.5 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700 dark:hover:text-gray-300';
                 }
             });
+            if (window.lucide) lucide.createIcons();
         };
 
         window.toggleStatut = function(id) {
@@ -1922,8 +2127,35 @@ document.addEventListener('DOMContentLoaded', () => {
             printWindow.document.write('th { background-color: #f2f2f2; }');
             printWindow.document.write('h2 { text-align: center; }');
             printWindow.document.write('</style></head><body>');
-            printWindow.document.write('<h2>Registre de Présence du ' + today + '</h2>');
+            printWindow.document.write('<h2>Registre de Présence du ' + today + ' — ' + db.ecoleActive + '</h2>');
             printWindow.document.write(printContent);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        };
+
+        window.printChargeReport = function() {
+            const printTable = document.getElementById('table-charge-horaire');
+            if (!printTable) return;
+            const today = new Date().toLocaleDateString('fr-FR');
+            const printWindow = window.open('', '', 'height=700,width=900');
+            printWindow.document.write('<html><head><title>Tableau Officiel de Charge Horaire - ' + db.ecoleActive + '</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write('body { font-family: Arial, sans-serif; padding: 25px; color: #111; }');
+            printWindow.document.write('h1 { font-size: 18px; text-transform: uppercase; margin-bottom: 4px; }');
+            printWindow.document.write('p { font-size: 12px; color: #555; margin-top: 0; }');
+            printWindow.document.write('table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }');
+            printWindow.document.write('th, td { border: 1px solid #ccc; padding: 8px 10px; text-align: left; }');
+            printWindow.document.write('th { background-color: #f0f0f0; text-transform: uppercase; font-size: 10px; }');
+            printWindow.document.write('</style></head><body>');
+            printWindow.document.write('<h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO — EPST</h1>');
+            printWindow.document.write('<h2>Tableau de Surveillance de la Charge Horaire — ' + (db.ecoleActive === 'Harmonie' ? 'C.S. HARMONIE (Primaire & Maternelle)' : 'G.S. RETROUVAILLES (Secondaire & Humanités)') + '</h2>');
+            printWindow.document.write('<p>Édité le ' + today + ' par la Direction Générale Super-Admin</p>');
+            printWindow.document.write(printTable.outerHTML);
             printWindow.document.write('</body></html>');
             printWindow.document.close();
             printWindow.focus();
