@@ -178,10 +178,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const roleBadge = document.querySelector('p.text-xs.text-gold-600');
     if (roleBadge && user.role) roleBadge.textContent = user.role;
 
+    const isGlobalSuperAdmin = user.role === 'Super-Admin';
+
+    // PRIVACY & SECURITY: Hide financial and account management tabs for non-Super-Admin
+    if (!isGlobalSuperAdmin) {
+        const finNav = document.querySelector('a[data-target="finance"]');
+        if (finNav) finNav.style.display = 'none';
+        const comNav = document.querySelector('a[data-target="gestion-comptes"]');
+        if (comNav) comNav.style.display = 'none';
+
+        // Lock institution to user's assigned school
+        if (user.ecole) {
+            db.ecoleActive = user.ecole;
+            saveDb();
+        }
+        const btnH = document.getElementById('switch-harmonie');
+        const btnR = document.getElementById('switch-retrouvailles');
+        if (user.ecole === 'Harmonie' && btnR) btnR.style.display = 'none';
+        if (user.ecole === 'Retrouvailles' && btnH) btnH.style.display = 'none';
+    }
+
     let currentView = 'dashboard';
 
     const renderView = () => {
         if (!ui.content) return;
+        // Block non-super-admin if trying to access finance or accounts
+        if (!isGlobalSuperAdmin && (currentView === 'finance' || currentView === 'gestion-comptes')) {
+            currentView = 'dashboard';
+        }
         switch (currentView) {
             case 'dashboard': renderDashboard(); break;
             case 'presence-journaliere': renderPresenceJournaliere(); break;
@@ -189,12 +213,12 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'palmares': renderPalmares(); break;
             case 'resultats': renderResultats(); break;
             case 'rh': renderRH(); break;
-            case 'finance': renderFinance(); break;
+            case 'finance': if (isGlobalSuperAdmin) renderFinance(); break;
             case 'communication': renderCommunication(); break;
             case 'coffrefort': renderCoffreFort(); break;
             case 'suivi-direction': renderSuiviDirection(); break;
             case 'dossier360': renderDossier360(); break;
-            case 'gestion-comptes': renderGestionComptes(); break;
+            case 'gestion-comptes': if (isGlobalSuperAdmin) renderGestionComptes(); break;
         }
         if (window.lucide) lucide.createIcons();
         updateBadgePrevisions();
@@ -224,8 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnR.className = db.ecoleActive === 'Retrouvailles' ? "active-inst" : "inactive-inst";
             }
         };
-        if (btnH) btnH.onclick = () => { db.ecoleActive = 'Harmonie'; saveDb(); updateHeader(); renderView(); };
-        if (btnR) btnR.onclick = () => { db.ecoleActive = 'Retrouvailles'; saveDb(); updateHeader(); renderView(); };
+        if (btnH) btnH.onclick = () => { if (isGlobalSuperAdmin || user.ecole === 'Harmonie') { db.ecoleActive = 'Harmonie'; saveDb(); updateHeader(); renderView(); } };
+        if (btnR) btnR.onclick = () => { if (isGlobalSuperAdmin || user.ecole === 'Retrouvailles') { db.ecoleActive = 'Retrouvailles'; saveDb(); updateHeader(); renderView(); } };
         updateHeader();
     }
 
@@ -245,31 +269,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const presentsCount = allPointages.filter(p => p.statut === 'Présent' || p.statut === 'Terminé').length;
         const absentsCount = allPointages.filter(p => p.statut === 'Absent').length;
 
+        const allEleves = JSON.parse(localStorage.getItem('hr_eleves_db')) || [];
+        const elevesInst = allEleves.filter(e => e.ecole === db.ecoleActive && e.statut !== 'Rejeté');
+        const countInscrits = elevesInst.length > 0 ? elevesInst.length : inst.pedagogie.eleves.length;
+
         ui.content.innerHTML = `
             <div class="mb-8 flex justify-between items-start">
                 <div>
-                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tight">Tableau de Bord ERP</h2>
+                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tight">${isGlobalSuperAdmin ? 'Tableau de Bord ERP' : (db.ecoleActive === 'Harmonie' ? 'Direction École Primaire' : 'Direction Pédagogique')}</h2>
                     <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">${db.ecoleActive} — ${today}</p>
                 </div>
                 <div class="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span class="text-xs font-black text-emerald-400 uppercase tracking-widest">Système Opérationnel</span>
+                    <span class="text-xs font-black text-emerald-400 uppercase tracking-widest">${user.role} Actif</span>
                 </div>
             </div>
 
             <!-- KPI Grid -->
             <div id="widgets" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                ${createKPI('Recettes Totales', `$${inst.finance.revenus.toLocaleString()}`, 'trending-up', 'text-emerald-500', 'bg-emerald-500/10')}
-                ${createKPI('Dépenses', `$${inst.finance.depenses.toLocaleString()}`, 'trending-down', 'text-red-400', 'bg-red-500/10')}
-                ${createKPI('Solde Net', `$${solde.toLocaleString()}`, 'wallet', 'text-amber-400', 'bg-amber-500/10')}
-                ${createKPI('Effectif Inscrits', inst.pedagogie.eleves.length, 'users', 'text-blue-400', 'bg-blue-500/10')}
+                ${isGlobalSuperAdmin ? `
+                    ${createKPI('Recettes Totales', `$${inst.finance.revenus.toLocaleString()}`, 'trending-up', 'text-emerald-500', 'bg-emerald-500/10')}
+                    ${createKPI('Dépenses', `$${inst.finance.depenses.toLocaleString()}`, 'trending-down', 'text-red-400', 'bg-red-500/10')}
+                    ${createKPI('Solde Net', `$${solde.toLocaleString()}`, 'wallet', 'text-amber-400', 'bg-amber-500/10')}
+                    ${createKPI('Effectif Total', countInscrits, 'users', 'text-blue-400', 'bg-blue-500/10')}
+                ` : `
+                    ${createKPI('Élèves Inscrits', countInscrits, 'users', 'text-emerald-400', 'bg-emerald-500/10')}
+                    ${createKPI('Classes Actives', inst.pedagogie.classes.length, 'school', 'text-blue-400', 'bg-blue-500/10')}
+                    ${createKPI('Personnel Actif', allPointages.length || 18, 'user-check', 'text-amber-400', 'bg-amber-500/10')}
+                    ${createKPI('Taux de Présence', `${presenceRate}%`, 'check-circle-2', 'text-purple-400', 'bg-purple-500/10')}
+                `}
             </div>
 
-            <!-- Secondary KPIs with Highlighted Late Metric -->
+            <!-- Secondary KPIs -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div class="glass-panel p-5 rounded-2xl border border-white/10 flex items-center gap-4">
                     <div class="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center"><i data-lucide="user-check" class="w-6 h-6 text-cyan-400"></i></div>
-                    <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Taux Présence</p><h4 class="text-2xl font-black text-white">${presenceRate}%</h4></div>
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Présents ce jour</p><h4 class="text-2xl font-black text-white">${presentsCount}</h4></div>
                 </div>
                 <div class="glass-panel p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5 flex items-center gap-4 relative overflow-hidden">
                     <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center"><i data-lucide="clock-alert" class="w-6 h-6 text-amber-400 animate-pulse"></i></div>
@@ -285,16 +320,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="glass-panel p-5 rounded-2xl border border-white/10 flex items-center gap-4">
                     <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center"><i data-lucide="school" class="w-6 h-6 text-purple-400"></i></div>
-                    <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Classes Actives</p><h4 class="text-2xl font-black text-white">${inst.pedagogie.classes.length}</h4></div>
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sections / Options</p><h4 class="text-2xl font-black text-white">${inst.pedagogie.classes.length}</h4></div>
                 </div>
             </div>
 
             <!-- Charts + Activity Feed -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div class="lg:col-span-2 glass-panel p-6 rounded-3xl shadow-xl border border-white/10">
-                    <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4">Évolution Financière ${new Date().getFullYear()}</h3>
-                    <div id="chartRev" class="h-64"></div>
+                ${isGlobalSuperAdmin ? `
+                    <div class="lg:col-span-2 glass-panel p-6 rounded-3xl shadow-xl border border-white/10">
+                        <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4">Évolution Financière ${new Date().getFullYear()}</h3>
+                        <div id="chartRev" class="h-64"></div>
+                    </div>
+                ` : `
+                    <div class="lg:col-span-2 glass-panel p-6 rounded-3xl shadow-xl border border-white/10">
+                        <h3 class="font-black text-sm uppercase tracking-widest text-emerald-400 mb-4 flex items-center gap-2">
+                            <i data-lucide="award" class="w-4 h-4"></i> Répartition & Assiduité Pédagogique
+                        </h3>
+                        <div class="p-6 bg-white/5 rounded-2xl border border-white/10 space-y-4">
+                            <div class="flex justify-between items-center text-sm font-bold">
+                                <span>Assiduité des Élèves</span>
+                                <span class="text-emerald-400">96.4%</span>
+                            </div>
+                            <div class="w-full bg-white/10 h-2.5 rounded-full overflow-hidden">
+                                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style="width: 96.4%"></div>
+                            </div>
+                            <div class="flex justify-between items-center text-sm font-bold pt-2">
+                                <span>Couverture du Programme National (EPST)</span>
+                                <span class="text-blue-400">82.0%</span>
+                            </div>
+                            <div class="w-full bg-white/10 h-2.5 rounded-full overflow-hidden">
+                                <div class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full" style="width: 82%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `}
+                <div class="glass-panel p-6 rounded-3xl shadow-xl border border-white/10">
+                    <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4">Répartition des Élèves</h3>
+                    <div id="chartPed" class="h-64"></div>
                 </div>
+            </div>
                 <div class="glass-panel p-6 rounded-3xl shadow-xl border border-white/10">
                     <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4">Répartition des Élèves</h3>
                     <div id="chartPed" class="h-64"></div>
@@ -485,19 +549,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
 
-            <!-- EPST-Specific: Classes Scolarité Overview -->
+            <!-- EPST-Specific: Classes Overview -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="glass-panel p-6 rounded-2xl border border-white/10">
-                    <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4 flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4 text-amber-400"></i> Grille des Frais EPST</h3>
-                    <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
-                        ${inst.finance.fraisScolaires.map(f => `
-                            <div class="flex justify-between items-center p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition">
-                                <span class="text-xs font-bold text-gray-300">${f.classe}</span>
-                                <span class="text-sm font-black text-amber-400">${f.montant !== undefined ? '$' + f.montant : '$' + f.montantNonTech + ' / $' + f.montantTech}</span>
-                            </div>
-                        `).join('')}
+                ${isGlobalSuperAdmin ? `
+                    <div class="glass-panel p-6 rounded-2xl border border-white/10">
+                        <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4 flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4 text-amber-400"></i> Grille des Frais EPST</h3>
+                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            ${inst.finance.fraisScolaires.map(f => `
+                                <div class="flex justify-between items-center p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition">
+                                    <span class="text-xs font-bold text-gray-300">${f.classe}</span>
+                                    <span class="text-sm font-black text-amber-400">${f.montant !== undefined ? '$' + f.montant : '$' + f.montantNonTech + ' / $' + f.montantTech}</span>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                </div>
+                ` : `
+                    <div class="glass-panel p-6 rounded-2xl border border-white/10">
+                        <h3 class="font-black text-sm uppercase tracking-widest text-emerald-400 mb-4 flex items-center gap-2"><i data-lucide="school" class="w-4 h-4 text-emerald-400"></i> Classes & Sections Actives (${db.ecoleActive})</h3>
+                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            ${inst.pedagogie.classes.map(c => `
+                                <div class="flex justify-between items-center p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition">
+                                    <span class="text-xs font-bold text-gray-200">${c}</span>
+                                    <span class="text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Enseignement Officiel</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `}
                 <div class="glass-panel p-6 rounded-2xl border border-white/10">
                     <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-blue-400"></i> Dernières Activités</h3>
                     <div class="space-y-3 max-h-60 overflow-y-auto pr-1">
@@ -896,14 +974,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function initDashboardCharts() {
         if (!window.ApexCharts) return;
         const inst = db.institutions[db.ecoleActive], isD = document.documentElement.classList.contains('dark');
-        new ApexCharts(document.getElementById('chartRev'), {
-            series: [{ name: 'Recettes', data: [15, 30, 25, 55, 40, inst.finance.revenus / 1000] }],
-            chart: { type: 'area', height: 320, toolbar: { show: false } }, colors: ['#22c55e'], theme: { mode: isD ? 'dark' : 'light' }
-        }).render();
-        new ApexCharts(document.getElementById('chartPed'), {
-            series: [45, 30, 25],
-            chart: { type: 'donut', height: 320 }, labels: ['Maternelle', 'Primaire', 'Reste'], theme: { mode: isD ? 'dark' : 'light' }
-        }).render();
+        const elRev = document.getElementById('chartRev');
+        if (elRev) {
+            new ApexCharts(elRev, {
+                series: [{ name: 'Recettes', data: [15, 30, 25, 55, 40, inst.finance.revenus / 1000] }],
+                chart: { type: 'area', height: 320, toolbar: { show: false } }, colors: ['#22c55e'], theme: { mode: isD ? 'dark' : 'light' }
+            }).render();
+        }
+        const elPed = document.getElementById('chartPed');
+        if (elPed) {
+            new ApexCharts(elPed, {
+                series: db.ecoleActive === 'Harmonie' ? [45, 55] : [40, 35, 25],
+                chart: { type: 'donut', height: 320 }, labels: db.ecoleActive === 'Harmonie' ? ['Maternelle', 'Primaire'] : ['Éducation de Base', 'Humanités Scientifiques', 'Humanités Techniques'], theme: { mode: isD ? 'dark' : 'light' }
+            }).render();
+        }
     }
 
     function createKPI(t, v, i, c, b) {
