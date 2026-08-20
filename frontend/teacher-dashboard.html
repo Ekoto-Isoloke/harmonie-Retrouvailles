@@ -210,21 +210,23 @@
       const statutLabel = meta.statut === 'approuve' ? '✓ Approuvée' : meta.statut === 'rejete' ? '✗ Rejetée' : meta.statut === 'soumis' ? '⏳ En attente' : 'Brouillon';
       const statutColor = meta.statut === 'approuve' ? 'badge-green' : meta.statut === 'rejete' ? 'badge-red' : meta.statut === 'soumis' ? 'badge-blue' : 'badge-amber';
 
+      const totalHeures = myAffs.reduce((sum, a) => sum + (parseInt(a.weeklyHours) || 0), 0) || (myTit ? myTit.weeklyHours : (user.ecole === 'Harmonie' ? 28 : 18));
+
       return `
         <div class="mb-8">
           <h2 class="text-3xl font-black uppercase tracking-tighter">Bonjour, ${user.prenom || fullName} 👋</h2>
           <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">${new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'})}</p>
         </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div class="kpi-card cursor-pointer hover:border-purple-500/40" onclick="showView('planning')">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-3"><i data-lucide="clock" class="w-5 h-5 text-purple-400"></i></div>
+            <div class="text-2xl font-black font-mono text-purple-300">${totalHeures}<span class="text-xs font-normal text-gray-400 font-sans">h / sem.</span></div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Charge Horaire EPST</div>
+          </div>
           <div class="kpi-card">
             <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mb-3"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i></div>
             <div class="text-2xl font-black">${teacherClasses.length}</div>
             <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Classes affectées</div>
-          </div>
-          <div class="kpi-card">
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-3"><i data-lucide="user-check" class="w-5 h-5 text-green-400"></i></div>
-            <div class="text-2xl font-black">87<span class="text-sm font-normal text-gray-400">%</span></div>
-            <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Présence moy.</div>
           </div>
           <div class="kpi-card cursor-pointer hover:border-amber-500/40" onclick="showView('prevision')">
             <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mb-3"><i data-lucide="map" class="w-5 h-5 text-amber-400"></i></div>
@@ -233,9 +235,9 @@
             <div class="prog-bar mt-3"><div class="prog-fill" style="width:${progPct}%"></div></div>
           </div>
           <div class="kpi-card">
-            <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-3"><i data-lucide="award" class="w-5 h-5 text-purple-400"></i></div>
-            <div class="text-2xl font-black">14.2</div>
-            <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Moyenne générale</div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-3"><i data-lucide="user-check" class="w-5 h-5 text-green-400"></i></div>
+            <div class="text-2xl font-black">94<span class="text-sm font-normal text-gray-400">%</span></div>
+            <div class="text-xs text-gray-400 uppercase tracking-widest mt-1">Présence & Assiduité</div>
           </div>
         </div>
         ${!meta.soumis ? `
