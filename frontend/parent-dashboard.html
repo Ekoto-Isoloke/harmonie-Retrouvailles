@@ -55,10 +55,12 @@
     <div>
       <div class="p-6 border-b border-white/10">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-blue-950 border border-amber-500 flex items-center justify-center text-white font-display font-bold text-lg rounded-lg shadow-lg">HR</div>
+          <div class="w-12 h-12 rounded-full overflow-hidden bg-white p-0.5 shadow-lg border border-white/20 shrink-0">
+            <img id="parent-school-logo" src="/logos/logo-retrouvailles.jpg" alt="Logo École" class="w-full h-full object-contain rounded-full">
+          </div>
           <div>
             <h1 class="font-display font-bold text-white leading-tight">Espace Parent</h1>
-            <p class="text-xs text-amber-500 font-semibold tracking-wider">Premium Access</p>
+            <p class="text-xs text-amber-400 font-bold tracking-wider" id="parent-school-name">G.S. Retrouvailles</p>
           </div>
         </div>
       </div>
@@ -818,7 +820,11 @@
         document.getElementById('child-teacher').textContent = 'Mr. TSHIBANGU';
         document.getElementById('child-matricule').textContent = 'HR-2026-0451';
         document.getElementById('child-img').src = 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=400&q=80';
-        if (!silent) showToast("Dossier sécurisé : David Mukendi");
+        const logoEl = document.getElementById('parent-school-logo');
+        const nameEl = document.getElementById('parent-school-name');
+        if (logoEl) logoEl.src = '/logos/logo-retrouvailles.jpg';
+        if (nameEl) nameEl.textContent = 'G.S. Retrouvailles';
+        if (!silent) showToast("Dossier sécurisé : David Mukendi (G.S. Retrouvailles)");
       } else {
         btnSarah.className = "flex-1 p-2 bg-purple-600/30 border border-purple-500/50 rounded-xl text-left transition text-white";
         btnDavid.className = "flex-1 p-2 bg-[#112240]/80/5 border border-white/10 rounded-xl text-left transition text-gray-400 hover:text-white";
@@ -828,7 +834,11 @@
         document.getElementById('child-teacher').textContent = 'Mme. ILUNGA';
         document.getElementById('child-matricule').textContent = 'HR-2026-0812';
         document.getElementById('child-img').src = 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&q=80';
-        if (!silent) showToast("Dossier sécurisé : Sarah Mukendi");
+        const logoEl = document.getElementById('parent-school-logo');
+        const nameEl = document.getElementById('parent-school-name');
+        if (logoEl) logoEl.src = '/logos/logo-harmonie.jpg';
+        if (nameEl) nameEl.textContent = 'C.S. Harmonie';
+        if (!silent) showToast("Dossier sécurisé : Sarah Mukendi (C.S. Harmonie)");
       }
     }
 

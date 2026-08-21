@@ -49,10 +49,12 @@
   <!-- SIDEBAR -->
   <aside class="w-full md:w-64 md:min-h-screen glass flex flex-col py-6 px-4 shrink-0 md:fixed md:left-0 md:top-0 md:bottom-0 z-40 overflow-y-auto">
     <div class="flex items-center gap-3 px-2 mb-8">
-      <div class="w-10 h-10 bg-[#0a192f] border-2 border-amber-500 flex items-center justify-center font-display font-bold text-base rounded-lg">HR</div>
+      <div class="w-12 h-12 rounded-full overflow-hidden bg-white p-0.5 shadow-lg border border-white/20 shrink-0">
+        <img id="teacher-school-logo" src="/logos/logo-harmonie.jpg" alt="Logo École" class="w-full h-full object-contain rounded-full">
+      </div>
       <div>
-        <p class="font-black text-sm leading-tight">Espace</p>
-        <p class="text-amber-400 text-xs font-bold">Enseignant</p>
+        <p class="font-black text-sm leading-tight uppercase" id="teacher-portal-title">Espace Enseignant</p>
+        <p class="text-amber-400 text-[11px] font-bold" id="teacher-inst-badge">C.S. Harmonie</p>
       </div>
     </div>
     <nav class="space-y-1 flex-1">
@@ -111,10 +113,15 @@
     }
 
     const fullName = [user.prenom, user.nom].filter(Boolean).join(' ');
+    const teacherSchool = user.ecole || 'Harmonie';
     document.getElementById('teacher-name').textContent = fullName || 'Inconnu';
-    document.getElementById('teacher-role').textContent = `${user.role || 'Agent'} — ${user.ecole === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}`;
+    document.getElementById('teacher-role').textContent = `${user.role || 'Agent'} — ${teacherSchool === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}`;
     const initials = ((user.prenom || '')[0] || '') + ((user.nom || '')[0] || '');
     document.getElementById('teacher-avatar').textContent = initials.toUpperCase() || '?';
+    const teacherLogoEl = document.getElementById('teacher-school-logo');
+    if (teacherLogoEl) teacherLogoEl.src = teacherSchool === 'Harmonie' ? '/logos/logo-harmonie.jpg' : '/logos/logo-retrouvailles.jpg';
+    const teacherBadgeEl = document.getElementById('teacher-inst-badge');
+    if (teacherBadgeEl) teacherBadgeEl.textContent = teacherSchool === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles';
 
     // ── Charger les affectations RÉELLES faites par le D.E (Secondaire) ou Sur École (Primaire) ──
     const affectationsRetr = JSON.parse(localStorage.getItem('hr_affectations_db')) || [];

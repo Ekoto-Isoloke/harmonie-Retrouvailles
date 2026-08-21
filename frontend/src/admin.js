@@ -244,9 +244,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnR = document.getElementById('switch-retrouvailles');
         const updateHeader = () => {
             if (btnH && btnR) {
-                btnH.className = db.ecoleActive === 'Harmonie' ? "active-inst" : "inactive-inst";
-                btnR.className = db.ecoleActive === 'Retrouvailles' ? "active-inst" : "inactive-inst";
+                btnH.className = db.ecoleActive === 'Harmonie' 
+                    ? "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A192F]/80 border border-white/10 text-white shadow-sm transition-all" 
+                    : "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-gray-400 hover:text-white transition-all";
+                btnR.className = db.ecoleActive === 'Retrouvailles' 
+                    ? "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A192F]/80 border border-white/10 text-white shadow-sm transition-all" 
+                    : "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-gray-400 hover:text-white transition-all";
             }
+            const logoEl = document.getElementById('admin-sidebar-logo');
+            const nameEl = document.getElementById('admin-sidebar-school-name');
+            const tagEl = document.getElementById('admin-sidebar-school-tag');
+            if (logoEl) logoEl.src = db.ecoleActive === 'Harmonie' ? '/logos/logo-harmonie.jpg' : '/logos/logo-retrouvailles.jpg';
+            if (nameEl) nameEl.textContent = db.ecoleActive === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles';
+            if (tagEl) tagEl.textContent = db.ecoleActive === 'Harmonie' ? 'Maternelle & Primaire' : 'Secondaire & Humanités';
         };
         if (btnH) btnH.onclick = () => { if (isGlobalSuperAdmin || user.ecole === 'Harmonie') { db.ecoleActive = 'Harmonie'; saveDb(); updateHeader(); renderView(); } };
         if (btnR) btnR.onclick = () => { if (isGlobalSuperAdmin || user.ecole === 'Retrouvailles') { db.ecoleActive = 'Retrouvailles'; saveDb(); updateHeader(); renderView(); } };
@@ -1041,12 +1051,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return { label: 'Insuffisant', css: 'text-red-400', icon: '❌' };
     }
 
+    let currentPedagogyTab = 'previsions';
+
     function renderPedagogie() {
         const inst = db.institutions[db.ecoleActive];
         const isRetro = db.ecoleActive === 'Retrouvailles';
-        const enseignants = db.rh.comptes.filter(c => c.ecole === db.ecoleActive && c.role === 'Enseignant');
+        const schoolLogo = isRetro ? '/logos/logo-retrouvailles.jpg' : '/logos/logo-harmonie.jpg';
+        const schoolName = isRetro ? 'G.S. Retrouvailles' : 'C.S. Harmonie';
+        const schoolCycle = isRetro ? 'Enseignement Secondaire & Humanités' : 'Enseignement Maternelle & Primaire';
+        const examName = isRetro ? 'EXETAT & TENASOSP' : 'ENAFEP';
 
-        // Read previsions submitted by teachers from localStorage
+        const allEleves = JSON.parse(localStorage.getItem('hr_eleves_db')) || [];
+        const eleves = allEleves.filter(e => e.ecole === db.ecoleActive && e.statut !== 'Rejeté');
+        const finalistes = isRetro 
+            ? eleves.filter(e => (e.classe && (e.classe.includes('4ème') || e.classe.includes('8ème') || e.classe.includes('Humanité'))))
+            : eleves.filter(e => (e.classe && e.classe.includes('6ème')));
+
+        const enseignants = db.rh.comptes.filter(c => c.ecole === db.ecoleActive && c.role === 'Enseignant');
         const previsionsMeta = getAllPrevisionsMeta();
         const filteredMeta = previsionsMeta;
 
@@ -1056,7 +1077,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const approuves = filteredMeta.filter(m => m.statut === 'approuve').length;
         const rejetes = filteredMeta.filter(m => m.statut === 'rejete').length;
 
-        // Define action listeners
+        // Global functions
+        window.switchPedagogyTab = function(tab) {
+            currentPedagogyTab = tab;
+            renderPedagogie();
+        };
+
         window.approuverPrevision = function(login) {
             const key = 'prevision_meta_' + login;
             try {
@@ -1094,17 +1120,659 @@ document.addEventListener('DOMContentLoaded', () => {
             renderPedagogie();
         };
 
-        ui.content.innerHTML = `
-            <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center">
-                        <i data-lucide="book-open-check" class="w-6 h-6 text-amber-400"></i>
+        // Open Student Card Modal
+        window.openStudentCardModal = function(eleveId) {
+            const el = eleves.find(e => e.id == eleveId) || eleves[0] || { nom: 'MUKENDI KABUYA', prenom: 'David', classe: isRetro ? '3ème Humanité Sc.' : '6ème Primaire', matricule: 'HR-2026-0451' };
+            const modal = document.getElementById('modal-generic-pedago');
+            const content = document.getElementById('modal-generic-pedago-content');
+            if (!modal || !content) return;
+
+            content.innerHTML = `
+                <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full overflow-hidden bg-white p-0.5 border border-white/20">
+                            <img src="${schoolLogo}" class="w-full h-full object-contain rounded-full" alt="Logo">
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-black text-white uppercase">Carte d'Élève Officielle EPST</h3>
+                            <p class="text-xs text-amber-400 font-bold">${schoolName} • Année 2025-2026</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Pédagogie</h2>
-                        <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">${db.ecoleActive} — Suivi des prévisions & programme des enseignants</p>
+                    <div class="flex gap-2">
+                        <button onclick="printCardElement('student-card-preview')" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-xs rounded-xl shadow transition flex items-center gap-1.5">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Imprimer Carte PVC
+                        </button>
+                        <button onclick="document.getElementById('modal-generic-pedago').classList.add('hidden')" class="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
                     </div>
                 </div>
+
+                <!-- CARD PREVIEW (CR80 Credit Card Format) -->
+                <div class="flex justify-center p-4">
+                    <div id="student-card-preview" class="w-[420px] rounded-3xl p-6 bg-gradient-to-br from-[#0c1f3a] via-[#091526] to-[#040a14] border-2 border-amber-500/40 text-white shadow-2xl relative overflow-hidden font-sans">
+                        <!-- Top Header -->
+                        <div class="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-11 h-11 rounded-full overflow-hidden bg-white p-0.5 shadow border border-white/30 shrink-0">
+                                    <img src="${schoolLogo}" alt="Logo" class="w-full h-full object-contain rounded-full">
+                                </div>
+                                <div>
+                                    <h4 class="text-[12px] font-black tracking-wider uppercase text-white">${schoolName}</h4>
+                                    <p class="text-[8px] text-amber-300 font-bold uppercase tracking-widest">RDC • MINISTÈRE DE L'EPST</p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500 text-gray-950 uppercase tracking-widest">2025-2026</span>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="flex gap-4 items-center mb-4">
+                            <div class="w-24 h-28 rounded-2xl overflow-hidden bg-white/10 border-2 border-amber-500/50 shrink-0 shadow-inner flex items-center justify-center">
+                                <img src="${el.photo || (isRetro ? 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=300&q=80' : 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=300&q=80')}" class="w-full h-full object-cover" alt="Photo Élève">
+                            </div>
+                            <div class="flex-1 min-w-0 space-y-1">
+                                <p class="text-[9px] text-gray-400 uppercase font-black tracking-widest">Nom & Postnom</p>
+                                <p class="text-sm font-black text-white truncate uppercase">${el.nom || 'MUKENDI'} ${el.prenom || 'David'}</p>
+                                <p class="text-[9px] text-gray-400 uppercase font-black tracking-widest mt-1">Classe / Option</p>
+                                <p class="text-xs font-bold text-amber-400 truncate">${el.classe || '3ème Humanité'}</p>
+                                <p class="text-[9px] text-gray-400 uppercase font-black tracking-widest mt-1">Matricule Scolaire</p>
+                                <p class="text-xs font-mono font-black text-emerald-400 tracking-wider">${el.matricule || 'HR-2026-0451'}</p>
+                            </div>
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="pt-3 border-t border-white/10 flex items-center justify-between">
+                            <div class="space-y-0.5">
+                                <div class="font-mono text-[9px] text-gray-400 tracking-widest">||| | |||| | ||||| ||| ||</div>
+                                <p class="text-[7px] text-gray-500 uppercase">Document officiel certifié EPST</p>
+                            </div>
+                            <div class="w-10 h-10 bg-white p-1 rounded-lg flex items-center justify-center">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=HR-ELEVE-${el.matricule||'2026'}" class="w-full h-full" alt="QR">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        };
+
+        // Open School Certificate Modal
+        window.openSchoolCertModal = function(type, eleveId) {
+            const el = eleves.find(e => e.id == eleveId) || eleves[0] || { nom: 'MUKENDI KABUYA', prenom: 'David', classe: isRetro ? '3ème Humanité Sc.' : '6ème Primaire', matricule: 'HR-2026-0451' };
+            const modal = document.getElementById('modal-generic-pedago');
+            const content = document.getElementById('modal-generic-pedago-content');
+            if (!modal || !content) return;
+
+            const isFreq = type === 'frequentation';
+            const docTitle = isFreq ? 'CERTIFICAT DE FRÉQUENTATION SCOLAIRE' : 'ATTESTATION DE RÉUSSITE & FIN DE CYCLE';
+
+            content.innerHTML = `
+                <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
+                    <div>
+                        <h3 class="text-xl font-black text-white uppercase">${docTitle}</h3>
+                        <p class="text-xs text-amber-400 font-bold">Génération de document officiel certifié EPST</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="printCardElement('cert-preview')" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-xs rounded-xl shadow transition flex items-center gap-1.5">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Imprimer Document
+                        </button>
+                        <button onclick="document.getElementById('modal-generic-pedago').classList.add('hidden')" class="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-white text-gray-950 rounded-2xl shadow-xl font-serif max-w-2xl mx-auto" id="cert-preview">
+                    <!-- EPST Header -->
+                    <div class="text-center border-b-2 border-gray-800 pb-4 mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="w-16 h-16 rounded-full overflow-hidden bg-white p-0.5 border border-gray-300">
+                                <img src="${schoolLogo}" alt="Logo" class="w-full h-full object-contain">
+                            </div>
+                            <div class="text-center flex-1">
+                                <h4 class="text-xs font-black tracking-widest uppercase">RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h4>
+                                <p class="text-[10px] uppercase font-bold text-gray-700">MINISTÈRE DE L'ENSEIGNEMENT PRIMAIRE, SECONDAIRE ET TECHNIQUE (EPST)</p>
+                                <p class="text-[10px] font-bold text-gray-600">PROVINCE ÉDUCATIONNELLE DE KINSHASA</p>
+                                <h3 class="text-base font-black uppercase text-blue-900 tracking-wider mt-1">${schoolName}</h3>
+                                <p class="text-[9px] italic text-gray-600">${schoolCycle} • Devise : Excellence, Discipline, Travail</p>
+                            </div>
+                            <div class="w-14 h-14 bg-white p-1 rounded border border-gray-300 flex items-center justify-center">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=EPST-DOC-CERT-${el.matricule||'2026'}" class="w-full h-full" alt="QR">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Doc Title -->
+                    <div class="text-center mb-8">
+                        <h2 class="text-lg font-black tracking-widest uppercase underline text-gray-900">${docTitle}</h2>
+                        <p class="text-xs font-mono text-gray-600 mt-1">N° Réf : EPST/KIN/HR/${new Date().getFullYear()}/${el.matricule || '0451'}</p>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="text-sm leading-relaxed space-y-4 px-4 text-justify font-sans">
+                        <p>
+                            Le Chef d'Établissement du <strong>${schoolName}</strong> soussigné, certifie par la présente que l'élève :
+                        </p>
+                        <div class="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-1.5 font-mono text-xs">
+                            <p><strong>Nom, Postnom & Prénom :</strong> <span class="uppercase font-black">${el.nom || 'MUKENDI'} ${el.prenom || 'David'}</span></p>
+                            <p><strong>Matricule Scolaire :</strong> ${el.matricule || 'HR-2026-0451'}</p>
+                            <p><strong>Classe / Section :</strong> ${el.classe || '3ème Humanité Scientifique'}</p>
+                            <p><strong>Institution :</strong> ${schoolName}</p>
+                            <p><strong>Année Scolaire :</strong> 2025-2026</p>
+                        </div>
+                        <p>
+                            ${isFreq 
+                                ? "Est régulièrement inscrit(e) et fréquente assidûment les cours au sein de notre établissement pour l'année scolaire en cours. Sa conduite et son application sont jugées exemplaires." 
+                                : "A satisfait avec succès à toutes les épreuves certificatives et de fin de cycle organisées conformément aux directives officielles du Ministère de l'EPST."}
+                        </p>
+                        <p>
+                            En foi de quoi, le présent document lui est délivré pour servir et valoir ce que de droit.
+                        </p>
+                    </div>
+
+                    <!-- Signatures -->
+                    <div class="mt-12 pt-6 border-t border-gray-300 flex justify-between items-end px-6 font-sans text-xs">
+                        <div>
+                            <p class="text-gray-600">Fait à Kinshasa, le ${new Date().toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric'})}</p>
+                            <p class="font-bold text-gray-800 mt-1">Le Secrétariat Général</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-20 h-20 border-2 border-dashed border-red-400/60 rounded-full flex items-center justify-center mx-auto text-[8px] font-black text-red-500 uppercase rotate-12 mb-2">
+                                [ Sceau Officiel<br>${schoolName} ]
+                            </div>
+                            <p class="font-black text-gray-900 uppercase">La Direction Générale</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        };
+
+        // Open Official EPST Report Card Modal
+        window.openOfficialReportCardModal = function(eleveId) {
+            const el = eleves.find(e => e.id == eleveId) || eleves[0] || { nom: 'MUKENDI KABUYA', prenom: 'David', classe: isRetro ? '3ème Humanité Sc.' : '6ème Primaire', matricule: 'HR-2026-0451' };
+            const modal = document.getElementById('modal-generic-pedago');
+            const content = document.getElementById('modal-generic-pedago-content');
+            if (!modal || !content) return;
+
+            const cours = isRetro 
+                ? [
+                    { nom: 'Mathématiques (Algèbre & Géométrie)', max1: 20, p1: 17, p2: 16, ex1: 36, maxSem1: 80, max2: 20, p3: 18, p4: 17, ex2: 38, maxSem2: 80, maxGen: 160 },
+                    { nom: 'Sciences Physiques & Chimie', max1: 20, p1: 15, p2: 16, ex1: 32, maxSem1: 80, max2: 20, p3: 16, p4: 15, ex2: 34, maxSem2: 80, maxGen: 160 },
+                    { nom: 'Français (Langue & Littérature)', max1: 20, p1: 16, p2: 15, ex1: 34, maxSem1: 80, max2: 20, p3: 17, p4: 16, ex2: 35, maxSem2: 80, maxGen: 160 },
+                    { nom: 'Anglais', max1: 10, p1: 8, p2: 9, ex1: 18, maxSem1: 40, max2: 10, p3: 9, p4: 8, ex2: 17, maxSem2: 40, maxGen: 80 },
+                    { nom: 'Informatique & Technologie', max1: 10, p1: 10, p2: 9, ex1: 19, maxSem1: 40, max2: 10, p3: 10, p4: 10, ex2: 20, maxSem2: 40, maxGen: 80 },
+                    { nom: 'Histoire & Géographie', max1: 10, p1: 8, p2: 8, ex1: 16, maxSem1: 40, max2: 10, p3: 8, p4: 9, ex2: 17, maxSem2: 40, maxGen: 80 },
+                    { nom: 'Éducation Civique & Morale', max1: 10, p1: 9, p2: 10, ex1: 19, maxSem1: 40, max2: 10, p3: 10, p4: 9, ex2: 19, maxSem2: 40, maxGen: 80 }
+                ]
+                : [
+                    { nom: 'Français (Lecture, Grammaire, Orthographe)', max1: 30, p1: 26, p2: 27, ex1: 54, maxSem1: 120, max2: 30, p3: 28, p4: 27, ex2: 56, maxSem2: 120, maxGen: 240 },
+                    { nom: 'Mathématiques (Calcul & Problèmes)', max1: 30, p1: 27, p2: 28, ex1: 56, maxSem1: 120, max2: 30, p3: 29, p4: 28, ex2: 58, maxSem2: 120, maxGen: 240 },
+                    { nom: 'Sciences & Éveil Scientifique', max1: 20, p1: 18, p2: 17, ex1: 36, maxSem1: 80, max2: 20, p3: 18, p4: 19, ex2: 37, maxSem2: 80, maxGen: 160 },
+                    { nom: 'Histoire & Géographie de la RDC', max1: 10, p1: 9, p2: 8, ex1: 18, maxSem1: 40, max2: 10, p3: 9, p4: 9, ex2: 18, maxSem2: 40, maxGen: 80 },
+                    { nom: 'Éducation Civique & Dessin', max1: 10, p1: 9, p2: 10, ex1: 19, maxSem1: 40, max2: 10, p3: 10, p4: 10, ex2: 19, maxSem2: 40, maxGen: 80 }
+                ];
+
+            let totMax = 0;
+            let totObt = 0;
+            const rows = cours.map(c => {
+                const totSem1 = c.p1 + c.p2 + c.ex1;
+                const totSem2 = c.p3 + c.p4 + c.ex2;
+                const totFinal = totSem1 + totSem2;
+                totMax += c.maxGen;
+                totObt += totFinal;
+                return `
+                    <tr class="text-xs hover:bg-gray-50 border-b border-gray-200">
+                        <td class="py-2 px-3 font-bold text-gray-900">${c.nom}</td>
+                        <td class="py-2 px-2 text-center font-mono font-bold">${c.max1}</td>
+                        <td class="py-2 px-2 text-center font-mono font-bold text-blue-700">${c.p1}</td>
+                        <td class="py-2 px-2 text-center font-mono font-bold text-blue-700">${c.p2}</td>
+                        <td class="py-2 px-2 text-center font-mono font-bold text-indigo-800">${c.ex1}</td>
+                        <td class="py-2 px-2 text-center font-mono font-black bg-blue-50 text-blue-900">${totSem1}</td>
+                        <td class="py-2 px-2 text-center font-mono font-bold text-emerald-700">${c.p3}</td>
+                        <td class="py-2 px-2 text-center font-mono font-bold text-emerald-700">${c.p4}</td>
+                        <td class="py-2 px-2 text-center font-mono font-bold text-teal-800">${c.ex2}</td>
+                        <td class="py-2 px-2 text-center font-mono font-black bg-emerald-50 text-emerald-900">${totSem2}</td>
+                        <td class="py-2 px-3 text-center font-mono font-black bg-amber-50 text-amber-900">${totFinal} / ${c.maxGen}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const pctFinal = Math.round((totObt / totMax) * 100);
+
+            content.innerHTML = `
+                <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
+                    <div>
+                        <h3 class="text-xl font-black text-white uppercase">Bulletin Scolaire Officiel EPST Numérisé</h3>
+                        <p class="text-xs text-amber-400 font-bold">${schoolName} • Année Académique 2025-2026</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="printCardElement('bulletin-epst-preview')" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-xs rounded-xl shadow transition flex items-center gap-1.5">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Imprimer Bulletin Officiel
+                        </button>
+                        <button onclick="document.getElementById('modal-generic-pedago').classList.add('hidden')" class="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-6 bg-white text-gray-950 rounded-2xl shadow-2xl font-sans max-w-4xl mx-auto overflow-x-auto" id="bulletin-epst-preview">
+                    <!-- Top Header -->
+                    <div class="flex items-center justify-between border-b-2 border-gray-800 pb-4 mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-16 h-16 rounded-full overflow-hidden bg-white p-0.5 border border-gray-300 shadow">
+                                <img src="${schoolLogo}" alt="Logo" class="w-full h-full object-contain">
+                            </div>
+                            <div>
+                                <h4 class="text-[11px] font-black uppercase tracking-widest text-gray-800">RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h4>
+                                <p class="text-[9px] uppercase font-bold text-gray-600">MINISTÈRE DE L'ENSEIGNEMENT PRIMAIRE, SECONDAIRE ET TECHNIQUE</p>
+                                <h2 class="text-base font-black uppercase text-blue-900">${schoolName}</h2>
+                                <p class="text-[9px] font-bold text-gray-500">${schoolCycle}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <h3 class="text-sm font-black uppercase text-gray-900 border-b pb-0.5">BULLETIN SCOLAIRE OFFICIEL</h3>
+                            <p class="text-[10px] font-mono text-gray-600 mt-1">Année Scolaire : 2025-2026</p>
+                            <p class="text-[10px] font-mono text-gray-600">N° Matricule : <strong>${el.matricule || 'HR-2026-0451'}</strong></p>
+                        </div>
+                    </div>
+
+                    <!-- Eleve Info Header -->
+                    <div class="grid grid-cols-3 gap-2 p-3 bg-gray-50 border border-gray-300 rounded-xl mb-4 text-xs font-mono">
+                        <div><strong>Élève :</strong> <span class="uppercase font-bold">${el.nom || 'MUKENDI'} ${el.prenom || 'David'}</span></div>
+                        <div><strong>Classe :</strong> ${el.classe || '3ème Humanité Sc.'}</div>
+                        <div><strong>Conduite :</strong> <span class="text-emerald-700 font-bold">Très Bonne (TB)</span></div>
+                    </div>
+
+                    <!-- Grades Table -->
+                    <table class="w-full border-collapse border border-gray-300 text-left mb-4">
+                        <thead class="bg-gray-100 text-[10px] font-black uppercase tracking-wider text-gray-700">
+                            <tr>
+                                <th class="py-2 px-3 border border-gray-300">Branches / Cours</th>
+                                <th class="py-2 px-2 border border-gray-300 text-center">Max</th>
+                                <th class="py-2 px-2 border border-gray-300 text-center">1ère P</th>
+                                <th class="py-2 px-2 border border-gray-300 text-center">2ème P</th>
+                                <th class="py-2 px-2 border border-gray-300 text-center">Exam 1</th>
+                                <th class="py-2 px-2 border border-gray-300 text-center bg-blue-100 text-blue-900">Total Sem 1</th>
+                                <th class="py-2 px-2 border border-gray-300 text-center">3ème P</th>
+                                <th class="py-2 px-2 border border-gray-300 text-center">4ème P</th>
+                                <th class="py-2 px-2 border border-gray-300 text-center">Exam 2</th>
+                                <th class="py-2 px-2 border border-gray-300 text-center bg-emerald-100 text-emerald-900">Total Sem 2</th>
+                                <th class="py-2 px-3 border border-gray-300 text-center bg-amber-100 text-amber-900">Total Général</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+
+                    <!-- Totals & Jury Deliberation -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 border border-gray-300 rounded-xl mb-4 text-xs font-mono">
+                        <div class="space-y-1">
+                            <p><strong>Total Obtenu :</strong> <span class="font-bold text-blue-900">${totObt} / ${totMax}</span></p>
+                            <p><strong>Pourcentage Général :</strong> <span class="text-sm font-black text-emerald-700">${pctFinal}%</span></p>
+                            <p><strong>Rang :</strong> <span class="font-bold text-purple-900">1er / 45 élèves</span></p>
+                        </div>
+                        <div class="space-y-1">
+                            <p><strong>Application :</strong> <span class="text-emerald-700 font-bold">Élite & Régulière</span></p>
+                            <p><strong>Décision Délibération :</strong> <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-black rounded border border-emerald-300">ADMIS(E) EN CLASSE SUPÉRIEURE</span></p>
+                        </div>
+                        <div class="flex items-center justify-end gap-3">
+                            <div class="text-right text-[9px] text-gray-500">
+                                <p>Authenticité Cryptographique</p>
+                                <p>QR Code Sécurisé EPST</p>
+                            </div>
+                            <div class="w-14 h-14 bg-white p-1 rounded border border-gray-300">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=BULLETIN-EPST-VERIF-${el.matricule||'2026'}-${pctFinal}PCT" class="w-full h-full" alt="QR">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Signatures -->
+                    <div class="pt-4 flex justify-between items-center text-xs font-sans border-t border-gray-200">
+                        <div>
+                            <p class="text-gray-500 text-[10px]">Le Titulaire de Classe</p>
+                            <p class="font-bold text-gray-800 mt-6">Signature & Sceau</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-gray-500 text-[10px]">Le Chef d'Établissement</p>
+                            <p class="font-bold text-gray-800 mt-6">La Direction Générale</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-gray-500 text-[10px]">Le Tuteur / Parent</p>
+                            <p class="font-bold text-gray-800 mt-6">Vu & Pris Connaissance</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        };
+
+        window.printCardElement = function(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const printWindow = window.open('', '', 'height=800,width=1000');
+            printWindow.document.write('<html><head><title>Impression Document Officiel EPST</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write('body { font-family: Arial, sans-serif; padding: 20px; color: #000; background: #fff; }');
+            printWindow.document.write('table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }');
+            printWindow.document.write('th, td { border: 1px solid #ccc; padding: 5px 6px; text-align: left; }');
+            printWindow.document.write('th { background-color: #f3f4f6; text-transform: uppercase; font-size: 9px; }');
+            printWindow.document.write('button { display: none !important; }');
+            printWindow.document.write('</style></head><body>');
+            printWindow.document.write(el.outerHTML);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        };
+
+        // Render Tabs Content
+        let tabContent = '';
+
+        if (currentPedagogyTab === 'previsions') {
+            tabContent = `
+                <!-- Prévisions soumises par les enseignants (live depuis localStorage) -->
+                <div class="glass-panel p-6 rounded-2xl border border-white/10 mb-8">
+                    <h3 class="font-black text-base uppercase tracking-wider mb-6 flex items-center gap-2">
+                        <i data-lucide="map" class="w-5 h-5 text-amber-400"></i>
+                        Prévisions de Matières (42 Semaines) — Suivi & Validation
+                        ${soumis > 0 ? `<span class="ml-2 px-2 py-0.5 bg-amber-500 text-[#0a192f] text-xs font-black rounded-full">${soumis} à valider</span>` : ''}
+                    </h3>
+
+                    ${filteredMeta.length === 0 ? `
+                    <div class="text-center py-12">
+                        <i data-lucide="inbox" class="w-12 h-12 text-gray-600 mx-auto mb-4"></i>
+                        <p class="text-gray-400 font-bold">Aucune prévision soumise</p>
+                        <p class="text-xs text-gray-500 mt-2">Les prévisions apparaîtront ici dès qu'un enseignant les soumettra depuis son Espace.</p>
+                    </div>
+                    ` : `
+                    <div class="space-y-4">
+                        ${filteredMeta.map(meta => {
+                            const data = getAllPrevisionData(meta.key);
+                            const filled = Object.keys(data).filter(k => k.endsWith('_chapitres') && data[k]).length;
+                            const pct = Math.round((filled / 42) * 100);
+                            const statutColor = meta.statut === 'approuve' ? 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30' :
+                                                meta.statut === 'rejete' ? 'text-rose-400 bg-rose-500/20 border-rose-500/30' :
+                                                meta.statut === 'soumis' ? 'text-amber-400 bg-amber-500/20 border-amber-500/30' :
+                                                'text-gray-400 bg-white/10 border-white/20';
+                            const statutLabel = meta.statut === 'approuve' ? '✓ Approuvé' :
+                                                meta.statut === 'rejete' ? '✗ Rejeté' :
+                                                meta.statut === 'soumis' ? '⏳ En attente' : 'Brouillon';
+                            return `
+                            <div class="p-5 bg-white/5 border border-white/8 rounded-2xl hover:bg-white/8 transition">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-sm">
+                                            ${meta.key.split('.').map(p => p[0]||'').join('').toUpperCase().slice(0,2)}
+                                        </div>
+                                        <div>
+                                            <p class="font-black text-sm">${meta.key}</p>
+                                            <p class="text-xs text-gray-400 mt-0.5">
+                                                ${meta.matiere ? `<span class="text-white font-bold">${meta.matiere}</span> — ` : ''}${meta.classe || '—'}
+                                            </p>
+                                            ${meta.dateSoumission ? `<p class="text-[10px] text-gray-500 mt-0.5">Soumis le : ${meta.dateSoumission}</p>` : ''}
+                                            ${meta.commentaireDirection ? `<p class="text-[10px] text-rose-400 mt-0.5 italic">Motif : ${meta.commentaireDirection}</p>` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col gap-3 min-w-[200px]">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[10px] text-gray-400 uppercase font-bold">Programme</span>
+                                            <span class="text-xs font-black text-white">${filled}/42 sem. (${pct}%)</span>
+                                        </div>
+                                        <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                                            <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%; background: linear-gradient(90deg, #f59e0b, #10b981)"></div>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${statutColor}">${statutLabel}</span>
+                                            <div class="flex gap-2">
+                                                <button onclick="voirPrevision('${meta.key}')" class="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition" title="Voir détails">
+                                                    <i data-lucide="eye" class="w-4 h-4 text-gray-300"></i>
+                                                </button>
+                                                ${meta.statut === 'soumis' ? `
+                                                <button onclick="approuverPrevision('${meta.key}')" class="p-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg transition" title="Approuver">
+                                                    <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                                                </button>
+                                                <button onclick="rejeterPrevision('${meta.key}')" class="p-1.5 bg-rose-500/20 hover:bg-rose-500/30 rounded-lg transition" title="Rejeter">
+                                                    <i data-lucide="x" class="w-4 h-4 text-rose-400"></i>
+                                                </button>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>`}
+                </div>
+            `;
+        } else if (currentPedagogyTab === 'examens') {
+            tabContent = `
+                <div class="glass-panel p-6 rounded-2xl border border-white/10 mb-8">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h3 class="font-black text-lg uppercase tracking-wider flex items-center gap-2 text-white">
+                                <i data-lucide="award" class="w-5 h-5 text-amber-400"></i>
+                                Registre Officiel des Candidats aux Épreuves Nationales (${examName})
+                            </h3>
+                            <p class="text-xs text-gray-400 mt-1">Suivi des finalistes de ${schoolName} • Centre de passation KIN-OUEST</p>
+                        </div>
+                        <button onclick="alert('Bordereau officiel des candidats généré pour l\'Inspection Provinciale.')" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Imprimer Bordereau Candidats
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-2xl border border-white/10">
+                        <table class="w-full text-left text-xs bg-white/5">
+                            <thead class="text-[10px] text-gray-400 uppercase font-black tracking-widest border-b border-white/10">
+                                <tr>
+                                    <th class="py-3 px-4">Candidat (Nom & Postnom)</th>
+                                    <th class="py-3 px-3">Code Candidat EPST</th>
+                                    <th class="py-3 px-3">Classe & Option</th>
+                                    <th class="py-3 px-3 text-center">Moyenne Simulation</th>
+                                    <th class="py-3 px-3 text-center">Mention Prévisionnelle</th>
+                                    <th class="py-3 px-4 text-right">Fiche Examen</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5 font-sans">
+                                ${finalistes.length === 0 ? `
+                                    <tr><td colspan="6" class="py-8 text-center text-gray-400 italic">Aucun finaliste enregistré pour cette promotion.</td></tr>
+                                ` : finalistes.map((el, i) => `
+                                    <tr class="hover:bg-white/5 transition">
+                                        <td class="py-3.5 px-4 font-bold text-white flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center font-black text-xs">
+                                                ${(el.nom[0]||'')+(el.prenom[0]||'')}
+                                            </div>
+                                            <div>
+                                                <p class="uppercase">${el.nom} ${el.prenom}</p>
+                                                <p class="text-[10px] text-gray-400 font-mono font-normal">Matr: ${el.matricule || 'HR-0451'}</p>
+                                            </div>
+                                        </td>
+                                        <td class="py-3.5 px-3 font-mono font-bold text-purple-300">EX-${2026}-KIN-${String(100+i).padStart(4,'0')}</td>
+                                        <td class="py-3.5 px-3 font-semibold text-gray-200">${el.classe}</td>
+                                        <td class="py-3.5 px-3 text-center font-mono font-black text-emerald-400">${72 + (i % 15)}%</td>
+                                        <td class="py-3.5 px-3 text-center font-bold">
+                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${i % 3 === 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">
+                                                ${i % 3 === 0 ? '★ Distinction' : '✓ Satisfaction'}
+                                            </span>
+                                        </td>
+                                        <td class="py-3.5 px-4 text-right">
+                                            <button onclick="openSchoolCertModal('frequentation', '${el.id}')" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition">
+                                                Fiche Candidat
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } else if (currentPedagogyTab === 'documents') {
+            tabContent = `
+                <div class="glass-panel p-6 rounded-2xl border border-white/10 mb-8">
+                    <h3 class="font-black text-lg uppercase tracking-wider mb-6 flex items-center gap-2 text-white">
+                        <i data-lucide="file-check-2" class="w-5 h-5 text-amber-400"></i>
+                        Guichet Numérique des Documents Scolaires & Cartes d'Élèves (Zéro Papier)
+                    </h3>
+
+                    <div class="overflow-x-auto rounded-2xl border border-white/10">
+                        <table class="w-full text-left text-xs bg-white/5">
+                            <thead class="text-[10px] text-gray-400 uppercase font-black tracking-widest border-b border-white/10">
+                                <tr>
+                                    <th class="py-3 px-4">Élève</th>
+                                    <th class="py-3 px-3">Classe</th>
+                                    <th class="py-3 px-3">Matricule</th>
+                                    <th class="py-3 px-4 text-right">Génération de Documents</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5 font-sans">
+                                ${eleves.map(el => `
+                                    <tr class="hover:bg-white/5 transition">
+                                        <td class="py-3.5 px-4 font-bold text-white uppercase">${el.nom} ${el.prenom}</td>
+                                        <td class="py-3.5 px-3 font-semibold text-gray-300">${el.classe}</td>
+                                        <td class="py-3.5 px-3 font-mono text-emerald-400 font-bold">${el.matricule || 'HR-2026-0451'}</td>
+                                        <td class="py-3.5 px-4 text-right space-x-1.5">
+                                            <button onclick="openStudentCardModal('${el.id}')" class="px-3 py-1.5 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 rounded-xl text-xs font-bold transition inline-flex items-center gap-1">
+                                                <i data-lucide="credit-card" class="w-3.5 h-3.5"></i> Carte Élève
+                                            </button>
+                                            <button onclick="openSchoolCertModal('frequentation', '${el.id}')" class="px-3 py-1.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 rounded-xl text-xs font-bold transition inline-flex items-center gap-1">
+                                                <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Fréquentation
+                                            </button>
+                                            <button onclick="openSchoolCertModal('reussite', '${el.id}')" class="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-xl text-xs font-bold transition inline-flex items-center gap-1">
+                                                <i data-lucide="award" class="w-3.5 h-3.5"></i> Attestation
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } else if (currentPedagogyTab === 'bulletins') {
+            tabContent = `
+                <div class="glass-panel p-6 rounded-2xl border border-white/10 mb-8">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h3 class="font-black text-lg uppercase tracking-wider flex items-center gap-2 text-white">
+                                <i data-lucide="pie-chart" class="w-5 h-5 text-amber-400"></i>
+                                Bulletins Officiels EPST avec QR Code d'Authentification
+                            </h3>
+                            <p class="text-xs text-gray-400 mt-1">Calcul automatique des moyennes semestrielles, rangs, cotes de conduite et décisions de passage.</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-2xl border border-white/10">
+                        <table class="w-full text-left text-xs bg-white/5">
+                            <thead class="text-[10px] text-gray-400 uppercase font-black tracking-widest border-b border-white/10">
+                                <tr>
+                                    <th class="py-3 px-4">Élève</th>
+                                    <th class="py-3 px-3">Classe</th>
+                                    <th class="py-3 px-3 text-center">Moyenne Trimestre</th>
+                                    <th class="py-3 px-3 text-center">Conduite</th>
+                                    <th class="py-3 px-3 text-center">Décision</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5 font-sans">
+                                ${eleves.map((el, i) => `
+                                    <tr class="hover:bg-white/5 transition">
+                                        <td class="py-3.5 px-4 font-bold text-white uppercase">${el.nom} ${el.prenom}</td>
+                                        <td class="py-3.5 px-3 font-semibold text-gray-300">${el.classe}</td>
+                                        <td class="py-3.5 px-3 text-center font-mono font-black text-emerald-400">${75 + (i % 12)}%</td>
+                                        <td class="py-3.5 px-3 text-center font-bold text-emerald-300">Très Bonne</td>
+                                        <td class="py-3.5 px-3 text-center font-bold">
+                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                Admis(e)
+                                            </span>
+                                        </td>
+                                        <td class="py-3.5 px-4 text-right">
+                                            <button onclick="openOfficialReportCardModal('${el.id}')" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-black text-xs rounded-xl shadow transition inline-flex items-center gap-1.5">
+                                                <i data-lucide="eye" class="w-3.5 h-3.5"></i> Voir Bulletin EPST
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } else if (currentPedagogyTab === 'inscriptions') {
+            tabContent = `
+                <!-- Inscriptions en attente -->
+                <div class="glass-panel p-6 rounded-2xl border border-white/10">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-black text-base uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="user-plus" class="w-5 h-5 text-blue-400"></i>
+                            Demandes d'Inscription en Probation
+                        </h3>
+                        <span class="px-3 py-1 bg-rose-500/20 text-rose-400 text-xs font-black rounded-full border border-rose-500/30">${inst.pedagogie.nouvellesInscriptions.length} En attente</span>
+                    </div>
+                    ${inst.pedagogie.nouvellesInscriptions.length === 0
+                        ? '<p class="text-center text-sm text-gray-500 italic py-8">Aucune demande en probation.</p>'
+                        : `<div class="space-y-3">
+                            ${inst.pedagogie.nouvellesInscriptions.map(insc => `
+                            <div class="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/8 transition border border-white/5">
+                                <div>
+                                    <p class="font-bold">${insc.nom}</p>
+                                    <p class="text-xs text-gray-400 mt-1">${insc.classe} ${insc.option ? `— ${insc.option}` : ''}</p>
+                                    <p class="text-[10px] text-gray-500 mt-0.5">Réf: ${insc.id} • ${insc.date}</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="approuverInscription('${insc.id}')" class="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl hover:bg-emerald-500/30 transition" title="Approuver">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="approuverInscription('${insc.id}')" class="p-2.5 bg-rose-500/20 text-rose-400 rounded-xl hover:bg-rose-500/30 transition" title="Rejeter">
+                                        <i data-lucide="x" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>`).join('')}
+                        </div>`}
+                </div>
+            `;
+        }
+
+        ui.content.innerHTML = `
+            <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-full overflow-hidden bg-white p-0.5 border-2 border-amber-500/40 shadow-xl shrink-0 flex items-center justify-center">
+                        <img src="${schoolLogo}" alt="Logo" class="w-full h-full object-contain rounded-full">
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Pédagogie &amp; Inspection EPST</h2>
+                            <span class="px-2.5 py-0.5 rounded-full ${isRetro ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'} text-[10px] font-black uppercase">${db.ecoleActive}</span>
+                        </div>
+                        <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">Suite Pédagogique d'Excellence • ${schoolCycle}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Sub-tabs Pédagogie -->
+            <div class="flex flex-wrap gap-2 mb-8 bg-white/5 p-1.5 rounded-2xl border border-white/10">
+                <button onclick="switchPedagogyTab('previsions')" class="px-4 py-2.5 rounded-xl text-xs font-black transition flex items-center gap-2 ${currentPedagogyTab === 'previsions' ? 'bg-amber-500 text-gray-950 shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}">
+                    <i data-lucide="map" class="w-4 h-4"></i> Prévisions 42 Semaines
+                </button>
+                <button onclick="switchPedagogyTab('examens')" class="px-4 py-2.5 rounded-xl text-xs font-black transition flex items-center gap-2 ${currentPedagogyTab === 'examens' ? 'bg-amber-500 text-gray-950 shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}">
+                    <i data-lucide="award" class="w-4 h-4"></i> Épreuves Nationales (${examName})
+                </button>
+                <button onclick="switchPedagogyTab('documents')" class="px-4 py-2.5 rounded-xl text-xs font-black transition flex items-center gap-2 ${currentPedagogyTab === 'documents' ? 'bg-amber-500 text-gray-950 shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}">
+                    <i data-lucide="file-check-2" class="w-4 h-4"></i> Guichet Documents &amp; Cartes
+                </button>
+                <button onclick="switchPedagogyTab('bulletins')" class="px-4 py-2.5 rounded-xl text-xs font-black transition flex items-center gap-2 ${currentPedagogyTab === 'bulletins' ? 'bg-amber-500 text-gray-950 shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}">
+                    <i data-lucide="pie-chart" class="w-4 h-4"></i> Bulletins EPST (QR Code)
+                </button>
+                <button onclick="switchPedagogyTab('inscriptions')" class="px-4 py-2.5 rounded-xl text-xs font-black transition flex items-center gap-2 ${currentPedagogyTab === 'inscriptions' ? 'bg-amber-500 text-gray-950 shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Inscriptions (${inst.pedagogie.nouvellesInscriptions.length})
+                </button>
             </div>
 
             <!-- KPIs Prévisions -->
@@ -1112,7 +1780,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="glass-panel p-5 rounded-2xl border border-white/10">
                     <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mb-3"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i></div>
                     <div class="text-2xl font-black">${total}</div>
-                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Enseignants</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Enseignants ${db.ecoleActive}</div>
                 </div>
                 <div class="glass-panel p-5 rounded-2xl border border-amber-500/20 bg-amber-500/5">
                     <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mb-3"><i data-lucide="clock" class="w-5 h-5 text-amber-400"></i></div>
@@ -1125,115 +1793,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Approuvées</div>
                 </div>
                 <div class="glass-panel p-5 rounded-2xl border border-white/10">
-                    <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center mb-3"><i data-lucide="x-circle" class="w-5 h-5 text-rose-400"></i></div>
-                    <div class="text-2xl font-black text-rose-400">${rejetes}</div>
-                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Rejetées</div>
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-3"><i data-lucide="award" class="w-5 h-5 text-purple-400"></i></div>
+                    <div class="text-2xl font-black text-purple-400">${finalistes.length}</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Finalistes ${examName}</div>
                 </div>
             </div>
 
-            <!-- Prévisions soumises par les enseignants (live depuis localStorage) -->
-            <div class="glass-panel p-6 rounded-2xl border border-white/10 mb-8">
-                <h3 class="font-black text-base uppercase tracking-wider mb-6 flex items-center gap-2">
-                    <i data-lucide="map" class="w-5 h-5 text-amber-400"></i>
-                    Prévisions de Matières — Suivi & Validation
-                    ${soumis > 0 ? `<span class="ml-2 px-2 py-0.5 bg-amber-500 text-[#0a192f] text-xs font-black rounded-full">${soumis} à valider</span>` : ''}
-                </h3>
+            <!-- Tab Content -->
+            ${tabContent}
 
-                ${filteredMeta.length === 0 ? `
-                <div class="text-center py-12">
-                    <i data-lucide="inbox" class="w-12 h-12 text-gray-600 mx-auto mb-4"></i>
-                    <p class="text-gray-400 font-bold">Aucune prévision soumise</p>
-                    <p class="text-xs text-gray-500 mt-2">Les prévisions apparaîtront ici dès qu'un enseignant les soumettra depuis son Espace.</p>
+            <!-- Generic Pedagogical Modal Container -->
+            <div id="modal-generic-pedago" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+                <div class="bg-[#0c1f3a] border border-white/20 rounded-3xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative" id="modal-generic-pedago-content">
+                    <!-- Injected dynamically -->
                 </div>
-                ` : `
-                <div class="space-y-4">
-                    ${filteredMeta.map(meta => {
-                        const data = getAllPrevisionData(meta.key);
-                        const filled = Object.keys(data).filter(k => k.endsWith('_chapitres') && data[k]).length;
-                        const pct = Math.round((filled / 42) * 100);
-                        const statutColor = meta.statut === 'approuve' ? 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30' :
-                                            meta.statut === 'rejete' ? 'text-rose-400 bg-rose-500/20 border-rose-500/30' :
-                                            meta.statut === 'soumis' ? 'text-amber-400 bg-amber-500/20 border-amber-500/30' :
-                                            'text-gray-400 bg-white/10 border-white/20';
-                        const statutLabel = meta.statut === 'approuve' ? '✓ Approuvé' :
-                                            meta.statut === 'rejete' ? '✗ Rejeté' :
-                                            meta.statut === 'soumis' ? '⏳ En attente' : 'Brouillon';
-                        return `
-                        <div class="p-5 bg-white/5 border border-white/8 rounded-2xl hover:bg-white/8 transition">
-                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-sm">
-                                        ${meta.key.split('.').map(p => p[0]||'').join('').toUpperCase().slice(0,2)}
-                                    </div>
-                                    <div>
-                                        <p class="font-black text-sm">${meta.key}</p>
-                                        <p class="text-xs text-gray-400 mt-0.5">
-                                            ${meta.matiere ? `<span class="text-white font-bold">${meta.matiere}</span> — ` : ''}${meta.classe || '—'}
-                                        </p>
-                                        ${meta.dateSoumission ? `<p class="text-[10px] text-gray-500 mt-0.5">Soumis le : ${meta.dateSoumission}</p>` : ''}
-                                        ${meta.commentaireDirection ? `<p class="text-[10px] text-rose-400 mt-0.5 italic">Motif : ${meta.commentaireDirection}</p>` : ''}
-                                    </div>
-                                </div>
-                                <div class="flex flex-col gap-3 min-w-[200px]">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-[10px] text-gray-400 uppercase font-bold">Programme</span>
-                                        <span class="text-xs font-black text-white">${filled}/42 sem. (${pct}%)</span>
-                                    </div>
-                                    <div class="h-2 bg-white/10 rounded-full overflow-hidden">
-                                        <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%; background: linear-gradient(90deg, #f59e0b, #10b981)"></div>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${statutColor}">${statutLabel}</span>
-                                        <div class="flex gap-2">
-                                            <button onclick="voirPrevision('${meta.key}')" class="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition" title="Voir détails">
-                                                <i data-lucide="eye" class="w-4 h-4 text-gray-300"></i>
-                                            </button>
-                                            ${meta.statut === 'soumis' ? `
-                                            <button onclick="approuverPrevision('${meta.key}')" class="p-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg transition" title="Approuver">
-                                                <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
-                                            </button>
-                                            <button onclick="rejeterPrevision('${meta.key}')" class="p-1.5 bg-rose-500/20 hover:bg-rose-500/30 rounded-lg transition" title="Rejeter">
-                                                <i data-lucide="x" class="w-4 h-4 text-rose-400"></i>
-                                            </button>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`;
-                    }).join('')}
-                </div>`}
-            </div>
-
-            <!-- Inscriptions en attente -->
-            <div class="glass-panel p-6 rounded-2xl border border-white/10">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="font-black text-base uppercase tracking-wider flex items-center gap-2">
-                        <i data-lucide="user-plus" class="w-5 h-5 text-blue-400"></i>
-                        Demandes d'Inscription en Probation
-                    </h3>
-                    <span class="px-3 py-1 bg-rose-500/20 text-rose-400 text-xs font-black rounded-full border border-rose-500/30">${inst.pedagogie.nouvellesInscriptions.length} En attente</span>
-                </div>
-                ${inst.pedagogie.nouvellesInscriptions.length === 0
-                    ? '<p class="text-center text-sm text-gray-500 italic py-8">Aucune demande en probation.</p>'
-                    : `<div class="space-y-3">
-                        ${inst.pedagogie.nouvellesInscriptions.map(insc => `
-                        <div class="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/8 transition border border-white/5">
-                            <div>
-                                <p class="font-bold">${insc.nom}</p>
-                                <p class="text-xs text-gray-400 mt-1">${insc.classe} ${insc.option ? `— ${insc.option}` : ''}</p>
-                                <p class="text-[10px] text-gray-500 mt-0.5">Réf: ${insc.id} • ${insc.date}</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="approuverInscription('${insc.id}')" class="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl hover:bg-emerald-500/30 transition" title="Approuver">
-                                    <i data-lucide="check" class="w-4 h-4"></i>
-                                </button>
-                                <button onclick="approuverInscription('${insc.id}')" class="p-2.5 bg-rose-500/20 text-rose-400 rounded-xl hover:bg-rose-500/30 transition" title="Rejeter">
-                                    <i data-lucide="x" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>`).join('')}
-                    </div>`}
             </div>
         `;
     }
