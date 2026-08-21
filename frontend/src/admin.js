@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const logoEl = document.getElementById('admin-sidebar-logo');
             const nameEl = document.getElementById('admin-sidebar-school-name');
             const tagEl = document.getElementById('admin-sidebar-school-tag');
-            if (logoEl) logoEl.src = db.ecoleActive === 'Harmonie' ? '/logos/logo-harmonie.jpg' : '/logos/logo-retrouvailles.jpg';
+            if (logoEl) logoEl.src = db.ecoleActive === 'Harmonie' ? '/logos/logo-harmonie.png' : '/logos/logo-retrouvailles.png';
             if (nameEl) nameEl.textContent = db.ecoleActive === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles';
             if (tagEl) tagEl.textContent = db.ecoleActive === 'Harmonie' ? 'Maternelle & Primaire' : 'Secondaire & Humanités';
         };
@@ -1056,7 +1056,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPedagogie() {
         const inst = db.institutions[db.ecoleActive];
         const isRetro = db.ecoleActive === 'Retrouvailles';
-        const schoolLogo = isRetro ? '/logos/logo-retrouvailles.jpg' : '/logos/logo-harmonie.jpg';
+        const schoolLogo = isRetro ? '/logos/logo-retrouvailles.png' : '/logos/logo-harmonie.png';
         const schoolName = isRetro ? 'G.S. Retrouvailles' : 'C.S. Harmonie';
         const schoolCycle = isRetro ? 'Enseignement Secondaire & Humanités' : 'Enseignement Maternelle & Primaire';
         const examName = isRetro ? 'EXETAT & TENASOSP' : 'ENAFEP';

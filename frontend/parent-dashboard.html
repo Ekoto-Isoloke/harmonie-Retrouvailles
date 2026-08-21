@@ -55,8 +55,8 @@
     <div>
       <div class="p-6 border-b border-white/10">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-full overflow-hidden bg-white p-0.5 shadow-lg border border-white/20 shrink-0">
-            <img id="parent-school-logo" src="/logos/logo-retrouvailles.jpg" alt="Logo École" class="w-full h-full object-contain rounded-full">
+          <div class="w-14 h-14 rounded-full overflow-hidden shadow-xl border-2 border-amber-500/40 shrink-0">
+            <img id="parent-school-logo" src="/logos/logo-retrouvailles.png" alt="Logo École" class="w-full h-full object-cover scale-105">
           </div>
           <div>
             <h1 class="font-display font-bold text-white leading-tight">Espace Parent</h1>
@@ -822,7 +822,7 @@
         document.getElementById('child-img').src = 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=400&q=80';
         const logoEl = document.getElementById('parent-school-logo');
         const nameEl = document.getElementById('parent-school-name');
-        if (logoEl) logoEl.src = '/logos/logo-retrouvailles.jpg';
+        if (logoEl) logoEl.src = '/logos/logo-retrouvailles.png';
         if (nameEl) nameEl.textContent = 'G.S. Retrouvailles';
         if (!silent) showToast("Dossier sécurisé : David Mukendi (G.S. Retrouvailles)");
       } else {
@@ -836,7 +836,7 @@
         document.getElementById('child-img').src = 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&q=80';
         const logoEl = document.getElementById('parent-school-logo');
         const nameEl = document.getElementById('parent-school-name');
-        if (logoEl) logoEl.src = '/logos/logo-harmonie.jpg';
+        if (logoEl) logoEl.src = '/logos/logo-harmonie.png';
         if (nameEl) nameEl.textContent = 'C.S. Harmonie';
         if (!silent) showToast("Dossier sécurisé : Sarah Mukendi (C.S. Harmonie)");
       }
