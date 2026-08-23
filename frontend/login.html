@@ -597,123 +597,51 @@
 
 
 
+    // ============================================================
+    // COMPTES PERMANENTS — Restaurés automatiquement sur TOUT appareil
+    // Ajouter ici chaque nouveau compte du personnel pour qu'il soit
+    // disponible sur téléphone, tablette et ordinateur.
+    // ============================================================
+    const PERMANENT_ACCOUNTS = [
+      // ── Super-Admin ──────────────────────────────────────────
+      { id: 1,  email: 'admin@retrouvailes.cd',      password: 'admin',              role: 'Super-Admin', nom: 'Direction', prenom: 'Générale', ecole: 'Harmonie-Retrouvailles', phone: '+243827613009' },
+      { id: 2,  email: 'harmonie@retrouvailes@2026', password: 'retrouvaille@2026',  role: 'Super-Admin', nom: 'Direction', prenom: 'Générale', ecole: 'Harmonie-Retrouvailles', phone: '' },
+      { id: 3,  email: 'harmonie@retroulles@2026',   password: 'retrouvaille@2026',  role: 'Super-Admin', nom: 'Direction', prenom: 'Générale', ecole: 'Harmonie-Retrouvailles', phone: '' },
+      // ── Préfet / Direction ────────────────────────────────────
+      { id: 99, email: 'chadrackisoloke@gmail.com',  password: 'chada123',           role: 'Préfet',      nom: 'EKOTO ISOLOKE', prenom: 'CHADA', ecole: 'Retrouvailles', phone: '+243827613009' },
+      // ── Enseignants ───────────────────────────────────────────
+      { id: 10, email: 'enseignant@retrouvailles.cd',password: 'teacher123',          role: 'Enseignant',  nom: 'ILUNGA',   prenom: 'Jacques', ecole: 'Retrouvailles', phone: '+243810000001', courses: 'Mathématiques' },
+      // ── Comptable ─────────────────────────────────────────────
+      { id: 11, email: 'compta@retrouvailles.cd',    password: 'compta123',           role: 'Comptable',   nom: 'KABONGO',  prenom: 'Marie',   ecole: 'Retrouvailles', phone: '+243810000002' },
+      // ── Parents ───────────────────────────────────────────────
+      { id: 12, email: 'parent@retrouvailles.cd',    password: 'parent123',           role: 'Parent',      nom: 'KABUYA',   prenom: 'Mme.',     ecole: 'Retrouvailles', phone: '+243810000003' },
+    ];
+
     function initDB() {
       let db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
 
-      // 1. Compte Super-Admin officiel
-      let adminAccount = db.find(u => u.email === 'admin@retrouvailes.cd' || u.email === 'admin@epst.cd');
-      if (!adminAccount) {
-        db.push({
-          id: 1,
-          email: 'admin@retrouvailes.cd',
-          password: 'admin',
-          role: 'Super-Admin',
-          nom: 'Direction',
-          prenom: 'Générale',
-          phone: '+243827613009',
-          ecole: 'Harmonie-Retrouvailles',
-          courses: ''
-        });
-      }
-
-      // Compte Super-Admin Harmonie-Retrouvailles (avec variantes courantes)
-      let legacyAdmin = db.find(u => u.email === 'harmonie@retrouvailes@2026' || u.email === 'harmonie@retroulles@2026');
-      if (!legacyAdmin) {
-        db.push({
-          id: 2,
-          email: 'harmonie@retrouvailes@2026',
-          password: 'retrouvaille@2026',
-          role: 'Super-Admin',
-          nom: 'Direction',
-          prenom: 'Générale',
-          phone: '',
-          ecole: 'Harmonie-Retrouvailles',
-          courses: ''
-        });
-        db.push({
-          id: 3,
-          email: 'harmonie@retroulles@2026',
-          password: 'retrouvaille@2026',
-          role: 'Super-Admin',
-          nom: 'Direction',
-          prenom: 'Générale',
-          phone: '',
-          ecole: 'Harmonie-Retrouvailles',
-          courses: ''
-        });
-      }
-
-      // 2. Compte CHADA EKOTO ISOLOKE (Préfet & Direction)
-      let chadrackUser = db.find(u => u.email === 'chadrackisoloke@gmail.com');
-      if (!chadrackUser) {
-        db.push({
-          id: 99,
-          email: 'chadrackisoloke@gmail.com',
-          password: 'chada123',
-          role: 'Préfet',
-          nom: 'EKOTO ISOLOKE',
-          prenom: 'CHADA',
-          phone: '+243827613009',
-          ecole: 'Retrouvailles',
-          courses: '',
-          biometric: false
-        });
-      } else {
-        // Mettre à jour le rôle s'il avait été initialisé en Enseignant par erreur
-        if (chadrackUser.role === 'Enseignant') {
-          chadrackUser.role = 'Préfet';
-          chadrackUser.nom = 'EKOTO ISOLOKE';
-          chadrackUser.prenom = 'CHADA';
+      // Fusionner les comptes enregistrés sur d'autres appareils (synchronisation cross-device)
+      let cloudDB = JSON.parse(localStorage.getItem('hr_cloud_accounts')) || [];
+      cloudDB.forEach(cloudUser => {
+        if (!db.some(u => u.email.toLowerCase() === cloudUser.email.toLowerCase())) {
+          db.push(cloudUser);
         }
-      }
+      });
 
-      // 3. Compte Enseignant par défaut
-      let teacherAccount = db.find(u => u.email === 'enseignant@retrouvailles.cd');
-      if (!teacherAccount) {
-        db.push({
-          id: 10,
-          email: 'enseignant@retrouvailles.cd',
-          password: 'teacher123',
-          role: 'Enseignant',
-          nom: 'ILUNGA',
-          prenom: 'Jacques',
-          phone: '+243810000001',
-          ecole: 'Retrouvailles',
-          courses: 'Mathématiques'
-        });
-      }
-
-      // 4. Compte Comptable par défaut
-      let comptaAccount = db.find(u => u.email === 'compta@retrouvailles.cd');
-      if (!comptaAccount) {
-        db.push({
-          id: 11,
-          email: 'compta@retrouvailles.cd',
-          password: 'compta123',
-          role: 'Comptable',
-          nom: 'KABONGO',
-          prenom: 'Marie',
-          phone: '+243810000002',
-          ecole: 'Retrouvailles',
-          courses: ''
-        });
-      }
-
-      // 5. Compte Parent par défaut
-      let parentAccount = db.find(u => u.email === 'parent@retrouvailles.cd');
-      if (!parentAccount) {
-        db.push({
-          id: 12,
-          email: 'parent@retrouvailles.cd',
-          password: 'parent123',
-          role: 'Parent',
-          nom: 'KABUYA',
-          prenom: 'Mme.',
-          phone: '+243810000003',
-          ecole: 'Retrouvailles',
-          courses: ''
-        });
-      }
+      // Restaurer tous les comptes permanents du personnel
+      PERMANENT_ACCOUNTS.forEach(account => {
+        let existing = db.find(u => u.email.toLowerCase() === account.email.toLowerCase());
+        if (!existing) {
+          db.push({ ...account, courses: account.courses || '', biometric: false });
+        } else {
+          // Corriger un rôle mal initialisé (ex: Enseignant → Préfet pour CHADA)
+          if (account.id === 99 && existing.role === 'Enseignant') {
+            existing.role = 'Préfet';
+            existing.nom = 'EKOTO ISOLOKE';
+            existing.prenom = 'CHADA';
+          }
+        }
+      });
 
       localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
     }
@@ -1131,10 +1059,17 @@
       db.push(newUser);
       localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
 
+      // Synchronisation cross-device: sauvegarder le nouveau compte dans le registre cloud
+      let cloudDB = JSON.parse(localStorage.getItem('hr_cloud_accounts')) || [];
+      if (!cloudDB.some(u => u.email.toLowerCase() === newUser.email.toLowerCase())) {
+        cloudDB.push(newUser);
+        localStorage.setItem('hr_cloud_accounts', JSON.stringify(cloudDB));
+      }
+
       localStorage.setItem('hr_user', JSON.stringify(newUser));
       localStorage.setItem('hr_token', 'token_reg_2026');
 
-      showToast(`Compte ${role} créé avec succès ! Bienvenue ${newUser.prenom} !`, 'success');
+      showToast(`✅ Compte ${role} créé : ${newUser.prenom} ${newUser.nom} — Bienvenue !`, 'success');
 
       setTimeout(() => {
         window.location.href = getDashboardRoute(role);
