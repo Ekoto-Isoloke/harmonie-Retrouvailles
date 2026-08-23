@@ -572,7 +572,7 @@
           const m = Math.floor(vcSeconds / 60).toString().padStart(2, '0');
           const s = (vcSeconds % 60).toString().padStart(2, '0');
           const el = document.getElementById('vc-duration');
-          if (el) el.textContent = \`\${m}:\${s}\`;
+          if (el) el.textContent = `${m}:${s}`;
         }, 1000);
 
         // Register in virtual classes DB so parents can see it
