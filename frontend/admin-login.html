@@ -700,6 +700,13 @@ function handleLogin(e) {
 
   const role = foundUser.role;
 
+  // SÉCURITÉ : Bloquer le personnel non autorisé (Enseignant, Parent, etc.)
+  const allowedAdminRoles = ['Super-Admin', 'Direction Générale', 'Directeur (D.P)', 'Préfet', 'D.E', 'D.D'];
+  if (!allowedAdminRoles.includes(role)) {
+    showToast("⛔ SÉCURITÉ : Accès refusé. Ce portail de connexion est strictement réservé à la Direction.", "error");
+    return;
+  }
+
   localStorage.setItem('hr_user', JSON.stringify(foundUser));
   localStorage.setItem('hr_token', 'token_auth_2026');
 
