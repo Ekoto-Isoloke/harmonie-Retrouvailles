@@ -194,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'suivi-direction': renderSuiviDirection(); break;
             case 'dossier360': renderDossier360(); break;
             case 'gestion-comptes': renderGestionComptes(); break;
+            case 'classe-virtuelle': renderClasseVirtuelle(); break;
         }
         if (window.lucide) lucide.createIcons();
     };
@@ -2990,6 +2991,153 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.printIndividualPresence = function(nom, role, arrivee, statut) {
         alert(`Fiche de présence individuelle générée pour ${nom} (${role}) — Heure: ${arrivee} — Statut: ${statut}`);
+    };
+
+    function renderClasseVirtuelle() {
+        const sessions = JSON.parse(localStorage.getItem('hr_virtual_classes_db') || '[]');
+        ui.content.innerHTML = `
+            <div class="mb-6">
+                <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
+                    <div>
+                        <h3 class="text-2xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+                            <span class="w-10 h-10 rounded-2xl bg-amber-500/20 flex items-center justify-center"><i data-lucide="video" class="w-5 h-5 text-amber-400"></i></span>
+                            Classe Virtuelle & Visioconférence EPST
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Supervision Super-Admin & Lancement de séances Jitsi Meet</p>
+                    </div>
+                    <div class="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <span class="text-xs font-black text-amber-400 uppercase tracking-widest">Jitsi Meet Intégré</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl">
+                        <h4 class="font-black text-sm uppercase tracking-widest text-gray-300 flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400"></i> Créer / Lancer une Séance
+                        </h4>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Classe / Auditoire *</label>
+                            <input id="vac-classe" type="text" placeholder="ex : 4ème Humanités / Réunion Direction"
+                                class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Objet / Cours *</label>
+                            <input id="vac-objet" type="text" placeholder="ex : Conseil Pédagogique / Mathématiques"
+                                class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+                        </div>
+                        <button id="vac-start"
+                            class="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wider cursor-pointer">
+                            <i data-lucide="play" class="w-4 h-4"></i> Lancer la Visioconférence
+                        </button>
+                    </div>
+
+                    <div class="lg:col-span-2 space-y-6">
+                        <div id="vac-container" class="hidden bg-[#0A192F]/80 backdrop-blur-xl border border-amber-500/30 p-6 rounded-3xl shadow-xl">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="font-black text-sm uppercase tracking-widest text-amber-400 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Séance en Direct
+                                </h4>
+                                <button id="vac-stop" class="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-black hover:bg-red-500/40 transition flex items-center gap-2 cursor-pointer">
+                                    <i data-lucide="square" class="w-3 h-3"></i> Fermer la Visioconférence
+                                </button>
+                            </div>
+                            <div id="jitsi-admin-meet" class="w-full rounded-2xl overflow-hidden" style="height:420px;background:#0a0f1e;"></div>
+                        </div>
+
+                        <div class="bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl">
+                            <h4 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4 flex items-center gap-2">
+                                <i data-lucide="history" class="w-4 h-4 text-blue-400"></i>
+                                Toutes les Séances Virtuelles (${sessions.length})
+                            </h4>
+                            <div class="space-y-3">
+                                ${sessions.length === 0 ? `
+                                    <div class="text-center py-10 text-gray-500">
+                                        <i data-lucide="video-off" class="w-10 h-10 mx-auto mb-3 opacity-30"></i>
+                                        <p class="text-sm font-medium">Aucune séance enregistrée pour le moment</p>
+                                        <p class="text-xs mt-1 opacity-60">Les cours virtuels lancés par la Direction ou les Professeurs apparaîtront ici.</p>
+                                    </div>
+                                ` : sessions.slice(0, 15).map(s => `
+                                    <div class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                                                <i data-lucide="video" class="w-5 h-5 text-amber-400"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-bold text-white">${s.subject || s.matiere || 'Séance'} — ${s.className || s.classe || ''}</p>
+                                                <p class="text-xs text-gray-400 mt-0.5">${s.teacher || s.enseignant || 'Direction'} • ${s.createdAt || s.date || ''}</p>
+                                            </div>
+                                        </div>
+                                        <button onclick="window.rejoindreClasseAdmin('${s.roomName || ''}')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold ${s.active ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30' : 'bg-gray-700/50 text-gray-400 border border-gray-700'}">
+                                            ${s.active ? 'Rejoindre ▶' : 'Terminée'}
+                                        </button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        setTimeout(bindVCEventsAdmin, 50);
+    }
+
+    function bindVCEventsAdmin() {
+        const startBtn = document.getElementById('vac-start');
+        const stopBtn = document.getElementById('vac-stop');
+
+        if (startBtn) {
+            startBtn.onclick = () => {
+                const classe = document.getElementById('vac-classe')?.value?.trim();
+                const objet = document.getElementById('vac-objet')?.value?.trim();
+                if (!classe || !objet) { alert("Veuillez renseigner la classe et l'objet de la séance."); return; }
+                const roomName = ('HR-Admin-' + classe + '-' + objet + '-' + Date.now()).replace(/[^a-zA-Z0-9-]/g, '-');
+                const sessions = JSON.parse(localStorage.getItem('hr_virtual_classes_db') || '[]');
+                sessions.unshift({ className: classe, subject: objet, teacher: 'Super-Admin Direction', roomName, active: true, createdAt: new Date().toLocaleDateString('fr-FR') });
+                localStorage.setItem('hr_virtual_classes_db', JSON.stringify(sessions));
+
+                window.rejoindreClasseAdmin(roomName);
+                startBtn.disabled = true;
+                startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            };
+        }
+
+        if (stopBtn) {
+            stopBtn.onclick = () => {
+                const container = document.getElementById('vac-container');
+                const meetDiv = document.getElementById('jitsi-admin-meet');
+                if (meetDiv) meetDiv.innerHTML = '';
+                if (container) container.classList.add('hidden');
+                if (startBtn) { startBtn.disabled = false; startBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
+            };
+        }
+    }
+
+    window.rejoindreClasseAdmin = function(roomName) {
+        if (!roomName) return;
+        const container = document.getElementById('vac-container');
+        const meetDiv = document.getElementById('jitsi-admin-meet');
+        if (container) container.classList.remove('hidden');
+        if (meetDiv && window.JitsiMeetExternalAPI) {
+            meetDiv.innerHTML = '';
+            new window.JitsiMeetExternalAPI('meet.jit.si', {
+                roomName,
+                width: '100%',
+                height: 420,
+                parentNode: meetDiv,
+                userInfo: { displayName: 'Super-Admin EPST' },
+                configOverwrite: { startWithAudioMuted: false, startWithVideoMuted: false }
+            });
+        } else if (meetDiv) {
+            meetDiv.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+                <i data-lucide="video" class="w-16 h-16 opacity-30 text-amber-400"></i>
+                <p class="text-sm font-bold text-white">Salle de classe : ${roomName}</p>
+                <a href="https://meet.jit.si/${encodeURIComponent(roomName)}" target="_blank"
+                   class="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black rounded-xl transition text-sm">
+                    Ouvrir dans Jitsi Meet
+                </a></div>`;
+            if (window.lucide) lucide.createIcons();
+        }
     };
 
 });
