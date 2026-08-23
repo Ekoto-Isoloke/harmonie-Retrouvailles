@@ -700,10 +700,10 @@ function handleLogin(e) {
 
   const role = foundUser.role;
 
-  // SÉCURITÉ : Bloquer le personnel non autorisé (Enseignant, Parent, etc.)
-  const allowedAdminRoles = ['Super-Admin', 'Direction Générale', 'Directeur (D.P)', 'Préfet', 'D.E', 'D.D'];
+  // SÉCURITÉ : Bloquer le personnel non autorisé
+  const allowedAdminRoles = ['Super-Admin'];
   if (!allowedAdminRoles.includes(role)) {
-    showToast("⛔ SÉCURITÉ : Accès refusé. Ce portail de connexion est strictement réservé à la Direction.", "error");
+    showToast("⛔ SÉCURITÉ : Accès refusé. Ce portail de connexion est strictement réservé au Super-Administrateur.", "error");
     return;
   }
 
