@@ -1003,8 +1003,9 @@
 
       initDB(); // Assure la présence des comptes universels
       let db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+      let foundUser = null;
 
-      // Raccourcis mobiles
+      // Raccourcis intelligents
       if (email.toLowerCase() === 'chada' || email.toLowerCase() === 'chadrack') {
         email = 'chadrackisoloke@gmail.com';
         if (!password) password = 'chada123';
@@ -1014,7 +1015,7 @@
         if (!password) password = 'admin';
       }
 
-      // Détection automatique du compte Super-Admin Harmonie (accepte harmonie@retrouvailes@2026, harmonie@retroulles@2026, etc.)
+      // 1. Détection du compte Super-Admin (acceptation souple des identifiants Direction Générale)
       const lowerEmail = email.toLowerCase();
       const lowerPass = password.toLowerCase();
       if ((lowerEmail.startsWith('harmonie') || lowerEmail.includes('retrouvailes') || lowerEmail.includes('retroulles')) &&
@@ -1030,10 +1031,11 @@
         };
       }
 
+      // 2. Recherche exacte dans la base de données sécurisée
       let dbUser = db.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
       if (dbUser) foundUser = dbUser;
 
-      // Correction permissive pour le compte CHADA EKOTO
+      // 3. Fallback d'authentification pour le compte Préfet CHADA EKOTO
       if (!foundUser && email.toLowerCase() === 'chadrackisoloke@gmail.com') {
         foundUser = {
           id: 99,
@@ -1049,7 +1051,7 @@
         localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
       }
 
-      // Si connexion Super-Admin demandée sur portail Admin avec chadrackisoloke@gmail.com, accorder le privilège Super-Admin
+      // 4. Privilège Super-Admin si connexion sur portail Admin avec compte CHADA EKOTO
       if (foundUser && foundUser.email.toLowerCase() === 'chadrackisoloke@gmail.com' && currentPortal === 'admin') {
         foundUser.role = 'Super-Admin';
       }
@@ -1061,25 +1063,27 @@
 
       const role = foundUser.role;
 
+      // SÉCURITÉ : Bloquer strictement l'accès des parents aux portails administratifs
       if (role === 'Parent') {
         showToast("⛔ Accès refusé: Les parents doivent utiliser l'Espace Parents.", "error");
         return;
       }
 
-      const superAdminRoles = ['Super-Admin'];
+      // SÉCURITÉ : Bloquer le personnel non-Admin du portail Super-Admin
+      const superAdminRoles = ['Super-Admin', 'Direction Générale'];
       if (currentPortal === 'admin' && !superAdminRoles.includes(role)) {
         showToast("⛔ Accès refusé: Ce portail est réservé au Super-Administrateur uniquement.", "error");
         return;
       }
 
-      // Sauvegarde de session
+      // Enregistrement de la session sécurisée
       localStorage.setItem('hr_user', JSON.stringify(foundUser));
       localStorage.setItem('hr_token', 'token_auth_2026');
 
-      showToast(`Bienvenue ${foundUser.prenom} ${foundUser.nom} (${role}) !`, 'success');
+      showToast(`Connexion réussie : ${foundUser.prenom} ${foundUser.nom} (${role})`, 'success');
       setTimeout(() => {
         window.location.href = getDashboardRoute(role);
-      }, 800);
+      }, 700);
     }
 
     function handleRegister(e) {

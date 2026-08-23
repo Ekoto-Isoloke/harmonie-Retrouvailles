@@ -97,6 +97,17 @@
       throw new Error('Session invalide');
     }
 
+    // STRICT RBAC CHECK: Accès réservé au corps enseignant et à la Direction
+    const allowedTeacherRoles = ['Enseignant', 'Professeur', 'Instituteur', 'Institutrice', 'Super-Admin', 'Direction', 'Direction Générale'];
+    if (!allowedTeacherRoles.includes(user.role)) {
+      alert("⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nAccès réservé exclusivement au Corps Enseignant.");
+      if (user.role === 'Parent') window.location.href = '/parent-dashboard.html';
+      else if (user.role === 'Comptable') window.location.href = '/compta-dashboard.html';
+      else if (['Préfet', 'D.E', 'D.D', 'Sur École'].includes(user.role)) window.location.href = '/prefet-dashboard.html';
+      else window.location.href = '/login.html';
+      throw new Error('Unauthorized');
+    }
+
     // Affichage du nom complet et du rôle exact choisi lors de l'inscription
     const fullName = [user.prenom, user.nom].filter(Boolean).join(' ');
     document.getElementById('teacher-name').textContent = fullName || 'Inconnu';
