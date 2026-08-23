@@ -288,7 +288,7 @@ function loadTodayState() {
 }
 
 // ===== Navigation onglets =====
-const tabs = ['pointage', 'historique'];
+const tabs = ['pointage', 'historique', 'visio'];
 tabs.forEach(tab => {
   const btn = document.getElementById(`tab-${tab}`);
   const content = document.getElementById(`content-${tab}`);

@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Espace RH – Pointage | Harmonie-Retrouvailles</title>
     <meta name="description" content="Gestion du pointage du personnel pour les écoles Harmonie et Retrouvailles." />
-    <script type="module" src="/shared.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://meet.jit.si/external_api.js"></script>
   </head>
   <body class="bg-[#112240]/60 border border-white/5 text-white font-sans min-h-screen flex flex-col md:flex-row overflow-y-auto">
 
@@ -37,6 +38,10 @@
         <button id="tab-historique" class="tab-btn w-full flex items-center gap-3 px-4 py-3 text-primary-200 hover:bg-primary-900 hover:text-white font-semibold transition-all border-l-4 border-transparent hover:border-primary-700">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
           Historique
+        </button>
+        <button id="tab-visio" class="tab-btn w-full flex items-center gap-3 px-4 py-3 text-amber-400 hover:bg-primary-900 hover:text-amber-300 font-semibold transition-all border-l-4 border-transparent hover:border-amber-500">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+          Classe Virtuelle (Visio)
         </button>
       </nav>
 
@@ -143,8 +148,24 @@
             </tbody>
           </table>
         </div>
+      <!-- ========== Section Visio Classe Virtuelle ========== -->
+      <section id="content-visio" class="tab-content hidden animate-fade-in">
+        <h2 class="font-display text-2xl font-bold text-white mb-4 flex items-center gap-3">
+          <span class="w-1.5 h-6 bg-amber-500 block"></span>
+          Classe Virtuelle & Réunions RH — Jitsi Meet
+        </h2>
+        <div class="bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-4">
+          <p class="text-xs text-gray-400">Rejoindre les visioconférences de l'établissement ou assister aux réunions du personnel.</p>
+          <div id="rh-visio-container" class="w-full rounded-2xl overflow-hidden" style="height:420px;background:#0a0f1e;">
+            <div class="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+              <svg class="w-16 h-16 opacity-30 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+              <a href="https://meet.jit.si/HR-RH-Personnel-Reunion" target="_blank" class="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold rounded-xl text-sm transition">
+                Ouvrir la Salle Visioconférence (Jitsi)
+              </a>
+            </div>
+          </div>
+        </div>
       </section>
-
     </main>
 
     <script type="module" src="/rh.js"></script>

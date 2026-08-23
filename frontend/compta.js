@@ -308,7 +308,7 @@ function renderRecents() {
 }
 
 // ===== Navigation onglets =====
-const tabs = ['encaissement', 'recents'];
+const tabs = ['encaissement', 'recents', 'visio'];
 tabs.forEach(tab => {
   const btn = document.getElementById(`tab-${tab}`);
   const content = document.getElementById(`content-${tab}`);
