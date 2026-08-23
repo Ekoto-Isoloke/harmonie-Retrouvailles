@@ -12,7 +12,9 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         admin: resolve(__dirname, 'admin-dashboard.html'),
+        admin_login: resolve(__dirname, 'admin-login.html'),
         login: resolve(__dirname, 'login.html'),
+        inscription: resolve(__dirname, 'inscription.html'),
         compta: resolve(__dirname, 'compta-dashboard.html'),
         parent_dash: resolve(__dirname, 'parent-dashboard.html'),
         parent_act: resolve(__dirname, 'parent-activation.html'),

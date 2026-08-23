@@ -2,6 +2,7 @@
   "name": "harmonie-retrouvailles",
   "version": "1.0.0",
   "scripts": {
-    "build": "cd frontend && npm install && npm run build"
+    "build": "cd frontend && npm install && npm run build",
+    "install": "cd frontend && npm install"
   }
 }

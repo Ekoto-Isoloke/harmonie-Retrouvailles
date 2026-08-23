@@ -48,7 +48,9 @@ app.post('/api/rh/pointage/depart', verifyToken, requireRole(['Agent', 'Enseigna
 // Seul un comptable ou un Super-Admin peut enregistrer un paiement
 app.post('/api/comptabilite/paiement', verifyToken, requireRole(['Comptable', 'Super-Admin']), paiementController.enregistrerPaiement);
 
-// Lancement du serveur
-app.listen(PORT, () => {
-    console.log(`Serveur demarre sur le port ${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Serveur demarre sur le port ${PORT}`);
+    });
+}
+module.exports = app;
