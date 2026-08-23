@@ -454,55 +454,89 @@
         <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h2 class="text-3xl font-black uppercase tracking-tighter">Classe Virtuelle Live</h2>
-            <p class="text-xs text-gray-400 font-bold mt-1 uppercase tracking-widest">Enseignement à distance interactif</p>
+            <p class="text-xs text-amber-500 font-bold mt-1 uppercase tracking-widest">Système Pédagogique Haute Gamme</p>
           </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div class="lg:col-span-1 space-y-4">
-            <div class="glass p-4 rounded-2xl">
-              <label class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Classe cible</label>
-              <select id="vc-classe-select" class="w-full bg-[#0a192f] text-sm text-white px-3 py-2 rounded-xl border border-white/10 outline-none focus:border-amber-500 mb-4">
-                <option value="3eme-humanites">3ème Humanités</option>
-                <option value="2eme-humanites">2ème Humanités</option>
-                <option value="1ere-primaire">1ère Primaire</option>
-              </select>
+            
+            <!-- CONFIGURATION DE L'AUDITOIRE -->
+            <div class="glass p-5 rounded-3xl border-t-4 border-t-amber-500 shadow-xl relative overflow-hidden">
+              <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="settings-2" class="w-16 h-16"></i></div>
+              <h3 class="font-black text-sm mb-4 uppercase tracking-widest text-white/90">Configuration</h3>
+              
+              <div class="space-y-4 relative z-10">
+                <div>
+                  <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Classe</label>
+                  <select id="vc-classe-select" class="w-full bg-white/5 text-sm text-white px-3 py-2.5 rounded-xl border border-white/10 outline-none focus:border-amber-500 focus:bg-white/10 transition-all cursor-pointer font-medium" onchange="window.vcHandleClasseChange()">
+                    <!-- Populated by JS -->
+                  </select>
+                </div>
 
-              <label class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Cours</label>
-              <select id="vc-cours-select" class="w-full bg-[#0a192f] text-sm text-white px-3 py-2 rounded-xl border border-white/10 outline-none focus:border-amber-500 mb-4">
-                <option value="Mathématiques">Mathématiques</option>
-                <option value="Physique">Physique</option>
-                <option value="Chimie">Chimie</option>
-              </select>
+                <div id="vc-section-container" class="hidden">
+                  <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Section</label>
+                  <select id="vc-section-select" class="w-full bg-white/5 text-sm text-white px-3 py-2.5 rounded-xl border border-white/10 outline-none focus:border-amber-500 focus:bg-white/10 transition-all cursor-pointer font-medium" onchange="window.vcHandleSectionChange()">
+                    <option value="">Sélectionnez...</option>
+                    <option value="Technique">Technique</option>
+                    <option value="Non Technique">Non Technique</option>
+                  </select>
+                </div>
 
-              <button onclick="startVirtualClass()" class="w-full bg-amber-500 text-[#0a192f] font-black px-4 py-3 rounded-xl hover:bg-amber-400 transition flex items-center justify-center gap-2">
-                <i data-lucide="play-circle" class="w-5 h-5"></i>
-                Démarrer le cours
-              </button>
+                <div id="vc-option-container" class="hidden">
+                  <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Option</label>
+                  <select id="vc-option-select" class="w-full bg-white/5 text-sm text-white px-3 py-2.5 rounded-xl border border-white/10 outline-none focus:border-amber-500 focus:bg-white/10 transition-all cursor-pointer font-medium" onchange="window.vcHandleOptionChange()">
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+
+                <div>
+                  <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Matière / Cours</label>
+                  <input type="text" id="vc-cours-input" placeholder="Ex: Mathématiques, Physique..." class="w-full bg-white/5 text-sm text-white px-3 py-2.5 rounded-xl border border-white/10 outline-none focus:border-amber-500 focus:bg-white/10 transition-all font-medium">
+                </div>
+
+                <button onclick="window.startVirtualClass()" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-[#0a192f] font-black px-4 py-3 rounded-xl hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all flex items-center justify-center gap-2 mt-4 transform hover:scale-[1.02]">
+                  <i data-lucide="play-circle" class="w-5 h-5"></i>
+                  Lancer la séance
+                </button>
+              </div>
             </div>
             
-            <div class="glass p-4 rounded-2xl">
-              <h3 class="font-black text-sm mb-3">Statistiques Live</h3>
-              <div class="space-y-3">
-                <div class="flex justify-between items-center text-sm">
-                  <span class="text-gray-400">Élèves connectés</span>
-                  <span class="font-bold text-emerald-400" id="vc-participants">0</span>
-                </div>
-                <div class="flex justify-between items-center text-sm">
-                  <span class="text-gray-400">Durée</span>
-                  <span class="font-bold text-white" id="vc-duration">00:00</span>
-                </div>
+            <!-- LISTE DES ÉLÈVES AUTORISÉS -->
+            <div class="glass p-5 rounded-3xl border border-white/5 shadow-xl">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-black text-sm uppercase tracking-widest text-white/90">Auditoire</h3>
+                <span id="vc-student-count" class="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-1 rounded-md font-black border border-emerald-500/30">0 Élève(s)</span>
+              </div>
+              <div id="vc-students-list" class="space-y-2 max-h-[250px] overflow-y-auto pr-2">
+                <div class="text-xs text-gray-500 italic text-center py-4">Sélectionnez une classe pour voir les élèves inscrits.</div>
+              </div>
+            </div>
+
+            <!-- STATISTIQUES LIVE -->
+            <div class="glass p-4 rounded-3xl border border-white/5">
+              <div class="flex justify-between items-center text-sm mb-2">
+                <span class="text-gray-400 font-medium">En ligne</span>
+                <span class="font-black text-amber-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><span id="vc-participants">0</span></span>
+              </div>
+              <div class="flex justify-between items-center text-sm">
+                <span class="text-gray-400 font-medium">Chrono</span>
+                <span class="font-black text-white font-mono" id="vc-duration">00:00</span>
               </div>
             </div>
           </div>
 
+          <!-- ÉCRAN JITSI -->
           <div class="lg:col-span-3">
-            <div class="glass p-1 rounded-3xl h-[600px] border border-white/10 overflow-hidden flex flex-col relative">
-              <div id="jitsi-container" class="w-full h-full bg-[#050b14] flex items-center justify-center flex-col gap-4 relative z-10">
-                <div class="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-500 border border-amber-500/20">
-                  <i data-lucide="video-off" class="w-10 h-10"></i>
+            <div class="glass p-1 rounded-3xl h-[600px] border border-white/10 overflow-hidden flex flex-col relative shadow-2xl bg-black/40">
+              <div id="jitsi-container" class="w-full h-full flex items-center justify-center flex-col gap-5 relative z-10">
+                <div class="w-24 h-24 bg-gradient-to-br from-amber-500/10 to-amber-600/5 rounded-full flex items-center justify-center text-amber-500 border border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.1)]">
+                  <i data-lucide="video" class="w-10 h-10 opacity-80"></i>
                 </div>
-                <p class="text-gray-400 text-sm font-bold">Sélectionnez une classe et cliquez sur "Démarrer le cours"</p>
+                <div class="text-center">
+                  <p class="text-white text-lg font-black tracking-tight mb-1">Prêt à enseigner ?</p>
+                  <p class="text-gray-500 text-sm font-medium">Configurez votre classe à gauche et lancez la séance.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -514,24 +548,173 @@
     let vcTimer = null;
     let vcSeconds = 0;
 
-    function initVirtualClassTeacher() {
+    const optionsTech = ['Commerciale et Gestion', 'Secrétariat-Bureautique', 'Informatique de Gestion', 'Électricité', 'Mécanique Générale', 'Construction', 'Électronique', 'Nutrition-Alimentation', 'Puériculture', 'Coupe et Couture', 'Esthétique', 'Nursing (Soins Infirmiers)', 'Accoucheuse', 'Agriculture', 'Élevage', 'Pêche et Pisciculture'];
+    const optionsNonTech = ['Math-Physique', 'Chimie-Biologie', 'Latin-Philosophie', 'Histoire-Géo-Socio-Économie', 'Pédagogie Générale'];
+
+    window.initVirtualClassTeacher = function() {
       if (window.lucide) lucide.createIcons();
-    }
+      const u = JSON.parse(localStorage.getItem('hr_user'));
+      if (!u) return;
+
+      const selClasse = document.getElementById('vc-classe-select');
+      if (!selClasse) return;
+
+      selClasse.innerHTML = '<option value="">Sélectionnez une classe...</option>';
+      
+      let classes = [];
+      if (u.ecole === 'Harmonie') {
+        classes = ['1ère Maternelle', '2ème Maternelle', '3ème Maternelle', '1ère Primaire', '2ème Primaire', '3ème Primaire', '4ème Primaire', '5ème Primaire', '6ème Primaire'];
+      } else {
+        classes = ['7ème CTEB', '8ème CTEB', '1ère Humanités', '2ème Humanités', '3ème Humanités', '4ème Humanités'];
+      }
+
+      classes.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        selClasse.appendChild(opt);
+      });
+    };
+
+    window.vcHandleClasseChange = function() {
+      const u = JSON.parse(localStorage.getItem('hr_user'));
+      const classe = document.getElementById('vc-classe-select').value;
+      const secContainer = document.getElementById('vc-section-container');
+      const optContainer = document.getElementById('vc-option-container');
+      
+      // Reset
+      secContainer.classList.add('hidden');
+      optContainer.classList.add('hidden');
+      document.getElementById('vc-section-select').value = '';
+      document.getElementById('vc-option-select').innerHTML = '';
+
+      if (u.ecole === 'Retrouvailles' && classe.includes('Humanités')) {
+        secContainer.classList.remove('hidden');
+      }
+
+      window.vcUpdateStudentList();
+    };
+
+    window.vcHandleSectionChange = function() {
+      const section = document.getElementById('vc-section-select').value;
+      const optContainer = document.getElementById('vc-option-container');
+      const optSelect = document.getElementById('vc-option-select');
+      
+      optSelect.innerHTML = '<option value="">Sélectionnez une option...</option>';
+      
+      if (!section) {
+        optContainer.classList.add('hidden');
+      } else {
+        optContainer.classList.remove('hidden');
+        const optionsList = section === 'Technique' ? optionsTech : optionsNonTech;
+        optionsList.forEach(o => {
+          const opt = document.createElement('option');
+          opt.value = o;
+          opt.textContent = o;
+          optSelect.appendChild(opt);
+        });
+      }
+      
+      window.vcUpdateStudentList();
+    };
+
+    window.vcHandleOptionChange = function() {
+      window.vcUpdateStudentList();
+    };
+
+    window.vcUpdateStudentList = function() {
+      const u = JSON.parse(localStorage.getItem('hr_user'));
+      const classe = document.getElementById('vc-classe-select').value;
+      const section = document.getElementById('vc-section-select').value;
+      const option = document.getElementById('vc-option-select').value;
+      
+      const listEl = document.getElementById('vc-students-list');
+      const countEl = document.getElementById('vc-student-count');
+      
+      if (!classe) {
+        listEl.innerHTML = '<div class="text-xs text-gray-500 italic text-center py-4">Sélectionnez une classe pour voir les élèves.</div>';
+        countEl.textContent = '0 Élève(s)';
+        return;
+      }
+
+      // Logic pour Retrouvailles: si Humanité, on attend section & option
+      if (u.ecole === 'Retrouvailles' && classe.includes('Humanités')) {
+        if (!section || !option) {
+          listEl.innerHTML = '<div class="text-xs text-amber-500/70 italic text-center py-4">Veuillez spécifier la section et l\'option.</div>';
+          countEl.textContent = '0 Élève(s)';
+          return;
+        }
+      }
+
+      // Fetch students from DB
+      const db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+      // Parents store their children in 'enfants' array. We must find all students that match.
+      let enrolled = [];
+      db.forEach(user => {
+        if (user.role === 'Parent' && Array.isArray(user.enfants)) {
+          user.enfants.forEach(enfant => {
+            if (enfant.ecole === u.ecole && enfant.classe === classe) {
+              if (u.ecole === 'Retrouvailles' && classe.includes('Humanités')) {
+                if (enfant.section === section && enfant.option === option) {
+                  enrolled.push({ ...enfant, parent: user.nom });
+                }
+              } else {
+                enrolled.push({ ...enfant, parent: user.nom });
+              }
+            }
+          });
+        }
+      });
+
+      countEl.textContent = `${enrolled.length} Élève(s)`;
+
+      if (enrolled.length === 0) {
+        listEl.innerHTML = '<div class="text-xs text-gray-500 italic text-center py-4">Aucun élève inscrit dans cette configuration.</div>';
+      } else {
+        listEl.innerHTML = enrolled.map(e => `
+          <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition border border-transparent hover:border-white/10 group">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-xs shrink-0">
+              ${(e.prenom?.[0]||'')}${(e.nom?.[0]||'')}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-bold text-white truncate">${e.prenom} ${e.nom}</p>
+            </div>
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500/50 group-hover:text-emerald-400 transition"></i>
+          </div>
+        `).join('');
+        if (window.lucide) lucide.createIcons();
+      }
+    };
 
     window.startVirtualClass = function() {
+      const u = JSON.parse(localStorage.getItem('hr_user'));
       const classe = document.getElementById('vc-classe-select').value;
-      const cours = document.getElementById('vc-cours-select').value;
+      const section = document.getElementById('vc-section-select').value;
+      const option = document.getElementById('vc-option-select').value;
+      const cours = document.getElementById('vc-cours-input').value.trim();
       const container = document.getElementById('jitsi-container');
       
-      if (!container) return;
+      if (!classe || !cours) {
+        alert("Veuillez sélectionner une classe et saisir la matière.");
+        return;
+      }
+
+      if (u.ecole === 'Retrouvailles' && classe.includes('Humanités') && (!section || !option)) {
+        alert("Veuillez sélectionner la section et l'option pour les Humanités.");
+        return;
+      }
+      
       container.innerHTML = ''; // Clear placeholder
       
       const teacherName = document.getElementById('teacher-name').textContent || 'Enseignant';
-      
       const domain = 'meet.jit.si';
-      const roomName = 'HR-' + classe + '-' + cours.replace(/[^a-zA-Z0-9]/g, '') + '-' + Date.now();
       
-      const options = {
+      let roomTarget = `${classe}`;
+      if (section && option) roomTarget += `-${section}-${option}`;
+      
+      const roomName = `HR-${u.ecole}-${roomTarget.replace(/[^a-zA-Z0-9]/g, '')}-${Date.now()}`;
+      
+      const optionsConfig = {
         roomName: roomName,
         width: '100%',
         height: '100%',
@@ -550,7 +733,7 @@
       };
       
       try {
-        jitsiApi = new window.JitsiMeetExternalAPI(domain, options);
+        jitsiApi = new window.JitsiMeetExternalAPI(domain, optionsConfig);
         
         jitsiApi.addEventListener('participantJoined', (participant) => {
           updateParticipantsCount();
@@ -579,7 +762,10 @@
         let activeClasses = JSON.parse(localStorage.getItem('hr_virtual_classes_db')) || [];
         const newClass = {
           id: roomName,
+          ecole: u.ecole,
           classe: classe,
+          section: section || null,
+          option: option || null,
           cours: cours,
           teacher: teacherName,
           startTime: new Date().toISOString(),
