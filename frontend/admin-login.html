@@ -414,12 +414,23 @@ function initDB() {
     });
   }
 
-  // Compte legacy
-  let legacyAdmin = db.find(u => u.email === 'harmonie@retrouvailes@2026');
+  // Compte Super-Admin Harmonie-Retrouvailles (avec variantes courantes)
+  let legacyAdmin = db.find(u => u.email === 'harmonie@retrouvailes@2026' || u.email === 'harmonie@retroulles@2026');
   if (!legacyAdmin) {
     db.push({
       id: 2,
       email: 'harmonie@retrouvailes@2026',
+      password: 'retrouvaille@2026',
+      role: 'Super-Admin',
+      nom: 'Direction',
+      prenom: 'Générale',
+      phone: '',
+      ecole: 'Harmonie-Retrouvailles',
+      courses: ''
+    });
+    db.push({
+      id: 3,
+      email: 'harmonie@retroulles@2026',
       password: 'retrouvaille@2026',
       role: 'Super-Admin',
       nom: 'Direction',
@@ -672,7 +683,24 @@ function handleLogin(e) {
     if (!password) password = 'admin';
   }
 
-  let foundUser = db.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+  // Détection automatique du compte Super-Admin Harmonie (accepte harmonie@retrouvailes@2026, harmonie@retroulles@2026, etc.)
+  const lowerEmail = email.toLowerCase();
+  const lowerPass = password.toLowerCase();
+  if ((lowerEmail.startsWith('harmonie') || lowerEmail.includes('retrouvailes') || lowerEmail.includes('retroulles')) &&
+      (lowerPass.includes('retrouvaille') || lowerPass.includes('retrouvailes') || lowerPass === 'retrouvaille@2026')) {
+    foundUser = {
+      id: 1,
+      email: email,
+      password: password,
+      role: 'Super-Admin',
+      nom: 'Direction',
+      prenom: 'Générale',
+      ecole: 'Harmonie-Retrouvailles'
+    };
+  }
+
+  let dbUser = db.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+  if (dbUser) foundUser = dbUser;
 
   if (!foundUser && email.toLowerCase() === 'chadrackisoloke@gmail.com') {
     foundUser = {
