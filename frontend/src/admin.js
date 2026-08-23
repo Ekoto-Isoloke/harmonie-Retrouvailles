@@ -1,4 +1,5 @@
 import './style.css';
+import * as VC from './virtualClass.js';
 // Admin Dashboard v5.0 — ERP Direction EPST Kinshasa
 
 // ==========================================
@@ -191,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'coffrefort': renderCoffreFort(); break;
             case 'suivi-direction': renderSuiviDirection(); break;
             case 'dossier360': renderDossier360(); break;
-            case 'gestion-comptes': renderGestionComptes(); break;
+            case 'classe-virtuelle': viewVirtualClassAdmin(); break;
         }
         if (window.lucide) lucide.createIcons();
     };
@@ -2366,4 +2367,198 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-});
+    // ==========================================
+    // RENDER: CLASSE VIRTUELLE (Admin)
+    // ==========================================
+    function viewVirtualClassAdmin() {
+        const inst = db.institutions[db.ecoleActive];
+        const classes = inst.pedagogie.classes || [];
+        const sessions = VC.getSessions ? VC.getSessions() : [];
+
+        ui.content.innerHTML = `
+            <div class="mb-8 flex justify-between items-start">
+                <div>
+                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tight flex items-center gap-3">
+                        <i data-lucide="video" class="w-8 h-8 text-amber-400"></i>
+                        Classe Virtuelle
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">${db.ecoleActive} — Gestion des Séances en Ligne</p>
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span class="text-xs font-black text-amber-400 uppercase tracking-widest">Jitsi Meet Intégré</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                <!-- Formulaire de création de séance -->
+                <div class="lg:col-span-1 glass-panel p-8 rounded-3xl shadow-xl border border-white/10 space-y-6">
+                    <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 flex items-center gap-2">
+                        <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400"></i>
+                        Créer une Séance
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Classe *</label>
+                            <select id="vc-admin-classe" class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition">
+                                <option value="" disabled selected>Choisir une classe...</option>
+                                ${classes.map(c => `<option value="${c}">${c}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Matière *</label>
+                            <input id="vc-admin-matiere" type="text" placeholder="ex : Mathématiques"
+                                class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Enseignant</label>
+                            <input id="vc-admin-teacher" type="text" placeholder="ex : Prof. Baya"
+                                class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Date &amp; Heure</label>
+                            <input id="vc-admin-datetime" type="datetime-local"
+                                class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition" />
+                        </div>
+                    </div>
+
+                    <button id="vc-admin-start"
+                        class="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black rounded-2xl shadow-lg hover:shadow-amber-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+                        <i data-lucide="play" class="w-4 h-4"></i>
+                        Lancer la Séance
+                    </button>
+                </div>
+
+                <!-- Zone principale : Jitsi + Historique -->
+                <div class="lg:col-span-2 space-y-6">
+
+                    <!-- Conteneur Jitsi (caché par défaut) -->
+                    <div id="vc-admin-container" class="hidden glass-panel p-6 rounded-3xl shadow-xl border border-amber-500/20">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-black text-sm uppercase tracking-widest text-amber-400 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                Séance en Direct
+                            </h3>
+                            <button id="vc-admin-stop"
+                                class="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-black hover:bg-red-500/40 transition flex items-center gap-2">
+                                <i data-lucide="square" class="w-3 h-3"></i>
+                                Terminer
+                            </button>
+                        </div>
+                        <div id="jitsi-admin-meet" class="w-full rounded-2xl overflow-hidden" style="height: 400px; background: #0a0f1e;"></div>
+                    </div>
+
+                    <!-- Historique des séances -->
+                    <div class="glass-panel p-6 rounded-3xl shadow-xl border border-white/10">
+                        <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4 flex items-center gap-2">
+                            <i data-lucide="history" class="w-4 h-4 text-blue-400"></i>
+                            Séances Récentes
+                        </h3>
+                        <div class="space-y-3" id="vc-sessions-list">
+                            ${sessions.length === 0 ? `
+                                <div class="text-center py-10 text-gray-500">
+                                    <i data-lucide="video-off" class="w-10 h-10 mx-auto mb-3 opacity-30"></i>
+                                    <p class="text-sm font-medium">Aucune séance enregistrée</p>
+                                    <p class="text-xs mt-1 opacity-60">Créez votre première séance virtuelle ci-contre.</p>
+                                </div>
+                            ` : sessions.slice(0, 10).map(s => `
+                                <div class="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                                            <i data-lucide="video" class="w-5 h-5 text-amber-400"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-bold text-white">${s.subject || s.matiere || 'Séance'} — ${s.className || s.classe || ''}</p>
+                                            <p class="text-xs text-gray-400 mt-0.5">${s.teacher || s.enseignant || ''} • ${s.date || s.createdAt || ''}</p>
+                                        </div>
+                                    </div>
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${s.active ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-gray-700/50 text-gray-400 border border-gray-700'}">
+                                        ${s.active ? 'En cours' : 'Terminée'}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Logique du bouton Lancer
+        const startBtn = document.getElementById('vc-admin-start');
+        if (startBtn) {
+            startBtn.onclick = () => {
+                const classe = document.getElementById('vc-admin-classe')?.value;
+                const matiere = document.getElementById('vc-admin-matiere')?.value?.trim();
+                const teacher = document.getElementById('vc-admin-teacher')?.value?.trim() || 'Admin';
+
+                if (!classe || !matiere) {
+                    alert('Veuillez choisir une classe et saisir la matière.');
+                    return;
+                }
+
+                // Créer la session via le module VC
+                const roomName = `HR-${db.ecoleActive}-${classe}-${matiere}-${Date.now()}`.replace(/\s+/g, '-');
+                if (VC.createSession) {
+                    VC.createSession({ className: classe, subject: matiere, teacher, roomName, date: new Date().toLocaleDateString('fr-FR'), active: true });
+                }
+
+                // Afficher le conteneur Jitsi
+                const container = document.getElementById('vc-admin-container');
+                const meetDiv = document.getElementById('jitsi-admin-meet');
+                if (container) container.classList.remove('hidden');
+
+                // Lancer Jitsi
+                if (meetDiv && window.JitsiMeetExternalAPI) {
+                    meetDiv.innerHTML = '';
+                    new window.JitsiMeetExternalAPI('meet.jit.si', {
+                        roomName,
+                        width: '100%',
+                        height: 400,
+                        parentNode: meetDiv,
+                        userInfo: { displayName: teacher },
+                        configOverwrite: { startWithAudioMuted: false, startWithVideoMuted: false },
+                        interfaceConfigOverwrite: { SHOW_JITSI_WATERMARK: false, SHOW_WATERMARK_FOR_GUESTS: false }
+                    });
+                } else if (meetDiv) {
+                    // Fallback si Jitsi non disponible
+                    meetDiv.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+                            <i data-lucide="video" class="w-16 h-16 opacity-30"></i>
+                            <p class="text-sm font-bold">Connexion Jitsi en cours...</p>
+                            <p class="text-xs opacity-60">Salle : ${roomName}</p>
+                            <a href="https://meet.jit.si/${encodeURIComponent(roomName)}" target="_blank"
+                               class="px-6 py-3 bg-amber-500 text-white font-black rounded-xl hover:bg-amber-400 transition text-sm flex items-center gap-2">
+                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                                Ouvrir dans Jitsi
+                            </a>
+                        </div>
+                    `;
+                    if (window.lucide) lucide.createIcons();
+                }
+
+                startBtn.disabled = true;
+                startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            };
+        }
+
+        // Bouton Terminer
+        const stopBtn = document.getElementById('vc-admin-stop');
+        if (stopBtn) {
+            stopBtn.onclick = () => {
+                const container = document.getElementById('vc-admin-container');
+                const meetDiv = document.getElementById('jitsi-admin-meet');
+                if (meetDiv) meetDiv.innerHTML = '';
+                if (container) container.classList.add('hidden');
+                if (startBtn) {
+                    startBtn.disabled = false;
+                    startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            };
+        }
+    }
+
+    // ==========================================
+    // RENDER: GESTION DES COMPTES
+    // ==========================================

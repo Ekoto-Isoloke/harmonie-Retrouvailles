@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://meet.jit.si/external_api.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; background: #0a192f; }
     .font-display { font-family: 'Playfair Display', serif; }
@@ -61,7 +62,11 @@
         <i data-lucide="message-circle" class="w-5 h-5"></i> Messagerie Direction
         <span class="ml-auto bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">2</span>
       </div>
-    </nav>
+    <div class="sidebar-link" onclick="showView('classe-virtuelle')">
+  <i data-lucide="video" class="w-5 h-5"></i>
+  <span class="font-medium">Classe Virtuelle</span>
+</div>
+</nav>
 
     <!-- User -->
     <div class="mt-auto">
@@ -82,10 +87,11 @@
 
   <!-- MAIN -->
   <main class="md:ml-64 flex-1 p-4 md:p-8" id="main-content">
-    <!-- Views dynamically injected -->
+        <!-- Views dynamically injected -->
   </main>
 
-  <script>
+  <script type="module">
+import * as VC from './src/virtualClass.js';
     const userStr = localStorage.getItem('hr_user');
     if (!userStr) {
       window.location.href = '/login.html';
@@ -116,7 +122,7 @@
     function setActiveLink(viewName) {
       document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
       const links = document.querySelectorAll('.sidebar-link');
-      const map = { accueil:0, presences:1, cahier:2, notes:3, planning:4, messagerie:5 };
+      const map = { accueil:0, presences:1, cahier:2, notes:3, planning:4, messagerie:5, 'classe-virtuelle': 6 };
       if (links[map[viewName]]) links[map[viewName]].classList.add('active');
     }
 
@@ -129,7 +135,7 @@
         case 'cahier': c.innerHTML = viewCahier(); break;
         case 'notes': c.innerHTML = viewNotes(); break;
         case 'planning': c.innerHTML = viewPlanning(); break;
-        case 'messagerie': c.innerHTML = viewMessagerie(); break;
+        case 'classe-virtuelle': c.innerHTML = viewVirtualClassTeacher(); break;
       }
       if (window.lucide) lucide.createIcons();
     }
@@ -430,7 +436,68 @@
         </div>`;
     }
 
-    // Init — Affichage nom & rôle réel
+// Init — Affichage nom & rôle réel
+
+function viewVirtualClassTeacher() {
+  return `
+    <div class="glass p-6 rounded-2xl">
+      <h2 class="text-2xl font-black mb-4"><i data-lucide="video" class="w-5 h-5 mr-2"></i>Classe Virtuelle</h2>
+
+      <form id="vc-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-black text-gray-400 uppercase mb-1">Classe</label>
+          <select id="vc-classe" class="w-full px-4 py-3 bg-[#112240]/80 border border-white/10 rounded-xl text-white">
+            ${mockClasses.map(c=>`<option>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-black text-gray-400 uppercase mb-1">Matière</label>
+          <input id="vc-matiere" type="text" placeholder="ex: Mathématiques" class="w-full px-4 py-3 bg-[#112240]/80 border border-white/10 rounded-xl text-white"/>
+        </div>
+        <div>
+          <label class="block text-xs font-black text-gray-400 uppercase mb-1">Date / Heure</label>
+          <input id="vc-datetime" type="datetime-local" class="w-full px-4 py-3 bg-[#112240]/80 border border-white/10 rounded-xl text-white"/>
+        </div>
+        <button type="button" id="vc-start" class="w-full py-3 bg-amber-500 text-[#0a192f] font-black rounded-xl hover:bg-amber-400 transition flex items-center justify-center gap-2">
+          <i data-lucide="play" class="w-4 h-4"></i>Lancer la séance
+        </button>
+      </form>
+
+      <div id="vc-container" class="mt-6 hidden">
+        <h3 class="text-xl font-black mb-2">Réunion Jitsi</h3>
+        <div id="jitsi-meet"></div>
+      </div>
+    </div>
+  `;
+}
+
+function launchVirtualClass() {
+  const classe = document.getElementById('vc-classe').value;
+  const matiere = document.getElementById('vc-matiere').value;
+  const datetime = document.getElementById('vc-datetime').value;
+  if (!classe || !matiere || !datetime) { alert('Veuillez remplir tous les champs.'); return; }
+  const sessionId = crypto.randomUUID();
+  VC.createSession({ id: sessionId, classe, matiere, datetime, teacher: `${user.prenom} ${user.nom}` });
+  const container = document.getElementById('vc-container');
+  const meetDiv = document.getElementById('jitsi-meet');
+  container.classList.remove('hidden');
+  meetDiv.innerHTML = '';
+  const api = new JitsiMeetExternalAPI('meet.jit.si', {
+    roomName: sessionId,
+    parentNode: meetDiv,
+    width: '100%',
+    height: 600,
+    configOverwrite: { startWithAudioMuted: false, startWithVideoMuted: false }
+  });
+  api.addEventListener('participantJoined', e => {
+    VC.recordAttendance(sessionId, { id: e.id, name: e.displayName, joinedAt: new Date().toISOString() });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const startBtn = document.getElementById('vc-start');
+  if (startBtn) startBtn.addEventListener('click', launchVirtualClass);
+});
     const userInit = JSON.parse(localStorage.getItem('hr_user'));
     if (!userInit) {
       window.location.href = '/login.html';
