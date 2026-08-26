@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // SECURITY CHECK 2: Strict RBAC - Only Super-Admin & Direction can access Super-Admin dashboard
-    const isSuperAdmin = ['Super-Admin', 'Direction', 'Directeur', 'Direction Générale'].includes(user.role);
+    const isSuperAdmin = ['Super-Admin', 'Direction', 'Directeur', 'Directeur (D.P)', 'D.P', 'Direction Générale'].includes(user.role);
 
     if (!isSuperAdmin) {
         // Enseignant attempt

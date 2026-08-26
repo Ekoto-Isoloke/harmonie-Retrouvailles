@@ -1017,10 +1017,10 @@
         return;
       }
 
-      // SÉCURITÉ : Bloquer le personnel non-Admin du portail Super-Admin
-      const superAdminRoles = ['Super-Admin', 'Direction Générale'];
+      // SÉCURITÉ : Autoriser Super-Admin et Direction / Directeur sur le portail admin
+      const superAdminRoles = ['Super-Admin', 'Direction Générale', 'Direction', 'Directeur', 'Directeur (D.P)', 'D.P'];
       if (currentPortal === 'admin' && !superAdminRoles.includes(role)) {
-        showToast('⛔ Accès refusé: Ce portail est réservé au Super-Administrateur uniquement.', 'error');
+        showToast('⛔ Accès refusé: Ce portail est réservé à la Direction et au Super-Administrateur.', 'error');
         return;
       }
 
