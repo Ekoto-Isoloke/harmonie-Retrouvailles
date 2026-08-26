@@ -637,83 +637,60 @@ function getDashboardRoute(role) {
   return routes[role] || '/teacher-dashboard.html';
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
   let email    = document.getElementById('login-email').value.trim();
   let password = document.getElementById('login-password').value;
 
-  initDB();
-  let db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
-
-  // Raccourcis mobiles
+  // Raccourcis mobiles (gardés pour compatibilité locale)
   if (email.toLowerCase() === 'chada' || email.toLowerCase() === 'chadrack') {
     email = 'chadrackisoloke@gmail.com';
-    if (!password) password = 'chada123';
+    if (!password) password = 'password';
   }
   if (email.toLowerCase() === 'admin') {
     email = 'admin@retrouvailes.cd';
     if (!password) password = 'admin';
   }
 
-  // Détection automatique du compte Super-Admin Harmonie (accepte harmonie@retrouvailes@2026, harmonie@retroulles@2026, etc.)
-  const lowerEmail = email.toLowerCase();
-  const lowerPass = password.toLowerCase();
-  if ((lowerEmail.startsWith('harmonie') || lowerEmail.includes('retrouvailes') || lowerEmail.includes('retroulles')) &&
-      (lowerPass.includes('retrouvaille') || lowerPass.includes('retrouvailes') || lowerPass === 'retrouvaille@2026')) {
-    foundUser = {
-      id: 1,
-      email: email,
-      password: password,
-      role: 'Super-Admin',
-      nom: 'Direction',
-      prenom: 'Générale',
-      ecole: 'Harmonie-Retrouvailles'
-    };
+  try {
+    // 1. Appel au nouveau Backend Node.js
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      showToast("Erreur: " + data.message, "error");
+      return;
+    }
+
+    const foundUser = data.user;
+    const token = data.token;
+
+    // SÉCURITÉ : Bloquer le personnel non autorisé (Spécifique à la page admin-login.html)
+    const allowedAdminRoles = ['Super-Admin'];
+    if (!allowedAdminRoles.includes(foundUser.role)) {
+      showToast("⛔ SÉCURITÉ : Accès refusé. Ce portail de connexion est strictement réservé au Super-Administrateur.", "error");
+      return;
+    }
+
+    // 2. Sauvegarde des données comme avant pour garder le frontend compatible
+    localStorage.setItem('hr_user', JSON.stringify(foundUser));
+    localStorage.setItem('hr_token', token);
+
+    showToast(`Bienvenue ${foundUser.prenom} ${foundUser.nom} (${foundUser.role}) !`, 'success');
+    
+    setTimeout(() => {
+      window.location.href = getDashboardRoute(foundUser.role);
+    }, 800);
+
+  } catch (error) {
+    console.error("Erreur de connexion API:", error);
+    showToast("Erreur réseau: Impossible de contacter le serveur PostgreSQL.", "error");
   }
-
-  let dbUser = db.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-  if (dbUser) foundUser = dbUser;
-
-  if (!foundUser && email.toLowerCase() === 'chadrackisoloke@gmail.com') {
-    foundUser = {
-      id: 99,
-      email: 'chadrackisoloke@gmail.com',
-      password: password || 'chada123',
-      role: 'Super-Admin',
-      nom: 'EKOTO ISOLOKE',
-      prenom: 'CHADA',
-      phone: '+243827613009',
-      ecole: 'Retrouvailles'
-    };
-    db.push(foundUser);
-    localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
-  }
-
-  if (foundUser && foundUser.email.toLowerCase() === 'chadrackisoloke@gmail.com') {
-    foundUser.role = 'Super-Admin';
-  }
-
-  if (!foundUser) {
-    showToast("Erreur: Identifiants incorrects ou compte inexistant.", "error");
-    return;
-  }
-
-  const role = foundUser.role;
-
-  // SÉCURITÉ : Bloquer le personnel non autorisé
-  const allowedAdminRoles = ['Super-Admin'];
-  if (!allowedAdminRoles.includes(role)) {
-    showToast("⛔ SÉCURITÉ : Accès refusé. Ce portail de connexion est strictement réservé au Super-Administrateur.", "error");
-    return;
-  }
-
-  localStorage.setItem('hr_user', JSON.stringify(foundUser));
-  localStorage.setItem('hr_token', 'token_auth_2026');
-
-  showToast(`Bienvenue ${foundUser.prenom} ${foundUser.nom} (${role}) !`, 'success');
-  setTimeout(() => {
-    window.location.href = getDashboardRoute(role);
-  }, 800);
 }
 
 function handleRegister(e) {

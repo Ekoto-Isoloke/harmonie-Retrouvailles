@@ -10,17 +10,6 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Veuillez fournir un email et un mot de passe.' });
         }
 
-        // --- BACKDOOR ADMIN POUR TESTS ---
-        if (email === 'admin@harmonie.com' && password === 'admin123') {
-            const token = jwt.sign({ id: 1, role: 'Super-Admin', nom: 'Admin', prenom: 'Principal' }, process.env.JWT_SECRET || 'supersecret_key', { expiresIn: '1d' });
-            return res.json({
-                message: 'Connexion réussie',
-                token,
-                user: { id: 1, nom: 'Admin', prenom: 'Principal', role: 'Super-Admin', ecole_id: null }
-            });
-        }
-        // ---------------------------------
-
         const query = 'SELECT * FROM utilisateurs WHERE email = $1';
         const { rows } = await pool.query(query, [email]);
 
@@ -30,22 +19,30 @@ exports.login = async (req, res) => {
 
         const user = rows[0];
 
-        // For testing, we might want to bypass bcrypt if the password is just plain text,
-        // but let's assume we use bcrypt.
-        // const isMatch = await bcrypt.compare(password, user.mot_de_passe_hash);
-        // If testing without hashed passwords in DB yet:
-        const isMatch = password === user.mot_de_passe_hash || await bcrypt.compare(password, user.mot_de_passe_hash);
+        // Comparaison : On gère ici le texte brut (pour les comptes de test injectés manuellement) 
+        // ou le bcrypt (pour les futurs comptes créés via l'API)
+        let isMatch = false;
+        if (user.password === password) {
+            isMatch = true; // Mot de passe en clair (ex: comptes de test)
+        } else {
+            isMatch = await bcrypt.compare(password, user.password).catch(() => false); // Tentative avec bcrypt
+        }
 
         if (!isMatch) {
             return res.status(401).json({ message: 'Identifiants incorrects.' });
         }
 
+        if (user.statut !== 'Actif') {
+             return res.status(403).json({ message: 'Ce compte est inactif ou en attente de validation.' });
+        }
+
         const payload = {
             id: user.id,
             role: user.role,
-            ecole_id: user.ecole_id,
+            ecole: user.ecole,
             nom: user.nom,
-            prenom: user.prenom
+            prenom: user.prenom,
+            email: user.email
         };
 
         const token = jwt.sign(payload, process.env.JWT_SECRET || 'supersecret_key', { expiresIn: '1d' });
@@ -53,13 +50,7 @@ exports.login = async (req, res) => {
         res.json({
             message: 'Connexion réussie',
             token,
-            user: {
-                id: user.id,
-                nom: user.nom,
-                prenom: user.prenom,
-                role: user.role,
-                ecole_id: user.ecole_id
-            }
+            user: payload
         });
 
     } catch (error) {
