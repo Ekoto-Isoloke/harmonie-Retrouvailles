@@ -1,5 +1,35 @@
 {
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "/api/health.js"
+    },
+    {
+      "source": "/api/auth/login",
+      "destination": "/api/auth/login.js"
+    },
+    {
+      "source": "/api/utilisateurs",
+      "destination": "/api/utilisateurs.js"
+    },
+    {
+      "source": "/api/etudiants",
+      "destination": "/api/etudiants.js"
+    },
+    {
+      "source": "/api/rh/pointages",
+      "destination": "/api/rh/pointages.js"
+    },
+    {
+      "source": "/api/rh/pointage/arrivee",
+      "destination": "/api/rh/pointage/arrivee.js"
+    },
+    {
+      "source": "/api/rh/pointage/depart",
+      "destination": "/api/rh/pointage/depart.js"
+    }
+  ]
 }
