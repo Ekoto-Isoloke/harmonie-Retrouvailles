@@ -1,4 +1,4 @@
-const { getPool } = require('./db');
+const { neon } = require('@neondatabase/serverless');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -10,19 +10,28 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const pool = getPool();
-    const dbRes = await pool.query('SELECT NOW()');
+    const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+    if (!dbUrl) {
+      return res.status(200).json({
+        status: 'WARNING',
+        message: 'API en ligne mais DATABASE_URL manquant dans Vercel Environment Variables.'
+      });
+    }
+
+    const sql = neon(dbUrl);
+    const result = await sql`SELECT NOW() as current_time, count(*)::int as total_users FROM utilisateurs`;
+
     return res.status(200).json({
       status: 'OK',
-      message: 'API Harmonie-Retrouvailles en ligne et connectée à Neon PostgreSQL !',
-      database_time: dbRes.rows[0].now,
+      message: 'API Harmonie-Retrouvailles 100% connectée à Neon PostgreSQL Cloud !',
+      database_time: result[0].current_time,
+      total_users: result[0].total_users,
       timestamp: new Date().toISOString()
     });
   } catch (err) {
     return res.status(500).json({
       status: 'ERROR',
-      message: 'Erreur de connexion à la base de données Neon',
-      error: err.message
+      message: 'Erreur Neon: ' + err.message
     });
   }
 };
