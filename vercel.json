@@ -4,12 +4,6 @@
   "installCommand": "npm install",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index" }
-  ],
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 30,
-      "memory": 512
-    }
-  }
+    { "source": "/api/:path*", "destination": "/api/[...path]" }
+  ]
 }
