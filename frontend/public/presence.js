@@ -438,10 +438,19 @@ const faceRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presence
         body: JSON.stringify({ email: presenceAuthUser.email, face_data: capturedFaceData })
       });
       const enrollData = await enrollRes.json();
-      
+
       if (!enrollRes.ok) {
         throw new Error(enrollData.message || "Échec de l'enrôlement");
       }
+
+      // Récupérer le visage stocké pour s'assurer d'utiliser la version officielle
+      const getRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presenceAuthUser.email));
+      const getInfo = await getRes.json();
+      if (!getRes.ok) {
+        throw new Error(getInfo.message || "Échec de la récupération du visage");
+      }
+      // Utiliser la donnée stockée (identique à capturedFaceData mais provient du serveur)
+      presenceAuthUser.photo = getInfo.face_data;
     } catch (err) {
       if (statusText) { statusText.textContent = "⛔ Enrôlement échoué"; statusText.className = "text-red-500 font-bold text-lg"; }
       if (statusSub) statusSub.textContent = err.message;
@@ -450,8 +459,6 @@ const faceRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presence
     }
 
     // 1er enrôlement = confiance, on continue vers le pointage
-    // La photo capturée DEVIENT la référence cloud
-    presenceAuthUser.photo = capturedFaceData;
     await showPresenceResultCard(true);
     return;
   }
