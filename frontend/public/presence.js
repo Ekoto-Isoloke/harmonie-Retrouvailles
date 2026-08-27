@@ -410,7 +410,8 @@ async function validateAndConfirmPresence() {
   let storedFaceData = null;
 
   try {
-    const faceRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presenceAuthUser.email));
+    console.log('[Presence] GET face data →', '/api/bio/face?email=' + encodeURIComponent(presenceAuthUser.email));
+const faceRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presenceAuthUser.email));
     if (faceRes.ok) {
       const faceInfo = await faceRes.json();
       isEnrolled = faceInfo.enrolled;
