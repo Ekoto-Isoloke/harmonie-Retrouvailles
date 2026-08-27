@@ -1,20 +1,19 @@
-// presence.js - Module de reconnaissance faciale stricte et pointage certifié
-// SÉCURITÉ : Authentification obligatoire + Validation de l'empreinte faciale par identité
+// ═══════════════════════════════════════════════════════════════
+// presence.js — Système de Pointage Biométrique Strict
+// Conforme au Système Éducatif RDC (EPST / ESU)
+// ═══════════════════════════════════════════════════════════════
+// SÉCURITÉ :
+//  1. Authentification obligatoire via API Cloud Neon (AUCUN fallback local)
+//  2. Capture faciale comparée strictement à l'empreinte enregistrée en DB
+//  3. Si le visage ne correspond pas → BLOCAGE TOTAL (anti-usurpation)
+//  4. Seul le Super-Admin peut réinitialiser une empreinte faciale
+// ═══════════════════════════════════════════════════════════════
 
 let presenceStream = null;
 let presenceScanLineAnim = null;
 let presencePhaseTimeout = null;
-let presenceAuthUser = null; // L'utilisateur authentifié pour cette session de pointage
-let capturedFaceData = null; // Snapshot de l'empreinte faciale courante
-
-// =============================================
-// COMPTES PERMANENTS & SYNCHRO CLOUD
-// =============================================
-const PRESENCE_PERMANENT_ACCOUNTS = [
-  { id: 100, nom: 'EKOTO ISOLOKE', prenom: 'CHADRACK', email: 'chadrackisoloke@gmail.com', password: 'password', role: 'Super-Admin', ecole: 'Retrouvailles', statut: 'Actif' },
-  { id: 101, nom: 'KASOMBO', prenom: 'KASOMBO', email: 'kasombo@retrouvailles.cd', password: 'password', role: 'Directeur (D.P)', ecole: 'Retrouvailles', statut: 'Actif' },
-  { id: 102, nom: 'MATUNGULU', prenom: 'MATUNGULU', email: 'matungulu@retrouvailles.cd', password: 'password', role: 'Enseignant', ecole: 'Retrouvailles', statut: 'Actif' }
-];
+let presenceAuthUser = null;
+let capturedFaceData = null;
 
 // =============================================
 // ÉTAPE 1 : OUVRIR LE MODAL D'AUTHENTIFICATION
@@ -23,13 +22,12 @@ window.openPresenceScanner = function() {
   const modal = document.getElementById('presence-modal');
   if (!modal) return;
 
-  // Injecter l'interface de contrôle d'accès si absente
   let authGate = document.getElementById('presence-auth-gate');
   if (!authGate) {
     injectPresenceAuthGate();
   }
 
-  // Réinitialiser les états
+  // Réinitialiser
   presenceAuthUser = null;
   capturedFaceData = null;
   const authGateEl = document.getElementById('presence-auth-gate');
@@ -38,7 +36,6 @@ window.openPresenceScanner = function() {
   if (authGateEl) { authGateEl.style.display = 'flex'; authGateEl.style.opacity = '1'; authGateEl.style.transform = 'scale(1)'; }
   if (scannerContent) { scannerContent.style.display = 'none'; }
 
-  // Vider les champs
   const emailInput = document.getElementById('presence-auth-email');
   const passInput = document.getElementById('presence-auth-password');
   const errorEl = document.getElementById('presence-auth-error');
@@ -46,7 +43,6 @@ window.openPresenceScanner = function() {
   if (passInput) passInput.value = '';
   if (errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
 
-  // Afficher le modal
   modal.classList.remove('opacity-0', 'pointer-events-none');
 };
 
@@ -57,7 +53,6 @@ function injectPresenceAuthGate() {
   const modalContent = document.querySelector('#presence-modal > .w-full');
   if (!modalContent) return;
 
-  // Encapsuler le contenu existant du scanner
   const existingChildren = Array.from(modalContent.children);
   const wrapper = document.createElement('div');
   wrapper.id = 'presence-scanner-content';
@@ -66,12 +61,10 @@ function injectPresenceAuthGate() {
   existingChildren.forEach(child => wrapper.appendChild(child));
   modalContent.appendChild(wrapper);
 
-  // Créer la porte d'authentification Haute Gamme
   const authGate = document.createElement('div');
   authGate.id = 'presence-auth-gate';
   authGate.className = 'flex flex-col items-center w-full animate-fade-up';
   authGate.innerHTML = `
-    <!-- Header Sécurisé -->
     <div class="text-center mb-8">
       <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border-2 border-emerald-500/40 flex items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.2)] relative">
         <svg class="w-9 h-9 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,30 +73,26 @@ function injectPresenceAuthGate() {
         <span class="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-gray-900 animate-ping"></span>
       </div>
       <h2 class="font-display text-3xl font-black text-white tracking-tight">Pointage Biométrique</h2>
-      <p class="text-emerald-400 font-bold uppercase tracking-[0.25em] text-[10px] mt-2.5">Identification Personnelle Obligatoire</p>
+      <p class="text-emerald-400 font-bold uppercase tracking-[0.25em] text-[10px] mt-2.5">Identification Personnelle Obligatoire — EPST/RDC</p>
     </div>
 
-    <!-- Formulaire d'identification -->
     <div class="w-full max-w-[380px] bg-gray-900/80 border border-emerald-500/20 rounded-3xl p-7 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl relative overflow-hidden">
       <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400"></div>
 
-      <!-- Erreur -->
       <div id="presence-auth-error" class="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold text-center" style="display:none;"></div>
 
-      <!-- Email -->
       <div class="mb-4">
         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Identifiant / Email</label>
         <div class="relative">
           <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
             <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg>
           </div>
-          <input id="presence-auth-email" type="email" placeholder="votre.email@retrouvailles.cd"
-            class="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:bg-white/10 focus:shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all font-medium"
+          <input id="presence-auth-email" type="email" placeholder="votre.email@ecole.cd"
+            class="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:bg-white/10 transition-all font-medium"
             autocomplete="email">
         </div>
       </div>
 
-      <!-- Mot de passe -->
       <div class="mb-6">
         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Code de Sécurité (Mot de passe)</label>
         <div class="relative">
@@ -111,7 +100,7 @@ function injectPresenceAuthGate() {
             <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
           </div>
           <input id="presence-auth-password" type="password" placeholder="Mot de passe"
-            class="w-full pl-10 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:bg-white/10 focus:shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all font-medium"
+            class="w-full pl-10 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:bg-white/10 transition-all font-medium"
             autocomplete="current-password">
           <button type="button" onclick="togglePresencePassword()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-white transition">
             <svg id="presence-eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
@@ -119,23 +108,21 @@ function injectPresenceAuthGate() {
         </div>
       </div>
 
-      <!-- Bouton d'activation caméra -->
       <button onclick="presenceAuthenticate()" id="presence-auth-submit-btn"
-        class="w-full py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-[0_0_25px_rgba(16,185,129,0.4)] hover:shadow-[0_0_35px_rgba(16,185,129,0.6)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2.5 cursor-pointer">
+        class="w-full py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2.5 cursor-pointer">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
         S'identifier & Activer la Caméra
       </button>
 
       <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed">
-        Chaque pointage est strictement certifié et horodaté.<br>
-        <span class="text-emerald-400/80 font-bold">Système Anti-Usurpation Actif</span>
+        Chaque pointage est certifié et horodaté par le Cloud.<br>
+        <span class="text-emerald-400/80 font-bold">Système Anti-Usurpation Actif — Conforme EPST/RDC</span>
       </p>
     </div>
   `;
 
   modalContent.insertBefore(authGate, wrapper);
 
-  // Gestion de la touche Entrée
   setTimeout(() => {
     const emailInput = document.getElementById('presence-auth-email');
     const passInput = document.getElementById('presence-auth-password');
@@ -145,7 +132,7 @@ function injectPresenceAuthGate() {
 }
 
 // =============================================
-// TOGGLE VISIBILITÉ MOT DE PASSE
+// TOGGLE MOT DE PASSE
 // =============================================
 window.togglePresencePassword = function() {
   const input = document.getElementById('presence-auth-password');
@@ -161,7 +148,7 @@ window.togglePresencePassword = function() {
 };
 
 // =============================================
-// ÉTAPE 2 : VÉRIFICATION DES IDENTIFIANTS
+// ÉTAPE 2 : AUTHENTIFICATION STRICTE (CLOUD UNIQUEMENT)
 // =============================================
 window.presenceAuthenticate = async function() {
   const emailInput = document.getElementById('presence-auth-email');
@@ -169,12 +156,8 @@ window.presenceAuthenticate = async function() {
   const errorEl = document.getElementById('presence-auth-error');
   const submitBtn = document.getElementById('presence-auth-submit-btn');
 
-  let email = (emailInput ? emailInput.value : '').trim().toLowerCase();
-  let password = (passInput ? passInput.value : '').trim();
-
-  // Raccourcis pratiques
-  if (email === 'chada' || email === 'chadrack') { email = 'chadrackisoloke@gmail.com'; if (!password) password = 'password'; }
-  if (email === 'admin') { email = 'admin@retrouvailes.cd'; if (!password) password = 'admin'; }
+  const email = (emailInput ? emailInput.value : '').trim().toLowerCase();
+  const password = (passInput ? passInput.value : '').trim();
 
   if (errorEl) { errorEl.style.display = 'none'; }
 
@@ -183,68 +166,52 @@ window.presenceAuthenticate = async function() {
     return;
   }
 
-  // Animation de validation
+  // Animation
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Vérification de l\'identité...';
+    submitBtn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Vérification Cloud en cours...';
   }
 
+  // ─── AUTHENTIFICATION 100% CLOUD (AUCUN FALLBACK LOCAL) ───
   let foundUser = null;
-
-  // 1. Tentative API Cloud Neon
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    if (res.ok) {
-      const data = await res.json();
-      foundUser = data.user;
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.message || 'Identifiants incorrects');
     }
+    foundUser = data.user;
   } catch (err) {
-    console.warn("Vérification locale de secours:", err);
-  }
-
-  // 2. Recherche locale sécurisée si Cloud hors-ligne
-  if (!foundUser) {
-    for (let i = 0; i < PRESENCE_PERMANENT_ACCOUNTS.length; i++) {
-      const u = PRESENCE_PERMANENT_ACCOUNTS[i];
-      if (u.email.toLowerCase() === email && (u.password === password || password === 'password' || password === 'chada123')) {
-        foundUser = u;
-        break;
-      }
-    }
-    if (!foundUser) {
-      const db = JSON.parse(localStorage.getItem('hr_users_db_v2') || '[]');
-      foundUser = db.find(u => u.email && u.email.toLowerCase() === email && u.password === password);
-    }
-  }
-
-  if (submitBtn) {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> S\'identifier & Activer la Caméra';
-  }
-
-  if (!foundUser) {
-    showPresenceAuthError("⛔ Identifiants incorrects. Aucun compte trouvé avec cet email.");
+    resetSubmitBtn(submitBtn);
+    showPresenceAuthError("⛔ " + (err.message || "Connexion au serveur impossible. Vérifiez votre connexion internet."));
     return;
   }
 
-  // Authentification réussie
+  if (!foundUser) {
+    resetSubmitBtn(submitBtn);
+    showPresenceAuthError("⛔ Aucun compte trouvé. Contactez le Super-Admin.");
+    return;
+  }
+
+  resetSubmitBtn(submitBtn);
+
+  // Construire l'objet utilisateur authentifié
   const userName = ((foundUser.prenom || '') + ' ' + (foundUser.nom || '')).trim();
-  const initials = (foundUser.prenom || 'U').charAt(0) + '+' + (foundUser.nom || 'S').charAt(0);
-  
   presenceAuthUser = {
-    id: foundUser.id || 1,
+    id: foundUser.id,
     name: userName,
     email: foundUser.email,
     role: foundUser.role || 'Personnel',
     school: foundUser.ecole || 'Retrouvailles',
-    photo: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(initials) + '&background=0D8B6D&color=fff&size=150&bold=true'
+    photo: null // Sera rempli par la face_data cloud
   };
 
-  // Transition fluide vers le scanner facial
+  // Transition vers le scanner
   const authGate = document.getElementById('presence-auth-gate');
   const scannerContent = document.getElementById('presence-scanner-content');
 
@@ -270,19 +237,26 @@ window.presenceAuthenticate = async function() {
   }, 350);
 };
 
+function resetSubmitBtn(btn) {
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> S\'identifier & Activer la Caméra';
+  }
+}
+
 function showPresenceAuthError(msg) {
   const errorEl = document.getElementById('presence-auth-error');
   if (errorEl) {
     errorEl.textContent = msg;
     errorEl.style.display = 'block';
     errorEl.style.animation = 'none';
-    errorEl.offsetHeight; // reflow
+    errorEl.offsetHeight;
     errorEl.style.animation = 'shake 0.4s ease';
   }
 }
 
 // =============================================
-// ÉTAPE 3 : LANCER LA CAMÉRA & HUD HAUTE GAMME
+// ÉTAPE 3 : LANCER LA CAMÉRA
 // =============================================
 async function launchPresenceCamera() {
   const video = document.getElementById('presence-video');
@@ -294,7 +268,6 @@ async function launchPresenceCamera() {
 
   if (!video) return;
 
-  // Réinitialiser les éléments visuels
   if (resultCard) { resultCard.classList.add('hidden'); resultCard.classList.remove('flex'); }
   if (scannerView) scannerView.style.display = 'block';
   if (statusBox) statusBox.style.display = 'block';
@@ -306,7 +279,7 @@ async function launchPresenceCamera() {
 
   const subtitle = document.getElementById('presence-subtitle');
   if (subtitle && presenceAuthUser) {
-    subtitle.innerHTML = `<span class="text-emerald-400 font-bold">Identité Validée :</span> ${presenceAuthUser.name} (${presenceAuthUser.role})`;
+    subtitle.innerHTML = `<span class="text-emerald-400 font-bold">Identité :</span> ${presenceAuthUser.name} (${presenceAuthUser.role})`;
   }
 
   try {
@@ -323,7 +296,7 @@ async function launchPresenceCamera() {
       statusText.textContent = "Accès Caméra Requis";
       statusText.className = "text-red-400 font-bold text-lg";
     }
-    if (statusSub) statusSub.textContent = "Veuillez autoriser l'accès à la caméra pour certifier votre présence.";
+    if (statusSub) statusSub.textContent = "Veuillez autoriser l'accès à la caméra.";
   }
 }
 
@@ -374,7 +347,7 @@ function startBiometricScanSequence() {
   if (statusText) statusText.textContent = "Scan biométrique en cours...";
   if (statusSub) statusSub.textContent = "Capture des points nodaux et géométrie faciale...";
 
-  // Phase 1 : Capture réelle d'empreinte faciale sur Canvas
+  // Phase 1 : Capture faciale
   presencePhaseTimeout = setTimeout(() => {
     captureFacialSignature();
 
@@ -384,11 +357,11 @@ function startBiometricScanSequence() {
     }
     if (statusSub) statusSub.textContent = "Comparaison avec l'identité de " + presenceAuthUser.name + "...";
 
-    // Phase 2 : Validation et certification
+    // Phase 2 : Validation Cloud STRICTE
     presencePhaseTimeout = setTimeout(() => {
       validateAndConfirmPresence();
     }, 1800);
-  }, 1800);
+  }, 2000);
 }
 
 // =============================================
@@ -406,17 +379,18 @@ function captureFacialSignature() {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     capturedFaceData = canvas.toDataURL('image/jpeg', 0.7);
 
+    // Stocker la photo de capture en direct sur l'objet auth
     if (presenceAuthUser) {
-      presenceAuthUser.photo = capturedFaceData;
+      presenceAuthUser.capturedPhoto = capturedFaceData;
     }
   } catch (e) {
-    console.warn("Canvas capture fallback:", e);
+    console.warn("Canvas capture error:", e);
   }
 }
 
-// =============================================
-// VALIDATION & ENREGISTREMENT DU POINTAGE
-// =============================================
+// ═══════════════════════════════════════════════════════════════
+// VALIDATION & ENREGISTREMENT DU POINTAGE (100% CLOUD)
+// ═══════════════════════════════════════════════════════════════
 async function validateAndConfirmPresence() {
   clearInterval(presenceScanLineAnim);
 
@@ -428,91 +402,119 @@ async function validateAndConfirmPresence() {
     return;
   }
 
-  // ======= VÉRIFICATION CLOUD BIOMÉTRIQUE =======
-  if (statusText) { statusText.textContent = "Vérification biométrique cloud..."; statusText.className = "text-amber-400 font-bold text-lg animate-pulse"; }
-  if (statusSub) statusSub.textContent = "Connexion au serveur d'identité Neon...";
+  // ═══ ÉTAPE 1 : Récupérer la face de référence depuis le Cloud ═══
+  if (statusText) { statusText.textContent = "Connexion au serveur d'identité..."; statusText.className = "text-amber-400 font-bold text-lg animate-pulse"; }
+  if (statusSub) statusSub.textContent = "Récupération de l'empreinte de référence...";
 
   let isEnrolled = false;
   let storedFaceData = null;
 
-  // 1. Récupérer la photo de référence depuis le cloud
   try {
     const faceRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presenceAuthUser.email));
     if (faceRes.ok) {
       const faceInfo = await faceRes.json();
       isEnrolled = faceInfo.enrolled;
       storedFaceData = faceInfo.face_data;
+    } else {
+      throw new Error("Serveur biométrique indisponible");
     }
   } catch (err) {
-    console.warn("Cloud face check unavailable:", err);
-  }
-
-  // 2. Si PAS encore enrôlé → ENRÔLEMENT (1ère capture = référence cloud)
-  if (!isEnrolled) {
-    if (statusText) { statusText.textContent = "Enrôlement facial en cours..."; statusText.className = "text-cyan-400 font-bold text-lg animate-pulse"; }
-    if (statusSub) statusSub.textContent = "Enregistrement de votre visage dans le cloud sécurisé...";
-
-    try {
-      await fetch('/api/bio/face', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: presenceAuthUser.email, face_data: capturedFaceData })
-      });
-    } catch (err) {
-      console.warn("Enrollment cloud unavailable:", err);
-    }
-
-    // Continuer vers le pointage (1er enrôlement = confiance)
-    await showPresenceResultCard(true);
-    return;
-  }
-
-  // 3. Si DÉJÀ enrôlé → COMPARAISON STRICTE avec la photo de référence cloud
-  if (statusText) { statusText.textContent = "Comparaison faciale stricte..."; statusText.className = "text-emerald-400 font-bold text-lg animate-pulse"; }
-  if (statusSub) statusSub.textContent = "Vérification anti-usurpation en cours...";
-
-  const similarity = compareFaceSignatures(capturedFaceData, storedFaceData);
-
-  if (similarity < 0.35) {
-    // ⛔ VISAGE DIFFÉRENT → BLOCAGE
-    if (statusText) { statusText.textContent = "⛔ Visage non reconnu !"; statusText.className = "text-red-500 font-bold text-lg"; }
-    if (statusSub) statusSub.textContent = "Le visage capturé ne correspond pas à " + presenceAuthUser.name + ". Pointage refusé.";
-    
+    if (statusText) { statusText.textContent = "⛔ Serveur biométrique hors-ligne"; statusText.className = "text-red-500 font-bold text-lg"; }
+    if (statusSub) statusSub.textContent = "Impossible de vérifier votre identité. Réessayez plus tard.";
     presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 4000);
     return;
   }
 
-  // ✅ VISAGE VALIDÉ → Pointage autorisé
-  // Mettre à jour la photo cloud avec la capture la plus récente
-  try {
-    await fetch('/api/bio/face', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: presenceAuthUser.email, face_data: capturedFaceData })
-    });
-  } catch (err) { /* silently update */ }
+  // ═══ ÉTAPE 2 : ENRÔLEMENT INITIAL (1ère utilisation) ═══
+  if (!isEnrolled) {
+    if (statusText) { statusText.textContent = "🔐 Enrôlement facial initial..."; statusText.className = "text-cyan-400 font-bold text-lg animate-pulse"; }
+    if (statusSub) statusSub.textContent = "Enregistrement de votre visage de référence dans le Cloud sécurisé...";
 
+    try {
+      const enrollRes = await fetch('/api/bio/face', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: presenceAuthUser.email, face_data: capturedFaceData })
+      });
+      const enrollData = await enrollRes.json();
+      
+      if (!enrollRes.ok) {
+        throw new Error(enrollData.message || "Échec de l'enrôlement");
+      }
+    } catch (err) {
+      if (statusText) { statusText.textContent = "⛔ Enrôlement échoué"; statusText.className = "text-red-500 font-bold text-lg"; }
+      if (statusSub) statusSub.textContent = err.message;
+      presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 4000);
+      return;
+    }
+
+    // 1er enrôlement = confiance, on continue vers le pointage
+    // La photo capturée DEVIENT la référence cloud
+    presenceAuthUser.photo = capturedFaceData;
+    await showPresenceResultCard(true);
+    return;
+  }
+
+  // ═══ ÉTAPE 3 : COMPARAISON STRICTE AVEC LA RÉFÉRENCE CLOUD ═══
+  if (statusText) { statusText.textContent = "Comparaison faciale stricte..."; statusText.className = "text-emerald-400 font-bold text-lg animate-pulse"; }
+  if (statusSub) statusSub.textContent = "Vérification anti-usurpation en cours...";
+
+  // ⚠️ CORRECTION CRITIQUE : await la Promise de comparaison
+  const similarity = await compareFaceSignatures(capturedFaceData, storedFaceData);
+
+  if (similarity < 0.35) {
+    // ═══ ⛔ VISAGE DIFFÉRENT → BLOCAGE TOTAL ═══
+    if (statusText) { statusText.textContent = "⛔ VISAGE NON RECONNU !"; statusText.className = "text-red-500 font-bold text-xl"; }
+    if (statusSub) statusSub.textContent = "Le visage capturé ne correspond PAS à " + presenceAuthUser.name + ". Pointage REFUSÉ. Score: " + (similarity * 100).toFixed(0) + "%";
+
+    // Log tentative d'usurpation
+    try {
+      await fetch('/api/rh/pointage/arrivee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          utilisateur_id: presenceAuthUser.id,
+          nom: presenceAuthUser.name,
+          role: presenceAuthUser.role,
+          ecole: presenceAuthUser.school,
+          date_pointage: new Date().toISOString().split('T')[0],
+          heure: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: 'USURPATION_BLOQUEE',
+          score_facial: similarity
+        })
+      });
+    } catch(e) { /* silent */ }
+
+    presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 5000);
+    return;
+  }
+
+  // ═══ ✅ VISAGE VALIDÉ → Pointage autorisé ═══
+  // Utiliser la photo de RÉFÉRENCE cloud pour l'affichage (pas la capture)
+  presenceAuthUser.photo = storedFaceData;
   await showPresenceResultCard(true);
 }
 
-// =============================================
-// COMPARAISON D'EMPREINTES FACIALES (Canvas)
-// =============================================
+// ═══════════════════════════════════════════════════════════════
+// COMPARAISON D'EMPREINTES FACIALES (Canvas pixel-level)
+// Retourne une Promise<number> entre 0.0 et 1.0
+// ═══════════════════════════════════════════════════════════════
 function compareFaceSignatures(capturedB64, storedB64) {
-  // Comparaison pixel par pixel des signatures faciales
-  // Retourne un score de similarité entre 0.0 (différent) et 1.0 (identique)
-  try {
-    if (!capturedB64 || !storedB64) return 0.5; // Pas de référence = confiance moyenne
+  return new Promise((resolve) => {
+    try {
+      if (!capturedB64 || !storedB64) {
+        resolve(0.0); // Pas de référence = rejet total
+        return;
+      }
 
-    const canvas1 = document.createElement('canvas');
-    const canvas2 = document.createElement('canvas');
-    const ctx1 = canvas1.getContext('2d');
-    const ctx2 = canvas2.getContext('2d');
-    const size = 32; // Réduction pour comparaison rapide
-    canvas1.width = canvas2.width = size;
-    canvas1.height = canvas2.height = size;
+      const canvas1 = document.createElement('canvas');
+      const canvas2 = document.createElement('canvas');
+      const ctx1 = canvas1.getContext('2d');
+      const ctx2 = canvas2.getContext('2d');
+      const size = 64; // Résolution augmentée pour meilleure précision
+      canvas1.width = canvas2.width = size;
+      canvas1.height = canvas2.height = size;
 
-    return new Promise((resolve) => {
       const img1 = new Image();
       const img2 = new Image();
       let loaded = 0;
@@ -528,30 +530,38 @@ function compareFaceSignatures(capturedB64, storedB64) {
         const data2 = ctx2.getImageData(0, 0, size, size).data;
 
         let totalDiff = 0;
-        const totalPixels = size * size * 3; // R, G, B (skip alpha)
+        const totalPixels = size * size * 3;
 
         for (let i = 0; i < data1.length; i += 4) {
-          totalDiff += Math.abs(data1[i] - data2[i]);     // R
-          totalDiff += Math.abs(data1[i+1] - data2[i+1]); // G
-          totalDiff += Math.abs(data1[i+2] - data2[i+2]); // B
+          totalDiff += Math.abs(data1[i] - data2[i]);
+          totalDiff += Math.abs(data1[i+1] - data2[i+1]);
+          totalDiff += Math.abs(data1[i+2] - data2[i+2]);
         }
 
         const avgDiff = totalDiff / totalPixels;
-        const similarity = Math.max(0, 1 - (avgDiff / 128)); // Normaliser
+        const similarity = Math.max(0, 1 - (avgDiff / 128));
         resolve(similarity);
       }
 
       img1.onload = onLoad;
       img2.onload = onLoad;
-      img1.onerror = () => resolve(0.5);
-      img2.onerror = () => resolve(0.5);
+      img1.onerror = () => resolve(0.0);
+      img2.onerror = () => resolve(0.0);
       img1.src = capturedB64;
       img2.src = storedB64;
-    });
-  } catch (e) {
-    return 0.5; // En cas d'erreur, confiance moyenne
-  }
+
+      // Timeout de sécurité : si les images ne chargent pas en 5s → rejet
+      setTimeout(() => { if (loaded < 2) resolve(0.0); }, 5000);
+
+    } catch (e) {
+      resolve(0.0); // En cas d'erreur = rejet total (sécurité)
+    }
+  });
 }
+
+// ═══════════════════════════════════════════════════════════════
+// AFFICHAGE DE LA CARTE RÉSULTAT AVEC PHOTO DE RÉFÉRENCE CLOUD
+// ═══════════════════════════════════════════════════════════════
 async function showPresenceResultCard(validated) {
   if (!validated) return;
 
@@ -575,13 +585,15 @@ async function showPresenceResultCard(validated) {
   const storageKey = 'presence_' + user.email + '_' + today;
   const hasArrived = localStorage.getItem(storageKey);
 
-  // Remplissage UI
-  if (photo) photo.src = user.photo || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name) + '&background=0D8B6D&color=fff&size=150&bold=true');
+  // ─── AFFICHER LA PHOTO DE RÉFÉRENCE CLOUD (pas la capture en direct) ───
+  if (photo) {
+    photo.src = user.photo || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name) + '&background=0D8B6D&color=fff&size=150&bold=true');
+  }
   if (userRole) userRole.textContent = user.role + ' • ' + user.school;
   if (timeValue) timeValue.textContent = timeStr;
 
   if (!hasArrived) {
-    // ---- ARRIVÉE ----
+    // ── ARRIVÉE ──
     localStorage.setItem(storageKey, 'arrived');
     if (welcomeMsg) welcomeMsg.textContent = 'Bienvenue ' + user.name;
     if (timeLabel) timeLabel.textContent = "Heure d'arrivée certifiée";
@@ -594,12 +606,10 @@ async function showPresenceResultCard(validated) {
       timeIcon.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>';
     }
 
-    // Synchronisation Cloud Neon + Local
     syncPointageToCloud('arrivee', user, today, timeStr);
-    saveToAdminDb('Arrivee', timeStr, user);
 
   } else {
-    // ---- DÉPART ----
+    // ── DÉPART ──
     localStorage.removeItem(storageKey);
     if (welcomeMsg) welcomeMsg.textContent = 'Au revoir ' + user.name;
     if (timeLabel) timeLabel.textContent = "Heure de départ certifiée";
@@ -612,9 +622,7 @@ async function showPresenceResultCard(validated) {
       timeIcon.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>';
     }
 
-    // Synchronisation Cloud Neon + Local
     syncPointageToCloud('depart', user, today, timeStr);
-    saveToAdminDb('Depart', timeStr, user);
   }
 
   // Basculer l'affichage
@@ -630,7 +638,7 @@ async function showPresenceResultCard(validated) {
     }, 40);
   }
 
-  // Fermeture automatique après 4.5s
+  // Fermeture automatique
   presencePhaseTimeout = setTimeout(() => {
     closePresenceScanner();
   }, 4500);
@@ -646,7 +654,7 @@ async function syncPointageToCloud(type, user, date, time) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        utilisateur_id: user.id || 1,
+        utilisateur_id: user.id,
         nom: user.name,
         role: user.role,
         ecole: user.school,
@@ -655,51 +663,12 @@ async function syncPointageToCloud(type, user, date, time) {
       })
     });
   } catch (err) {
-    console.warn("Pointage cloud en file d'attente locale:", err);
+    console.warn("Pointage cloud error:", err);
   }
 }
 
 // =============================================
-// SAUVEGARDE DANS LE JOURNAL LOCAL ADMIN_DB
-// =============================================
-function saveToAdminDb(type, timeStr, user) {
-  try {
-    let db = JSON.parse(localStorage.getItem('admin_db') || '{}');
-    if (!db.rh) db.rh = { pointages: [], comptes: [] };
-    if (!db.rh.pointages) db.rh.pointages = [];
-
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-
-    if (type === 'Depart') {
-      const todayLog = db.rh.pointages.find(p => p.nom === user.name && p.date === dateStr);
-      if (todayLog) {
-        todayLog.statut = 'Terminé';
-        todayLog.depart = timeStr;
-      }
-    } else {
-      const ids = db.rh.pointages.map(p => p.id || 0);
-      const newId = (ids.length > 0 ? Math.max(...ids) : 0) + 1;
-      db.rh.pointages.unshift({
-        id: newId,
-        nom: user.name,
-        date: dateStr,
-        statut: 'Présent',
-        arrivee: timeStr,
-        role: user.role,
-        ecole: user.school,
-        photo: user.photo
-      });
-    }
-
-    localStorage.setItem('admin_db', JSON.stringify(db));
-  } catch (e) {
-    console.error("Erreur sauvegarde admin_db:", e);
-  }
-}
-
-// =============================================
-// STYLE CSS D'ANIMATION
+// CSS ANIMATIONS
 // =============================================
 (function() {
   if (!document.getElementById('presence-shake-css')) {
