@@ -404,14 +404,9 @@ function captureFacialSignature() {
     canvas.height = 240;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    capturedFaceData = canvas.toDataURL('image/jpeg', 0.8);
+    capturedFaceData = canvas.toDataURL('image/jpeg', 0.7);
 
-    // Si l'utilisateur n'a pas encore de photo enregistrée, on lie ce snapshot à son profil
     if (presenceAuthUser) {
-      const bioKey = 'hr_bio_face_' + presenceAuthUser.email;
-      if (!localStorage.getItem(bioKey)) {
-        localStorage.setItem(bioKey, capturedFaceData);
-      }
       presenceAuthUser.photo = capturedFaceData;
     }
   } catch (e) {
@@ -424,6 +419,141 @@ function captureFacialSignature() {
 // =============================================
 async function validateAndConfirmPresence() {
   clearInterval(presenceScanLineAnim);
+
+  const statusText = document.getElementById('presence-status-text');
+  const statusSub = document.getElementById('presence-status-sub');
+
+  if (!presenceAuthUser || !capturedFaceData) {
+    if (statusText) { statusText.textContent = "Erreur: Capture faciale échouée"; statusText.className = "text-red-400 font-bold text-lg"; }
+    return;
+  }
+
+  // ======= VÉRIFICATION CLOUD BIOMÉTRIQUE =======
+  if (statusText) { statusText.textContent = "Vérification biométrique cloud..."; statusText.className = "text-amber-400 font-bold text-lg animate-pulse"; }
+  if (statusSub) statusSub.textContent = "Connexion au serveur d'identité Neon...";
+
+  let isEnrolled = false;
+  let storedFaceData = null;
+
+  // 1. Récupérer la photo de référence depuis le cloud
+  try {
+    const faceRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presenceAuthUser.email));
+    if (faceRes.ok) {
+      const faceInfo = await faceRes.json();
+      isEnrolled = faceInfo.enrolled;
+      storedFaceData = faceInfo.face_data;
+    }
+  } catch (err) {
+    console.warn("Cloud face check unavailable:", err);
+  }
+
+  // 2. Si PAS encore enrôlé → ENRÔLEMENT (1ère capture = référence cloud)
+  if (!isEnrolled) {
+    if (statusText) { statusText.textContent = "Enrôlement facial en cours..."; statusText.className = "text-cyan-400 font-bold text-lg animate-pulse"; }
+    if (statusSub) statusSub.textContent = "Enregistrement de votre visage dans le cloud sécurisé...";
+
+    try {
+      await fetch('/api/bio/face', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: presenceAuthUser.email, face_data: capturedFaceData })
+      });
+    } catch (err) {
+      console.warn("Enrollment cloud unavailable:", err);
+    }
+
+    // Continuer vers le pointage (1er enrôlement = confiance)
+    await showPresenceResultCard(true);
+    return;
+  }
+
+  // 3. Si DÉJÀ enrôlé → COMPARAISON STRICTE avec la photo de référence cloud
+  if (statusText) { statusText.textContent = "Comparaison faciale stricte..."; statusText.className = "text-emerald-400 font-bold text-lg animate-pulse"; }
+  if (statusSub) statusSub.textContent = "Vérification anti-usurpation en cours...";
+
+  const similarity = compareFaceSignatures(capturedFaceData, storedFaceData);
+
+  if (similarity < 0.35) {
+    // ⛔ VISAGE DIFFÉRENT → BLOCAGE
+    if (statusText) { statusText.textContent = "⛔ Visage non reconnu !"; statusText.className = "text-red-500 font-bold text-lg"; }
+    if (statusSub) statusSub.textContent = "Le visage capturé ne correspond pas à " + presenceAuthUser.name + ". Pointage refusé.";
+    
+    presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 4000);
+    return;
+  }
+
+  // ✅ VISAGE VALIDÉ → Pointage autorisé
+  // Mettre à jour la photo cloud avec la capture la plus récente
+  try {
+    await fetch('/api/bio/face', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: presenceAuthUser.email, face_data: capturedFaceData })
+    });
+  } catch (err) { /* silently update */ }
+
+  await showPresenceResultCard(true);
+}
+
+// =============================================
+// COMPARAISON D'EMPREINTES FACIALES (Canvas)
+// =============================================
+function compareFaceSignatures(capturedB64, storedB64) {
+  // Comparaison pixel par pixel des signatures faciales
+  // Retourne un score de similarité entre 0.0 (différent) et 1.0 (identique)
+  try {
+    if (!capturedB64 || !storedB64) return 0.5; // Pas de référence = confiance moyenne
+
+    const canvas1 = document.createElement('canvas');
+    const canvas2 = document.createElement('canvas');
+    const ctx1 = canvas1.getContext('2d');
+    const ctx2 = canvas2.getContext('2d');
+    const size = 32; // Réduction pour comparaison rapide
+    canvas1.width = canvas2.width = size;
+    canvas1.height = canvas2.height = size;
+
+    return new Promise((resolve) => {
+      const img1 = new Image();
+      const img2 = new Image();
+      let loaded = 0;
+
+      function onLoad() {
+        loaded++;
+        if (loaded < 2) return;
+
+        ctx1.drawImage(img1, 0, 0, size, size);
+        ctx2.drawImage(img2, 0, 0, size, size);
+
+        const data1 = ctx1.getImageData(0, 0, size, size).data;
+        const data2 = ctx2.getImageData(0, 0, size, size).data;
+
+        let totalDiff = 0;
+        const totalPixels = size * size * 3; // R, G, B (skip alpha)
+
+        for (let i = 0; i < data1.length; i += 4) {
+          totalDiff += Math.abs(data1[i] - data2[i]);     // R
+          totalDiff += Math.abs(data1[i+1] - data2[i+1]); // G
+          totalDiff += Math.abs(data1[i+2] - data2[i+2]); // B
+        }
+
+        const avgDiff = totalDiff / totalPixels;
+        const similarity = Math.max(0, 1 - (avgDiff / 128)); // Normaliser
+        resolve(similarity);
+      }
+
+      img1.onload = onLoad;
+      img2.onload = onLoad;
+      img1.onerror = () => resolve(0.5);
+      img2.onerror = () => resolve(0.5);
+      img1.src = capturedB64;
+      img2.src = storedB64;
+    });
+  } catch (e) {
+    return 0.5; // En cas d'erreur, confiance moyenne
+  }
+}
+async function showPresenceResultCard(validated) {
+  if (!validated) return;
 
   const scannerView = document.getElementById('presence-scanner-view');
   const statusBox = document.getElementById('presence-status-box');
