@@ -67,15 +67,8 @@
       <!-- Selector Enfants -->
       <div class="px-4 pt-4">
         <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-2">Sélection de l'Élève</p>
-        <div class="flex gap-2">
-          <button id="btn-child-david" onclick="selectChild('david')" class="flex-1 p-2 bg-blue-600/30 border border-blue-500/50 rounded-xl text-left transition text-white">
-            <p class="text-xs font-bold">David M.</p>
-            <p class="text-[10px] text-gray-300">3è Hum. Scientifique</p>
-          </button>
-          <button id="btn-child-sarah" onclick="selectChild('sarah')" class="flex-1 p-2 bg-[#112240]/80/5 border border-white/10 rounded-xl text-left transition text-gray-400 hover:text-white">
-            <p class="text-xs font-bold">Sarah M.</p>
-            <p class="text-[10px] text-gray-400">6è Primaire</p>
-          </button>
+        <div class="flex flex-col gap-2 max-h-40 overflow-y-auto hide-scrollbar" id="child-selector-container">
+          <div class="animate-pulse flex items-center justify-center p-4 text-xs text-gray-500">Chargement des élèves...</div>
         </div>
       </div>
 
@@ -723,9 +716,9 @@
 
   <!-- JavaScript Logic -->
   <script>
-    let currentParentUser = null;
-
-    document.addEventListener('DOMContentLoaded', () => {
+    let parentChildren = [];
+    
+    document.addEventListener('DOMContentLoaded', async () => {
       if (window.lucide) lucide.createIcons();
 
       // Enforce Strict Parent Session Security
@@ -750,23 +743,51 @@
           return;
         }
 
-        if (currentParentUser && currentParentUser.nom) {
-          document.getElementById('parent-name').textContent = `${currentParentUser.prenom} ${currentParentUser.nom}`;
-          if (currentParentUser.activeStudent) {
-            const active = currentParentUser.activeStudent;
-            if (active.name.includes('Sarah')) {
-              selectChild('sarah', true);
-            } else {
-              selectChild('david', true);
-            }
-          }
+        if (currentParentUser && (currentParentUser.nom || currentParentUser.prenom)) {
+          document.getElementById('parent-name').textContent = `${currentParentUser.prenom || ''} ${currentParentUser.nom || ''}`;
         }
+        
+        // Fetch children from Cloud
+        await loadParentChildren();
+        
       } catch(err) {
         console.warn("Session error", err);
         window.location.href = '/login.html';
       }
     });
-
+    
+    async function loadParentChildren() {
+      const container = document.getElementById('child-selector-container');
+      try {
+        const response = await fetch(`/api/parent/enfants?parent_id=${currentParentUser.id}`);
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) throw new Error(data.message || 'Erreur réseau');
+        
+        parentChildren = data.enfants || [];
+        
+        if (parentChildren.length === 0) {
+          container.innerHTML = '<div class="p-4 text-xs text-amber-500 font-bold bg-amber-500/10 rounded-xl border border-amber-500/20 text-center">Aucun élève inscrit n\'est rattaché à ce compte.</div>';
+          return;
+        }
+        
+        // Render buttons
+        container.innerHTML = parentChildren.map((enfant, index) => `
+          <button id="btn-child-${enfant.id}" onclick="selectChild(${index})" class="child-btn w-full p-2 bg-[#112240]/80 border border-white/10 rounded-xl text-left transition text-gray-400 hover:text-white">
+            <p class="text-xs font-bold uppercase truncate">${enfant.nom} ${enfant.postnom || ''} ${enfant.prenom}</p>
+            <p class="text-[10px] truncate">${enfant.classe || 'Nouvelle Inscription'} — ${enfant.ecole === 'harmonie' ? 'Harmonie' : 'Retrouvailles'}</p>
+          </button>
+        `).join('');
+        
+        // Select first child by default
+        selectChild(0, true);
+        
+      } catch (error) {
+        console.error('Erreur chargement enfants:', error);
+        container.innerHTML = `<div class="p-4 text-xs text-red-500 font-bold text-center">Erreur de connexion au serveur</div>`;
+      }
+    }
+    
     // Toast helper
     function showToast(msg) {
       const toast = document.getElementById('toast');
@@ -862,31 +883,32 @@
     }
 
     // Child Selector Logic (Strictly scoped to parent's authorized children)
-    function selectChild(childKey, silent = false) {
-      const btnDavid = document.getElementById('btn-child-david');
-      const btnSarah = document.getElementById('btn-child-sarah');
-
-      if (childKey === 'david') {
-        btnDavid.className = "flex-1 p-2 bg-blue-600/30 border border-blue-500/50 rounded-xl text-left transition text-white";
-        btnSarah.className = "flex-1 p-2 bg-[#112240]/80/5 border border-white/10 rounded-xl text-left transition text-gray-400 hover:text-white";
-        
-        document.getElementById('child-fullname').innerHTML = 'MUKENDI KABUYA <span class="text-amber-500">David</span>';
-        document.getElementById('child-class').textContent = '3ème Humanité (Scientifique) - G.S. Retrouvailles';
-        document.getElementById('child-teacher').textContent = 'Mr. TSHIBANGU';
-        document.getElementById('child-matricule').textContent = 'HR-2026-0451';
-        document.getElementById('child-img').src = 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=400&q=80';
-        if (!silent) showToast("Dossier sécurisé : David Mukendi");
-      } else {
-        btnSarah.className = "flex-1 p-2 bg-purple-600/30 border border-purple-500/50 rounded-xl text-left transition text-white";
-        btnDavid.className = "flex-1 p-2 bg-[#112240]/80/5 border border-white/10 rounded-xl text-left transition text-gray-400 hover:text-white";
-        
-        document.getElementById('child-fullname').innerHTML = 'MUKENDI KABUYA <span class="text-purple-400">Sarah</span>';
-        document.getElementById('child-class').textContent = '6ème Primaire - C.S. Harmonie';
-        document.getElementById('child-teacher').textContent = 'Mme. ILUNGA';
-        document.getElementById('child-matricule').textContent = 'HR-2026-0812';
-        document.getElementById('child-img').src = 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&q=80';
-        if (!silent) showToast("Dossier sécurisé : Sarah Mukendi");
+    function selectChild(index, silent = false) {
+      const enfant = parentChildren[index];
+      if (!enfant) return;
+      
+      // Update buttons UI
+      document.querySelectorAll('.child-btn').forEach(btn => {
+        btn.className = "child-btn w-full p-2 bg-[#112240]/80 border border-white/10 rounded-xl text-left transition text-gray-400 hover:text-white";
+      });
+      const activeBtn = document.getElementById(`btn-child-${enfant.id}`);
+      if (activeBtn) {
+        const colorClass = enfant.ecole === 'harmonie' ? 'purple' : 'blue';
+        activeBtn.className = `child-btn w-full p-2 bg-${colorClass}-600/30 border border-${colorClass}-500/50 rounded-xl text-left transition text-white`;
       }
+      
+      // Update Dashboard Info
+      const colorText = enfant.ecole === 'harmonie' ? 'text-purple-400' : 'text-amber-500';
+      document.getElementById('child-fullname').innerHTML = `${enfant.nom} ${enfant.postnom || ''} <span class="${colorText}">${enfant.prenom}</span>`;
+      document.getElementById('child-class').textContent = `${enfant.classe || 'Non assigné'} - ${enfant.ecole === 'harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}`;
+      document.getElementById('child-teacher').textContent = 'Non assigné'; // À lier avec l'enseignant plus tard
+      document.getElementById('child-matricule').textContent = enfant.matricule || 'N/A';
+      
+      // Dummy images based on gender or ecole
+      const dummyImg = enfant.sexe === 'F' ? 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&q=80' : 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=400&q=80';
+      document.getElementById('child-img').src = dummyImg;
+      
+      if (!silent) showToast(`Dossier sécurisé : ${enfant.prenom}`);
     }
 
     // Homework toggle
