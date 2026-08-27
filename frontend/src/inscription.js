@@ -204,21 +204,21 @@ document.addEventListener('DOMContentLoaded', function () {
       +         '<span style="width:20px;height:20px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#2563eb;">P</span>'
       +         'Informations du Père'
       +       '</h4>'
-      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nom du Père *</label><input type="text" required class="input-field"></div>'
-      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Profession</label><input type="text" class="input-field"></div>'
-      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Téléphone *</label><input type="tel" placeholder="+243..." required class="input-field phone-input"></div>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nom du Père *</label><input type="text" name="nom_pere" required class="input-field"></div>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Profession</label><input type="text" name="profession_pere" class="input-field"></div>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Téléphone *</label><input type="tel" name="tel_pere" placeholder="+243..." required class="input-field phone-input"></div>'
       +     '</div>'
       +     '<div class="space-y-4 p-4 bg-[#112240]/50 rounded-xl border border-gray-100">'
       +       '<h4 style="font-size:12px;font-weight:700;color: #e5e7eb;display:flex;align-items:center;gap:6px;">'
       +         '<span style="width:20px;height:20px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#db2777;">M</span>'
       +         'Informations de la Mère'
       +       '</h4>'
-      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nom de la Mère *</label><input type="text" required class="input-field"></div>'
-      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Profession</label><input type="text" class="input-field"></div>'
-      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Téléphone *</label><input type="tel" placeholder="+243..." required class="input-field phone-input"></div>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nom de la Mère *</label><input type="text" name="nom_mere" required class="input-field"></div>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Profession</label><input type="text" name="profession_mere" class="input-field"></div>'
+      +       '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Téléphone *</label><input type="tel" name="tel_mere" placeholder="+243..." required class="input-field phone-input"></div>'
       +     '</div>'
       +   '</div>'
-      +   '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Adresse e-mail des parents</label><input type="email" class="input-field"></div>'
+      +   '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Adresse e-mail des parents</label><input type="email" name="email_parent" class="input-field"></div>'
       + '</div>';
   };
 
@@ -303,35 +303,35 @@ document.addEventListener('DOMContentLoaded', function () {
       + '<div class="space-y-4">'
       +   '<h3 style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid #f3f4f6;padding-bottom:10px;color:' + color + '">Identité de l\'Élève</h3>'
       +   '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">'
-      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nom *</label><input type="text" required class="input-field"></div>'
-      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Postnom *</label><input type="text" required class="input-field"></div>'
-      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Prénom *</label><input type="text" required class="input-field"></div>'
+      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nom *</label><input type="text" name="nom" required class="input-field"></div>'
+      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Postnom *</label><input type="text" name="postnom" required class="input-field"></div>'
+      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Prénom *</label><input type="text" name="prenom" required class="input-field"></div>'
       +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Sexe *</label>'
-      +       '<select required class="input-field"><option value="">Sélectionner</option><option value="M">Masculin</option><option value="F">Féminin</option></select>'
+      +       '<select name="sexe" required class="input-field"><option value="">Sélectionner</option><option value="M">Masculin</option><option value="F">Féminin</option></select>'
       +     '</div>'
-      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Date de naissance *</label><input type="date" required class="input-field"></div>'
-      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Lieu de naissance *</label><input type="text" required class="input-field"></div>'
+      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Date de naissance *</label><input type="date" name="date_naissance" required class="input-field"></div>'
+      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Lieu de naissance *</label><input type="text" name="lieu_naissance" required class="input-field"></div>'
       +   '</div>'
       + '</div>';
   };
 
   var adresseBlock = function (color, avecDistrict) {
     var districtHtml = avecDistrict
-      ? '<div><label class="block text-xs font-semibold text-gray-500 mb-1">District / Territoire *</label><input type="text" required class="input-field"></div>'
+      ? '<div><label class="block text-xs font-semibold text-gray-500 mb-1">District / Territoire *</label><input type="text" name="district" required class="input-field"></div>'
       : '';
     return ''
       + '<div class="space-y-4">'
       +   '<h3 style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid #f3f4f6;padding-bottom:10px;color:' + color + '">Origine &amp; Adresse</h3>'
       +   '<div class="grid grid-cols-1 md:grid-cols-' + (avecDistrict ? '3' : '2') + ' gap-4 mb-4">'
-      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nationalité *</label><input type="text" value="Congolaise (RDC)" required class="input-field"></div>'
-      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Province d\'origine *</label><input type="text" required class="input-field"></div>'
+      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Nationalité *</label><input type="text" name="nationalite" value="Congolaise (RDC)" required class="input-field"></div>'
+      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Province d\'origine *</label><input type="text" name="province_origine" required class="input-field"></div>'
       +     districtHtml
       +   '</div>'
       +   '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">'
-      +     '<div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-500 mb-1">Avenue &amp; Numéro *</label><input type="text" required class="input-field"></div>'
-      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Quartier *</label><input type="text" required class="input-field"></div>'
-      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Commune *</label><input type="text" required class="input-field"></div>'
-      +     '<div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-500 mb-1">Ville *</label><input type="text" value="Kinshasa" required class="input-field"></div>'
+      +     '<div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-500 mb-1">Avenue &amp; Numéro *</label><input type="text" name="adresse" required class="input-field"></div>'
+      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Quartier *</label><input type="text" name="quartier" required class="input-field"></div>'
+      +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Commune *</label><input type="text" name="commune" required class="input-field"></div>'
+      +     '<div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-500 mb-1">Ville *</label><input type="text" name="ville" value="Kinshasa" required class="input-field"></div>'
       +   '</div>'
       + '</div>';
   };
@@ -344,13 +344,13 @@ document.addEventListener('DOMContentLoaded', function () {
     + '<div class="space-y-4">'
     +   '<h3 style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid #f3f4f6;padding-bottom:10px;color:#1d4ed8;">Cursus Scolaire</h3>'
     +   '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">'
-    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">École de provenance</label><input type="text" class="input-field"></div>'
-    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Province de l\'école</label><input type="text" class="input-field"></div>'
-    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Pourcentage / Mention</label><input type="text" class="input-field"></div>'
+    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">École de provenance</label><input type="text" name="ecole_provenance" class="input-field"></div>'
+    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Province de l\'école</label><input type="text" name="province_ecole" class="input-field"></div>'
+    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Pourcentage / Mention</label><input type="text" name="pourcentage" class="input-field"></div>'
     +   '</div>'
     +   '<div style="padding:20px;background: rgba(30, 58, 138, 0.3);border:1.5px solid #bfdbfe;border-radius:16px;">'
     +     '<label style="display:block;font-size:13px;font-weight:700;color:#1e40af;margin-bottom:10px;">Classe Sollicitée *</label>'
-    +     '<select required class="option-select-premium" style="border-color:#93c5fd;">'
+    +     '<select name="classe" required class="option-select-premium" style="border-color:#93c5fd;">'
     +       '<option value="">— Sélectionnez une classe —</option>'
     +       '<optgroup label="Maternelle"><option value="accueil">Accueil</option><option value="mat-1">1ère Maternelle</option><option value="mat-2">2ème Maternelle</option><option value="mat-3">3ème Maternelle</option></optgroup>'
     +       '<optgroup label="Primaire"><option value="prim-1">1ère Année Primaire</option><option value="prim-2">2ème Année Primaire</option><option value="prim-3">3ème Année Primaire</option><option value="prim-4">4ème Année Primaire</option><option value="prim-5">5ème Année Primaire</option><option value="prim-6">6ème Année Primaire</option></optgroup>'
@@ -366,8 +366,8 @@ document.addEventListener('DOMContentLoaded', function () {
     + '<div class="space-y-4">'
     +   '<h3 style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid #f3f4f6;padding-bottom:10px;color:#dc2626;">Cursus Scolaire</h3>'
     +   '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">'
-    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">École de provenance *</label><input type="text" required class="input-field"></div>'
-    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Code de l\'école d\'origine</label><input type="text" class="input-field"></div>'
+    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">École de provenance *</label><input type="text" name="ecole_provenance" required class="input-field"></div>'
+    +     '<div><label class="block text-xs font-semibold text-gray-500 mb-1">Code de l\'école d\'origine</label><input type="text" name="code_ecole" class="input-field"></div>'
     +   '</div>'
     +   '<div style="padding:16px;background: rgba(17, 34, 64, 0.6);border:1.5px dashed #d1d5db;border-radius:14px;">'
     +     '<label class="block text-xs font-semibold text-gray-700 mb-2">Pièces jointes (Bulletins, Attestation de passation)</label>'
@@ -588,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // ─────────────────────────────────────────────
   // SOUMISSION
   // ─────────────────────────────────────────────
-  form.addEventListener('submit', function (e) {
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
     formErrors.classList.add('hidden');
     var invalids = form.querySelectorAll(':invalid');
@@ -599,18 +599,57 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     btnSubmit.disabled = true;
-    btnSubmitText.textContent = 'Envoi en cours...';
+    btnSubmitText.textContent = 'Enregistrement dans le Cloud...';
     btnSubmitSpinner.classList.remove('hidden');
-    setTimeout(function () {
+    
+    try {
+      var formData = new FormData(form);
+      var dataObj = {};
+      formData.forEach((value, key) => {
+        if(key) dataObj[key] = value;
+      });
+      dataObj.ecole = currentInstitution;
+      dataObj.type_inscription = currentDemarche;
+      
+      // Additional selects for Retrouvailles if present
+      var selectClasse = document.getElementById('select-classe-humanite');
+      if (selectClasse && selectClasse.value) dataObj.classe = selectClasse.value;
+      
+      var selectOption = document.getElementById('select-option-final');
+      if (selectOption && selectOption.value) dataObj.option_etude = selectOption.value;
+
+      const response = await fetch('/api/inscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataObj)
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Erreur lors de l\'inscription');
+      }
+
       btnSubmit.disabled = false;
       btnSubmitSpinner.classList.add('hidden');
       btnSubmitText.textContent = "Soumettre le dossier d'inscription";
-      alert('Félicitations ! Votre dossier a été soumis avec succès.');
+      
+      alert('Félicitations ! L\'élève a été inscrit avec le matricule: ' + result.matricule + '\nLe compte parent a été automatiquement configuré.');
+      
       form.reset();
       stepDemarche.classList.add('hidden');
       form.classList.add('hidden');
       institutionRadios.forEach(function (r) { r.checked = false; });
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 2000);
+
+    } catch (error) {
+      btnSubmit.disabled = false;
+      btnSubmitSpinner.classList.add('hidden');
+      btnSubmitText.textContent = "Soumettre le dossier d'inscription";
+      
+      formErrorsText.textContent = error.message;
+      formErrors.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   });
 });
