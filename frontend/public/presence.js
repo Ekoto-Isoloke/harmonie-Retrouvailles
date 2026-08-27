@@ -428,10 +428,29 @@ const faceRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presence
 
   // ═══ ÉTAPE 2 : ENRÔLEMENT INITIAL (1ère utilisation) ═══
   if (!isEnrolled) {
-    if (statusText) { statusText.textContent = "🔐 Enrôlement facial initial..."; statusText.className = "text-cyan-400 font-bold text-lg animate-pulse"; }
-    if (statusSub) statusSub.textContent = "Enregistrement de votre visage de référence dans le Cloud sécurisé...";
+    if (statusText) { statusText.textContent = "🔍 Vérification d'unicité..."; statusText.className = "text-cyan-400 font-bold text-lg animate-pulse"; }
+    if (statusSub) statusSub.textContent = "Vérification que ce visage n'est pas déjà enregistré...";
 
     try {
+      // 1. Vérifier si ce visage est déjà utilisé par QUELQU'UN D'AUTRE
+      const allRes = await fetch('/api/bio/faces_all');
+      if (allRes.ok) {
+        const allFaces = await allRes.json();
+        for (const f of allFaces) {
+          // Ignorer le propre visage de l'utilisateur (s'il existe déjà)
+          if (f.email.toLowerCase() === presenceAuthUser.email.toLowerCase()) continue;
+          
+          const sim = await compareFaceSignatures(capturedFaceData, f.face_data);
+          // Si ressemblance forte (> 0.45) on bloque
+          if (sim > 0.45) {
+            throw new Error(`Ce visage est déjà associé à un autre compte (${f.nom} ${f.prenom}). Un visage = Un compte.`);
+          }
+        }
+      }
+
+      if (statusText) statusText.textContent = "🔐 Enrôlement facial initial...";
+      if (statusSub) statusSub.textContent = "Enregistrement de votre visage de référence dans le Cloud sécurisé...";
+
       const enrollRes = await fetch('/api/bio/face', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
