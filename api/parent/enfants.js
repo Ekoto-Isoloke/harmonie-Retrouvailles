@@ -21,6 +21,19 @@ module.exports = async (req, res) => {
       return res.status(400).json({ message: 'parent_id manquant' });
     }
 
+    // Auto-migration : s'assurer que la colonne photo_url existe
+    try {
+      const colCheck = await sql`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = 'etudiants' AND column_name = 'photo_url'
+      `;
+      if (colCheck.length === 0) {
+        await sql`ALTER TABLE etudiants ADD COLUMN photo_url TEXT`;
+      }
+    } catch (migErr) {
+      console.error('Migration photo_url ignorée:', migErr.message);
+    }
+
     const enfants = await sql`
       SELECT id, matricule, nom, postnom, prenom, classe, ecole, ecole_provenance, photo_url 
       FROM etudiants 

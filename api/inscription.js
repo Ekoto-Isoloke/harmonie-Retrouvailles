@@ -59,6 +59,20 @@ module.exports = async (req, res) => {
     const num = Math.floor(1000 + Math.random() * 9000);
     const matricule = data.type_inscription === 'reinscription' ? data.matricule : `${ecolePrefix}${annee}${num}`;
 
+    // Auto-migration : créer la colonne photo_url si elle n'existe pas
+    try {
+      const colCheck = await sql`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = 'etudiants' AND column_name = 'photo_url'
+      `;
+      if (colCheck.length === 0) {
+        await sql`ALTER TABLE etudiants ADD COLUMN photo_url TEXT`;
+        console.log('Migration: colonne photo_url ajoutée à etudiants');
+      }
+    } catch (migErr) {
+      console.error('Migration photo_url ignorée:', migErr.message);
+    }
+
     // 3. Insert student
     const result = await sql`
       INSERT INTO etudiants (
