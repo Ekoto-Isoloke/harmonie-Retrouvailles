@@ -303,8 +303,63 @@ tabs.forEach(tab => {
     btn.className = 'tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-50 text-primary-600 font-medium transition-colors';
     content.classList.remove('hidden');
     content.classList.add('block');
+    if (tab === 'visio') {
+      loadVisioRH();
+    }
   });
 });
+
+async function loadVisioRH() {
+  const container = document.getElementById('rh-visio-container');
+  if (!container) return;
+  
+  try {
+    const res = await fetch('/api/visio');
+    if (!res.ok) throw new Error('API non disponible');
+    const sessions = await res.json();
+    
+    if (!sessions || sessions.length === 0) {
+      container.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full text-gray-400 gap-4 p-8 text-center">
+          <svg class="w-16 h-16 opacity-30 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+          <div>
+            <p class="text-white font-bold text-base">Aucune conférence active</p>
+            <p class="text-xs text-gray-400 mt-1">Les réunions convoquées par le Super-Admin ou la Direction apparaîtront ici.</p>
+          </div>
+          <a href="https://meet.jit.si/HR-RH-Personnel-Reunion" target="_blank" class="px-6 py-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 font-bold rounded-xl text-xs transition border border-amber-500/30">
+            Ouvrir la Salle Permanente RH
+          </a>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="p-6 space-y-4">
+        <h3 class="text-sm font-black uppercase text-amber-400 tracking-wider flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Conférences & Réunions de Direction en Cours (${sessions.length})
+        </h3>
+        ${sessions.map(s => `
+          <div class="p-4 bg-white/5 border border-amber-500/30 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-wider animate-pulse">EN DIRECT</span>
+                <span class="text-xs text-amber-400 font-bold">${s.cibles || 'Personnel & Direction'}</span>
+              </div>
+              <h4 class="text-base font-bold text-white">${s.titre}</h4>
+              <p class="text-xs text-gray-400">Initié par : <strong class="text-white">${s.initiateur}</strong></p>
+            </div>
+            <a href="https://meet.jit.si/${encodeURIComponent(s.room_name)}" target="_blank" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-md">
+              Rejoindre la Réunion ▶
+            </a>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (err) {
+    console.error('Erreur chargement visio RH:', err);
+  }
+}
 
 // ===== Déconnexion =====
 const logoutBtn = document.querySelector('a[href="/login.html"]');

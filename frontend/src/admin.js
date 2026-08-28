@@ -2997,8 +2997,12 @@ document.addEventListener('DOMContentLoaded', () => {
         alert(`Fiche de présence individuelle générée pour ${nom} (${role}) — Heure: ${arrivee} — Statut: ${statut}`);
     };
 
-    function renderClasseVirtuelle() {
-        const sessions = JSON.parse(localStorage.getItem('hr_virtual_classes_db') || '[]');
+    async function renderClasseVirtuelle() {
+        let sessions = [];
+        try {
+            const res = await fetch('/api/visio');
+            if (res.ok) sessions = await res.json();
+        } catch(e) { console.error('Erreur fetch visio', e); }
         ui.content.innerHTML = `
             <div class="mb-6">
                 <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
@@ -3091,14 +3095,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const stopBtn = document.getElementById('vac-stop');
 
         if (startBtn) {
-            startBtn.onclick = () => {
+            startBtn.onclick = async () => {
                 const classe = document.getElementById('vac-classe')?.value?.trim();
                 const objet = document.getElementById('vac-objet')?.value?.trim();
                 if (!classe || !objet) { alert("Veuillez renseigner la classe et l'objet de la séance."); return; }
                 const roomName = ('HR-Admin-' + classe + '-' + objet + '-' + Date.now()).replace(/[^a-zA-Z0-9-]/g, '-');
-                const sessions = JSON.parse(localStorage.getItem('hr_virtual_classes_db') || '[]');
-                sessions.unshift({ className: classe, subject: objet, teacher: 'Super-Admin Direction', roomName, active: true, createdAt: new Date().toLocaleDateString('fr-FR') });
-                localStorage.setItem('hr_virtual_classes_db', JSON.stringify(sessions));
+                
+                try {
+                    await fetch('/api/visio', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ room_name: roomName, titre: objet, initiateur: 'Direction (Super-Admin)', cibles: classe })
+                    });
+                } catch(e) { console.error('Erreur API visio', e); }
 
                 window.rejoindreClasseAdmin(roomName);
                 startBtn.disabled = true;
@@ -3107,12 +3116,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (stopBtn) {
-            stopBtn.onclick = () => {
+            stopBtn.onclick = async () => {
                 const container = document.getElementById('vac-container');
                 const meetDiv = document.getElementById('jitsi-admin-meet');
                 if (meetDiv) meetDiv.innerHTML = '';
                 if (container) container.classList.add('hidden');
                 if (startBtn) { startBtn.disabled = false; startBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
+
+                try {
+                    const res = await fetch('/api/visio');
+                    if (res.ok) {
+                        const sessions = await res.json();
+                        for (let s of sessions) {
+                            await fetch('/api/visio', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ room_name: s.room_name })
+                            });
+                        }
+                    }
+                } catch(e) {}
             };
         }
     }

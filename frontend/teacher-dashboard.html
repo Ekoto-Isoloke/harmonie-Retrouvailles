@@ -777,21 +777,21 @@
           if (el) el.textContent = `${m}:${s}`;
         }, 1000);
 
-        // Register in virtual classes DB so parents can see it
-        let activeClasses = JSON.parse(localStorage.getItem('hr_virtual_classes_db')) || [];
-        const newClass = {
-          id: roomName,
-          ecole: u.ecole,
-          classe: classe,
-          section: section || null,
-          option: option || null,
-          cours: cours,
-          teacher: teacherName,
-          startTime: new Date().toISOString(),
-          status: 'active'
-        };
-        activeClasses.push(newClass);
-        localStorage.setItem('hr_virtual_classes_db', JSON.stringify(activeClasses));
+        // Register in global virtual classes API so parents and admin can see it in real-time
+        try {
+          fetch('/api/visio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              room_name: roomName,
+              titre: `${cours} (${classe})`,
+              initiateur: `${teacherName} (Enseignant)`,
+              cibles: classe
+            })
+          });
+        } catch (e) {
+          console.error("Erreur API visio teacher:", e);
+        }
 
       } catch (err) {
         console.error("Erreur d'initialisation Jitsi :", err);

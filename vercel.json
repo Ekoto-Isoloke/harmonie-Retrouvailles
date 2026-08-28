@@ -15,6 +15,7 @@
     { "source": "/api/rh/pointage/depart", "destination": "/api/rh/pointage/depart.js" },
     { "source": "/api/bio/face_cleanup", "destination": "/api/bio/face_cleanup.js" },
     { "source": "/api/bio/faces_all", "destination": "/api/bio/faces_all.js" },
-    { "source": "/api/migrate", "destination": "/api/migrate.js" }
+    { "source": "/api/migrate", "destination": "/api/migrate.js" },
+    { "source": "/api/visio", "destination": "/api/visio.js" }
   ]
 }

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr" class="dark">
 <head>
   <meta charset="UTF-8" />
@@ -186,7 +186,8 @@
         { id: 'incidents', label: 'Registre des Sanctions', icon: 'alert-triangle' },
         { id: 'billets', label: 'Billets & Justifications', icon: 'ticket' },
         { id: 'convocations', label: 'Convocations Parents', icon: 'phone-call' },
-        { id: 'rondes', label: 'Rapports de Rondes', icon: 'map' }
+        { id: 'rondes', label: 'Rapports de Rondes', icon: 'map' },
+        { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' }
       ],
       'Sur École': [
         { id: 'accueil', label: 'Surveillance Générale', icon: 'building-2' },
@@ -194,7 +195,8 @@
         { id: 'presence_matinale', label: 'Pointage Matinal', icon: 'clipboard-check' },
         { id: 'controle_preparations', label: 'Cahiers & Fiches', icon: 'file-text' },
         { id: 'recreations', label: 'Rondes Récréations', icon: 'bell' },
-        { id: 'rapport_dp', label: 'Rapport au D.P', icon: 'send' }
+        { id: 'rapport_dp', label: 'Rapport au D.P', icon: 'send' },
+        { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' }
       ]
     };
 
@@ -279,6 +281,7 @@
         else if (currentView === 'billets') html += viewDDBillets();
         else if (currentView === 'convocations') html += viewDDConvocations();
         else if (currentView === 'rondes') html += viewDDRondes();
+        else if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
       } else if (role === 'Sur École') {
         if (currentView === 'accueil') html += viewSurEcoleAccueil();
         else if (currentView === 'affectations_primaire') html += viewSurEcoleAffectations();
@@ -286,8 +289,10 @@
         else if (currentView === 'controle_preparations') html += viewSurEcoleCahiers();
         else if (currentView === 'recreations') html += viewSurEcoleRecreations();
         else if (currentView === 'rapport_dp') html += viewSurEcoleRapportDP();
+        else if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
       } else {
-        html += viewGenericDashboard();
+        if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
+        else html += viewGenericDashboard();
       }
 
       main.innerHTML = html;
@@ -1705,13 +1710,90 @@
       `;
     }
 
-    function viewGenericDashboard() {
+    function viewVirtualClassPrefet() {
+      setTimeout(loadVisioPrefet, 50);
       return `
-        <div class="glass p-8 rounded-3xl border border-white/10 text-center">
-          <h3 class="text-xl font-black uppercase text-white mb-2">Espace Direction & Supervision</h3>
-          <p class="text-xs text-gray-400">Bienvenue dans votre espace officiel de gestion.</p>
+        <div class="space-y-6">
+          <div class="glass p-6 rounded-3xl border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                <span class="text-xs font-black text-amber-400 uppercase tracking-wider">Module Visioconférence Sécurisé</span>
+              </div>
+              <h3 class="text-2xl font-black uppercase text-white mt-1">Classe Virtuelle & Réunions de Direction</h3>
+              <p class="text-xs text-gray-400">Rejoignez en temps réel les conseils de direction, réunions convoquées par le Super-Admin ou cours en direct.</p>
+            </div>
+            <button onclick="loadVisioPrefet()" class="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-xl text-xs flex items-center gap-2 transition cursor-pointer">
+              <i data-lucide="refresh-cw" class="w-4 h-4 text-amber-400"></i> Actualiser les Réunions
+            </button>
+          </div>
+
+          <div id="prefet-visio-list" class="space-y-4">
+            <div class="glass p-12 text-center text-gray-400 rounded-3xl border border-white/10">
+              <div class="animate-spin w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full mx-auto mb-3"></div>
+              <p class="text-sm font-bold text-white">Recherche des réunions actives...</p>
+            </div>
+          </div>
         </div>
       `;
+    }
+
+    async function loadVisioPrefet() {
+      const container = document.getElementById('prefet-visio-list');
+      if (!container) return;
+      
+      try {
+        const res = await fetch('/api/visio');
+        if (!res.ok) throw new Error('API non disponible');
+        const sessions = await res.json();
+        
+        if (!sessions || sessions.length === 0) {
+          container.innerHTML = `
+            <div class="glass p-12 rounded-3xl border border-white/10 text-center text-gray-400">
+              <i data-lucide="video-off" class="w-12 h-12 mx-auto mb-3 opacity-30 text-amber-400"></i>
+              <p class="text-base font-bold text-white">Aucune réunion de direction en cours</p>
+              <p class="text-xs text-gray-400 mt-1">Dès que le Super-Admin ou la Direction convoque une conférence, elle apparaîtra ici avec un bouton pour rejoindre instantanément.</p>
+            </div>
+          `;
+          if (window.lucide) lucide.createIcons();
+          return;
+        }
+
+        container.innerHTML = sessions.map(s => `
+          <div class="glass p-6 rounded-3xl border border-amber-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 border border-amber-500/30">
+                <i data-lucide="video" class="w-7 h-7 text-amber-400"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 text-[10px] font-black uppercase tracking-wider animate-pulse flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> EN DIRECT
+                  </span>
+                  <span class="text-xs text-amber-400 font-bold">${s.cibles || 'Direction & Corps Enseignant'}</span>
+                </div>
+                <h4 class="text-lg font-black uppercase text-white mt-1">${s.titre || 'Conférence Officielle'}</h4>
+                <p class="text-xs text-gray-400">Initié par : <strong class="text-white">${s.initiateur || 'Super-Admin Direction'}</strong> • Salle : <span class="font-mono text-gray-300">${s.room_name}</span></p>
+              </div>
+            </div>
+
+            <a href="https://meet.jit.si/${encodeURIComponent(s.room_name)}" target="_blank"
+               class="w-full md:w-auto px-6 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-black rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2">
+              <i data-lucide="radio" class="w-4 h-4"></i>
+              <span>Rejoindre la Conférence</span>
+            </a>
+          </div>
+        `).join('');
+        if (window.lucide) lucide.createIcons();
+
+      } catch (err) {
+        container.innerHTML = `
+          <div class="glass p-8 rounded-3xl border border-red-500/20 text-center text-red-400">
+            <p class="text-sm font-bold">Impossible de charger les conférences en direct.</p>
+            <p class="text-xs opacity-70 mt-1">${err.message}</p>
+          </div>
+        `;
+      }
     }
 
     // Initialisation
