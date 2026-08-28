@@ -125,20 +125,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // SECURITY CHECK 2: Strict RBAC - Only Super-Admin & Direction can access Super-Admin dashboard
-    const isSuperAdmin = ['Super-Admin', 'Direction', 'Directeur', 'Directeur (D.P)', 'D.P', 'Direction Générale'].includes(user.role);
+    // SECURITY CHECK 2: Strict RBAC - SEUL le Super-Admin a accès au panneau d'administration global
+    const isSuperAdmin = user.role === 'Super-Admin';
 
     if (!isSuperAdmin) {
-        // Enseignant attempt
-        if (user.role === 'Enseignant' || user.role === 'Professeur' || user.role === 'Sur École') {
-            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nUn enseignant (${user.prenom} ${user.nom}) ne peut pas se connecter au compte de la Direction ou du Super-Administrateur.\n\nVous êtes réorienté vers votre Espace Enseignant.`);
-            window.location.href = '/teacher-dashboard.html';
+        // Directeur / Préfet / DP / DE / DD / Sur École attempt
+        if (['Directeur (D.P)', 'D.P', 'Directeur', 'Préfet', 'D.E', 'D.D', 'Sur École', 'Direction'].includes(user.role)) {
+            alert(`⛔ ACCÈS RESTREINT — HIÉRARCHIE EPST\n\nCe panneau de contrôle global est réservé exclusivement au Super-Administrateur Général.\n\nVous êtes réorienté vers votre Espace de Direction Pédagogique.`);
+            window.location.href = '/prefet-dashboard.html';
             return;
         }
-        // Préfet / DE / DD attempt
-        if (['Préfet', 'D.E', 'D.D'].includes(user.role)) {
-            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nAccès réservé exclusivement à la Direction Générale et au Super-Administrateur.\n\nVous êtes réorienté vers votre Espace Discipline & Préfecture.`);
-            window.location.href = '/prefet-dashboard.html';
+        // Enseignant attempt
+        if (user.role === 'Enseignant' || user.role === 'Professeur' || user.role === 'Instituteur') {
+            alert(`⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nUn enseignant (${user.prenom} ${user.nom}) ne peut pas accéder au système d'administration.\n\nVous êtes réorienté vers votre Espace Enseignant.`);
+            window.location.href = '/teacher-dashboard.html';
             return;
         }
         // Comptable attempt
