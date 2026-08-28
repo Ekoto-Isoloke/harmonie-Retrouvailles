@@ -64,13 +64,13 @@ module.exports = async (req, res) => {
       INSERT INTO etudiants (
         matricule, nom, postnom, prenom, sexe, date_naissance, lieu_naissance,
         nationalite, province_origine, adresse, ecole_provenance,
-        classe, section, option_etude, ecole, type_inscription, parent_id
+        classe, section, option_etude, ecole, type_inscription, parent_id, photo_url
       ) VALUES (
         ${matricule}, ${data.nom}, ${data.postnom}, ${data.prenom}, ${data.sexe},
         ${data.date_naissance || null}, ${data.lieu_naissance}, ${data.nationalite},
         ${data.province_origine}, ${data.adresse}, ${data.ecole_provenance},
         ${data.classe}, ${data.section || null}, ${data.option_etude || null},
-        ${data.ecole}, ${data.type_inscription}, ${parentId}
+        ${data.ecole}, ${data.type_inscription}, ${parentId}, ${data.photo_url || null}
       )
       RETURNING id, matricule
     `;

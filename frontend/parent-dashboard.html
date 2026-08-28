@@ -135,7 +135,12 @@
         <!-- Identity Card -->
         <div class="lg:col-span-2 glass-panel p-6 flex flex-col md:flex-row gap-6 items-center">
           <div class="w-32 h-32 rounded-2xl bg-gray-800 overflow-hidden border-2 border-amber-500/50 shadow-lg flex-shrink-0 relative group">
-            <img id="child-img" src="https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=400&q=80" alt="Eleve" class="w-full h-full object-cover">
+            <img id="child-img" src="" alt="Photo élève" class="w-full h-full object-cover" style="background:#1e3a5f;"
+              onerror="this.style.display='none'; this.nextElementSibling && (this.nextElementSibling.style.display='flex')">
+            <div id="child-img-placeholder" class="w-full h-full items-center justify-center hidden" style="display:flex; background:#1e3a5f;">
+              <svg class="w-16 h-16 text-blue-400/40" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+            </div>
+
           </div>
           <div class="flex-1 w-full">
             <div class="flex flex-wrap justify-between items-start gap-2">
@@ -904,10 +909,25 @@
       document.getElementById('child-teacher').textContent = 'Non assigné'; // À lier avec l'enseignant plus tard
       document.getElementById('child-matricule').textContent = enfant.matricule || 'N/A';
       
-      // Dummy images based on gender or ecole
-      const dummyImg = enfant.sexe === 'F' ? 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&q=80' : 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=400&q=80';
-      document.getElementById('child-img').src = dummyImg;
-      
+      // ── PHOTO RÉELLE de l'élève depuis la base de données ──
+      // AVANT (bug) : on affichait une photo Unsplash générique selon le sexe → même photo pour tous les élèves du même sexe
+      // APRÈS : on utilise la vraie photo de l'élève (enfant.photo_url), ou un placeholder neutre si non disponible
+      const childImg = document.getElementById('child-img');
+      const childPlaceholder = document.getElementById('child-img-placeholder');
+      if (childImg) {
+        if (enfant.photo_url && enfant.photo_url.trim() !== '') {
+          childImg.src = enfant.photo_url;
+          childImg.style.display = 'block';
+          if (childPlaceholder) childPlaceholder.style.display = 'none';
+        } else {
+          // Pas de photo réelle → afficher le placeholder SVG neutre
+          childImg.src = '';
+          childImg.style.display = 'none';
+          if (childPlaceholder) childPlaceholder.style.display = 'flex';
+        }
+      }
+
+
       if (!silent) showToast(`Dossier sécurisé : ${enfant.prenom}`);
     }
 

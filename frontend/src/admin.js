@@ -169,11 +169,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (ui.name) ui.name.textContent = `${user.prenom || ''} ${user.nom || ''}`;
-    // Update avatar with real initials
+    // Update avatar with real initials — pas de ui-avatars (fausse image)
     const avatarEl = document.querySelector('img[alt="User"]');
     if (avatarEl) {
-        const initials = `${(user.prenom||'A')[0]}${(user.nom||'D')[0]}`;
-        avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.prenom+' '+user.nom)}&background=c7882c&color=fff&bold=true`;
+        const initials = `${(user.prenom||'A')[0]}${(user.nom||'D')[0]}`.toUpperCase();
+        // Remplacer l'<img> par un <div> textuel avec initiales (comme teacher/prefet dashboard)
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = avatarEl.className + ' flex items-center justify-center font-black text-sm bg-amber-700/60 text-amber-200 border border-amber-500/40';
+        avatarDiv.textContent = initials;
+        avatarEl.replaceWith(avatarDiv);
     }
     // Show role badge
     const roleBadge = document.querySelector('p.text-xs.text-gold-600');

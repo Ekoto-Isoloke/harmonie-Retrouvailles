@@ -29,8 +29,9 @@
           <div class="flex items-center gap-3">
             <div
               class="w-[45px] h-[45px] rounded-full overflow-hidden shadow-md border-2 border-primary-100 hover:border-primary-500 transition-colors bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white">
-              <img src="https://ui-avatars.com/api/?name=H&background=0A192F&color=fff&rounded=true&bold=true"
-                alt="C.S. Harmonie Logo" class="w-full h-full object-cover">
+              <img src="/logos/logo-harmonie.png"
+                alt="C.S. Harmonie Logo" class="w-full h-full object-cover"
+                onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\'flex items-center justify-center w-full h-full font-black text-sm text-white\'>H</span>'">
             </div>
             <span class="font-display font-bold text-[16px] text-white tracking-tight hidden sm:block">C.S.
               Harmonie</span>
@@ -43,12 +44,14 @@
           <div class="flex items-center gap-3">
             <div
               class="w-[45px] h-[45px] rounded-full overflow-hidden shadow-md border-2 border-secondary-100 hover:border-secondary-500 transition-colors bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white">
-              <img src="https://ui-avatars.com/api/?name=R&background=DC2626&color=fff&rounded=true&bold=true"
-                alt="G.S. Retrouvailles Logo" class="w-full h-full object-cover">
+              <img src="/logos/logo-retrouvailles.png"
+                alt="G.S. Retrouvailles Logo" class="w-full h-full object-cover"
+                onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\'flex items-center justify-center w-full h-full font-black text-sm text-white\'>R</span>'">
             </div>
             <span class="font-display font-bold text-[16px] text-white tracking-tight hidden sm:block">G.S.
               Retrouvailles</span>
           </div>
+
         </a>
 
         <!-- Droite: Menu & Actions (Desktop) -->
@@ -514,7 +517,8 @@
       <!-- CARTE D'IDENTITÉ RÉSULTAT (Cachée par défaut) -->
       <div id="presence-result-card" class="hidden flex-col items-center w-full mt-4 bg-gradient-to-b from-gray-800 to-gray-900 border border-emerald-500/50 rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform scale-95 transition-all duration-500">
         <div class="relative w-24 h-24 rounded-full overflow-hidden border-4 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)] mb-4">
-          <img id="presence-user-photo" src="https://ui-avatars.com/api/?name=Agent&background=0D8B6D&color=fff&size=150" alt="Agent" class="w-full h-full object-cover" />
+          <img id="presence-user-photo" src="" alt="Photo biométrique" class="w-full h-full object-cover" style="background:#0d2137;" onerror="this.style.display='none'" />
+
         </div>
         
         <h3 id="presence-welcome-msg" class="text-2xl font-black text-white text-center leading-tight mb-1">Bienvenue Mr. Ekoto Isoloke</h3>

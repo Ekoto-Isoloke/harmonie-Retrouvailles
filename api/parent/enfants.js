@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
     }
 
     const enfants = await sql`
-      SELECT id, matricule, nom, postnom, prenom, classe, ecole, ecole_provenance 
+      SELECT id, matricule, nom, postnom, prenom, classe, ecole, ecole_provenance, photo_url 
       FROM etudiants 
       WHERE parent_id = ${parentId}
       ORDER BY id ASC

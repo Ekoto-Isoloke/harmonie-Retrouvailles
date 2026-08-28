@@ -502,6 +502,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // ─────────────────────────────────────────────
   // PHOTO UPLOAD
   // ─────────────────────────────────────────────
+  // Stockage global de la photo base64 pour l'inclure dans le payload d'inscription
+  window._inscriptionPhotoBase64 = null;
+
   function setupPhotoUpload() {
     var photoInput   = document.getElementById('photo-input');
     var photoPreview = document.getElementById('photo-preview');
@@ -509,9 +512,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var photoName    = document.getElementById('photo-name');
     if (!photoInput) return;
 
+    // Réinitialiser à chaque appel (nouveau formulaire)
+    window._inscriptionPhotoBase64 = null;
+
     photoInput.addEventListener('change', function () {
       photoError.style.display = 'none';
       photoName.style.display  = 'none';
+      window._inscriptionPhotoBase64 = null;
       var file = photoInput.files[0];
       if (!file) return;
       if (file.size > 5 * 1024 * 1024) {
@@ -521,7 +528,10 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       var reader = new FileReader();
       reader.onload = function (ev) {
-        photoPreview.innerHTML = '<img src="' + ev.target.result + '" style="width:100%;height:100%;object-fit:cover;" alt="Photo candidat">';
+        var dataUrl = ev.target.result;
+        photoPreview.innerHTML = '<img src="' + dataUrl + '" style="width:100%;height:100%;object-fit:cover;" alt="Photo candidat">';
+        // ── CORRECTION : stocker le base64 pour l'envoyer à l'API backend ──
+        window._inscriptionPhotoBase64 = dataUrl;
       };
       reader.readAsDataURL(file);
       photoName.textContent = '✔ ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' Ko)';
@@ -610,6 +620,13 @@ document.addEventListener('DOMContentLoaded', function () {
       });
       dataObj.ecole = currentInstitution;
       dataObj.type_inscription = currentDemarche;
+
+      // ── CORRECTION : inclure la photo base64 dans le payload ──
+      // Sans ça, la photo n'était jamais sauvegardée en base de données
+      if (window._inscriptionPhotoBase64) {
+        dataObj.photo_url = window._inscriptionPhotoBase64;
+      }
+
       
       // Additional selects for Retrouvailles if present
       var selectClasse = document.getElementById('select-classe-humanite');
