@@ -431,6 +431,14 @@ const faceRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presence
     if (statusText) { statusText.textContent = "🔍 Vérification d'unicité..."; statusText.className = "text-cyan-400 font-bold text-lg animate-pulse"; }
     if (statusSub) statusSub.textContent = "Vérification que ce visage n'est pas déjà enregistré...";
 
+    // ── BUG FIX : Vérifier que la capture faciale est réelle et non vide ──
+    if (!capturedFaceData || capturedFaceData.length < 5000) {
+      if (statusText) { statusText.textContent = "⛔ Capture faciale invalide"; statusText.className = "text-red-500 font-bold text-lg"; }
+      if (statusSub) statusSub.textContent = "Aucun visage détecté. Veuillez vous placer face à la caméra et réessayer.";
+      presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 4000);
+      return;
+    }
+
     try {
       // 1. Vérifier si ce visage est déjà utilisé par QUELQU'UN D'AUTRE
       const allRes = await fetch('/api/bio/faces_all');
@@ -439,11 +447,12 @@ const faceRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presence
         for (const f of allFaces) {
           // Ignorer le propre visage de l'utilisateur (s'il existe déjà)
           if (f.email.toLowerCase() === presenceAuthUser.email.toLowerCase()) continue;
-          
+
+          // ── BUG FIX : Seuil relevé de 0.45 → 0.75 pour vraiment bloquer les doublons ──
+          // (0.45 était trop bas : une même luminosité pouvait faire passer un autre visage)
           const sim = await compareFaceSignatures(capturedFaceData, f.face_data);
-          // Si ressemblance forte (> 0.45) on bloque
-          if (sim > 0.45) {
-            throw new Error(`Ce visage est déjà associé à un autre compte (${f.nom} ${f.prenom}). Un visage = Un compte.`);
+          if (sim > 0.75) {
+            throw new Error(`⛔ DOUBLON DÉTECTÉ : Ce visage est déjà associé au compte de ${f.prenom} ${f.nom}. Un visage = Un seul compte. Contactez le Super-Admin si c'est une erreur.`);
           }
         }
       }
@@ -473,11 +482,11 @@ const faceRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presence
     } catch (err) {
       if (statusText) { statusText.textContent = "⛔ Enrôlement échoué"; statusText.className = "text-red-500 font-bold text-lg"; }
       if (statusSub) statusSub.textContent = err.message;
-      presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 4000);
+      presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 5000);
       return;
     }
 
-    // 1er enrôlement = confiance, on continue vers le pointage
+    // 1er enrôlement réussi → pointage
     await showPresenceResultCard(true);
     return;
   }
@@ -612,10 +621,26 @@ async function showPresenceResultCard(validated) {
   const storageKey = 'presence_' + user.email + '_' + today;
   const hasArrived = localStorage.getItem(storageKey);
 
-  // ─── AFFICHER LA PHOTO DE RÉFÉRENCE CLOUD (pas la capture en direct) ───
-  if (photo) {
-    photo.src = user.photo || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name) + '&background=0D8B6D&color=fff&size=150&bold=true');
+
+  // ── BUG 2 FIX : Kasombo n'est pas enrôlé → BLOQUER, ne jamais afficher un avatar généré ──
+  // Avant : photo.src = user.photo || 'https://ui-avatars.com/...' → affichait une fausse "photo"
+  // Après : si pas de photo réelle → on bloque le pointage et on exige l'enrôlement
+  if (!user.photo || user.photo.length < 100) {
+    // Ce cas ne devrait normalement pas arriver (le flux d'enrôlement ci-dessus le gère),
+    // mais on sécurise en dernier recours.
+    const statusText2 = document.getElementById('presence-status-text');
+    const statusSub2 = document.getElementById('presence-status-sub');
+    if (statusText2) { statusText2.textContent = "⛔ Aucune empreinte faciale enregistrée"; statusText2.className = "text-red-500 font-bold text-lg"; }
+    if (statusSub2) statusSub2.textContent = user.name + " n'a pas encore été enrôlé(e). Contactez le Super-Admin pour procéder à l'enrôlement biométrique.";
+    presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 5000);
+    return;
   }
+
+  // ─── AFFICHER LA PHOTO DE RÉFÉRENCE CLOUD (vraie capture biométrique uniquement) ───
+  if (photo) {
+    photo.src = user.photo; // Toujours la photo biométrique réelle, JAMAIS un avatar généré
+  }
+
   if (userRole) userRole.textContent = user.role + ' • ' + user.school;
   if (timeValue) timeValue.textContent = timeStr;
 
