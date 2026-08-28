@@ -3007,11 +3007,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="w-10 h-10 rounded-2xl bg-amber-500/20 flex items-center justify-center"><i data-lucide="video" class="w-5 h-5 text-amber-400"></i></span>
                             Classe Virtuelle & Visioconférence EPST
                         </h3>
-                        <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Supervision Super-Admin & Lancement de séances Jitsi Meet</p>
+                        <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Supervision Super-Admin & Lancement de séances CS Harmonie & GS Retrouvailles</p>
                     </div>
                     <div class="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-xl">
                         <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                        <span class="text-xs font-black text-amber-400 uppercase tracking-widest">Jitsi Meet Intégré</span>
+                        <span class="text-xs font-black text-amber-400 uppercase tracking-widest">Visioconférence Intégrée</span>
                     </div>
                 </div>
 
@@ -3138,7 +3138,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="text-sm font-bold text-white">Salle de classe : ${roomName}</p>
                 <a href="https://meet.jit.si/${encodeURIComponent(roomName)}" target="_blank"
                    class="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black rounded-xl transition text-sm">
-                    Ouvrir dans Jitsi Meet
+                    Ouvrir CS Harmonie & GS Retrouvailles
                 </a></div>`;
             if (window.lucide) lucide.createIcons();
         }
