@@ -349,17 +349,26 @@
               </button>
             </div>
 
-            <!-- Error -->
             <div id="login-error"
               class="hidden p-3 bg-red-500/15 border border-red-500/30 text-red-300 text-xs rounded-xl flex items-center gap-2">
               <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 text-red-400"></i>
               <span>Identifiants incorrects. Veuillez réessayer.</span>
             </div>
 
-            <button type="submit" class="btn-gold w-full py-4 flex items-center justify-center gap-2 mt-4">
-              <i data-lucide="log-in" class="w-5 h-5"></i>
-              <span>Se Connecter à l'Espace Direction</span>
-            </button>
+            <!-- Boutons Actions -->
+            <div class="flex flex-col gap-3 mt-4">
+              <!-- Bouton Connexion Classique -->
+              <button type="submit" class="btn-gold w-full py-4 flex items-center justify-center gap-2 shadow-lg">
+                <i data-lucide="log-in" class="w-5 h-5"></i>
+                <span id="btn-login-text">Se Connecter à l'Espace Direction</span>
+              </button>
+              
+              <!-- Bouton Pointage Présence (Nouveau) -->
+              <button type="button" onclick="handlePointageAction(event)" class="w-full py-4 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl shadow-lg font-bold text-sm transition-all shadow-emerald-500/20 hover:shadow-emerald-500/40">
+                <i data-lucide="calendar-check" class="w-5 h-5"></i>
+                <span>Pointage Présence (Personnel)</span>
+              </button>
+            </div>
           </form>
 
 
@@ -1174,8 +1183,86 @@
     let capturedFaceData = null;
     let faceApiLoaded = false;
 
+    // --- NOUVEAU: Logique de Pointage Strict ---
+    window.pendingPointageUser = null;
+    window.isPointageMode = false;
+
+    async function handlePointageAction(e) {
+      e.preventDefault();
+      let email = document.getElementById('login-email').value.trim();
+      let password = document.getElementById('login-password').value;
+
+      if (!email || !password) {
+        showToast("Veuillez saisir votre email et mot de passe pour pointer.", "error");
+        return;
+      }
+
+      // Vérification discrète des identifiants (SANS afficher le nom !)
+      initDB();
+      let foundUser = null;
+      let dbList = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+      const lowerEmail = email.toLowerCase();
+      
+      // Mêmes raccourcis que le login
+      if (lowerEmail === 'chada' || lowerEmail === 'chadrack') { email = 'chadrackisoloke@gmail.com'; if(!password) password = 'password'; }
+      if (lowerEmail === 'admin') { email = 'admin@retrouvailes.cd'; if(!password) password = 'admin'; }
+
+      // Simulation de validation (identique à handleLogin fallback)
+      foundUser = dbList.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+      if (!foundUser) {
+        if (email === 'chadrackisoloke@gmail.com' && (password === 'password' || password === 'admin')) {
+          foundUser = { id: 99, email, role: 'Super-Admin', nom: 'EKOTO ISOLOKE', prenom: 'CHADA' };
+        } else if (email === 'admin@retrouvailes.cd' && password === 'admin') {
+          foundUser = { id: 1, email, role: 'Directeur (D.P)', nom: 'Admin', prenom: 'Système' };
+        } else if (email === 'kasombo@retrouvailles.cd' && password === 'kasombo2026') {
+          foundUser = { id: 101, email, role: 'Directeur (D.P)', nom: 'KASOMBO', prenom: 'PAUL' };
+        }
+      }
+
+      if (!foundUser) {
+        document.getElementById('login-error').classList.remove('hidden');
+        return;
+      }
+
+      document.getElementById('login-error').classList.add('hidden');
+      
+      // On a l'utilisateur, on ne lui dit rien ! On lance juste la caméra avec le mode Pointage.
+      window.pendingPointageUser = foundUser;
+      window.isPointageMode = true;
+      openFaceCamera();
+    }
+
     // Callback appelé après scan réussi par le modal caméra
     function onFaceScanSuccess(faceData) {
+      // --- LOGIQUE DE POINTAGE ---
+      if (window.isPointageMode && window.pendingPointageUser) {
+        let u = window.pendingPointageUser;
+        let now = new Date();
+        let timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        let isDepart = now.getHours() >= 14;
+        
+        let typeP = isDepart ? "DÉPART" : "ARRIVÉE";
+        let msg = isDepart ? "Au revoir, bonne fin de journée !" : "Bonjour, excellente journée !";
+
+        // Enregistrer virtuellement le pointage pour la journée
+        let ptList = JSON.parse(localStorage.getItem('hr_pointages')) || [];
+        ptList.push({
+          nom: `${u.prenom} ${u.nom}`, role: u.role, ecole: u.ecole || 'Retrouvailles',
+          statut: 'Présent', arrivee: timeStr, depart: isDepart ? timeStr : '--:--', date: new Date().toISOString()
+        });
+        localStorage.setItem('hr_pointages', JSON.stringify(ptList));
+
+        // Afficher l'alerte formelle de sécurité
+        alert(`✅ POINTAGE RÉUSSI (${typeP})\n\nAgent : ${u.prenom} ${u.nom}\nRôle : ${u.role}\nHeure d'enregistrement : ${timeStr}\n\n${msg}\n\n(L'identité n'a été affichée qu'après vérification faciale stricte)`);
+
+        // Réinitialiser
+        window.isPointageMode = false;
+        window.pendingPointageUser = null;
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-password').value = '';
+        return; // ON NE CONNECTE PAS, ON S'ARRÊTE LÀ.
+      }
+
       const btn     = document.getElementById('btn-enroll-bio');
       const ring    = document.getElementById('bio-progress-ring');
       const iconIn  = document.getElementById('bio-icon-inner');
