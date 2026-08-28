@@ -1,7 +1,9 @@
 {
   "buildCommand": "npm install --prefix frontend && npm run build --prefix frontend",
   "outputDirectory": "frontend/dist",
+  "installCommand": "echo skip",
   "cleanUrls": true,
+
   "rewrites": [
     { "source": "/api/parent/enfants", "destination": "/api/parent/enfants.js" },
     { "source": "/api/inscription", "destination": "/api/inscription.js" },
