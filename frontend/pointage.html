@@ -132,41 +132,41 @@
   </div>
 
   <!-- ═══════════════════════════════════════════ -->
-  <!-- ÉCRAN 2 : SCAN FACIAL                      -->
+  <!-- ÉCRAN 2 : SCAN FACIAL (Premium UI)         -->
   <!-- ═══════════════════════════════════════════ -->
-  <div id="screen-scan" class="cam-overlay hidden flex flex-col">
-    <div class="relative flex-1">
-      <video id="scan-video" class="cam-video" autoplay playsinline muted></video>
+  <div id="screen-scan" class="hidden relative z-20 w-full min-h-screen flex flex-col items-center justify-center px-6 result-backdrop" style="background: rgba(5,13,26,0.85); backdrop-filter: blur(16px);">
+    
+    <div class="glass rounded-[2rem] p-8 w-full max-w-md text-center border border-emerald-500/20 shadow-2xl relative overflow-hidden" style="box-shadow: 0 0 80px rgba(16,185,129,0.1);">
+      
+      <h2 class="text-lg font-black text-white mb-2 uppercase tracking-widest">Authentification Biométrique</h2>
+      <p class="text-xs text-white/40 mb-8">Veuillez aligner votre visage dans le cadre</p>
 
-      <!-- Fallback (no camera) -->
-      <div id="scan-fallback" class="hidden absolute inset-0 bg-[#050d1a] flex flex-col items-center justify-center">
-        <i data-lucide="bot" class="w-20 h-20 text-emerald-500/40 mb-4 animate-pulse"></i>
-        <p class="text-sm text-emerald-400/60 font-bold uppercase tracking-widest">Simulation IA Active</p>
-      </div>
+      <!-- Camera container (Circular/Sleek) -->
+      <div class="relative w-64 h-64 mx-auto rounded-full overflow-hidden border-4 border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.2)] mb-8 bg-[#050d1a]">
+        <video id="scan-video" class="w-full h-full object-cover transform scale-x-[-1]" autoplay playsinline muted></video>
 
-      <!-- Oval guide -->
-      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <svg width="260" height="340" viewBox="0 0 260 340">
-          <ellipse id="scan-oval" cx="130" cy="170" rx="110" ry="150" fill="none" stroke="rgba(16,185,129,0.4)"
-            stroke-width="3" stroke-dasharray="20 8" style="transition: all 0.5s;" />
-        </svg>
-      </div>
-
-      <!-- Scan line -->
-      <div id="scan-line-el" class="scan-line" style="display:none;"></div>
-    </div>
-
-    <!-- Bottom bar -->
-    <div class="bg-[#0a192f]/95 backdrop-blur-xl p-6 border-t border-white/10">
-      <div class="max-w-lg mx-auto">
-        <p id="scan-status" class="text-sm font-bold text-center mb-3 text-emerald-400">Initialisation de la caméra...</p>
-        <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-4">
-          <div id="scan-progress" class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500" style="width:0%"></div>
+        <!-- Fallback (no camera) -->
+        <div id="scan-fallback" class="hidden absolute inset-0 bg-[#050d1a] flex flex-col items-center justify-center">
+          <i data-lucide="bot" class="w-16 h-16 text-emerald-500/40 mb-2 animate-pulse"></i>
+          <p class="text-[10px] text-emerald-400/60 font-bold uppercase tracking-widest">Simulation</p>
         </div>
-        <button onclick="cancelScan()" class="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold text-white/60 transition">
-          Annuler
-        </button>
+
+        <!-- Scanning overlay animation -->
+        <div class="absolute inset-0 border-4 border-emerald-400 rounded-full opacity-0 transition-opacity duration-500" id="scan-ring"></div>
+        <div id="scan-line-el" class="absolute left-0 right-0 h-1 bg-emerald-400 shadow-[0_0_15px_#34d399] z-10" style="display:none; animation: scanCircle 2s ease-in-out infinite;"></div>
       </div>
+
+      <!-- Status -->
+      <p id="scan-status" class="text-sm font-bold text-center mb-4 text-emerald-400 h-5">Initialisation de la caméra...</p>
+      
+      <!-- Progress Bar -->
+      <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-6">
+        <div id="scan-progress" class="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-full transition-all duration-500" style="width:0%"></div>
+      </div>
+      
+      <button onclick="cancelScan()" class="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold text-white/60 transition">
+        Annuler l'opération
+      </button>
     </div>
   </div>
 
@@ -314,7 +314,7 @@
     const statusEl = document.getElementById('scan-status');
     const progressEl = document.getElementById('scan-progress');
     const scanLine = document.getElementById('scan-line-el');
-    const oval = document.getElementById('scan-oval');
+    const oval = document.getElementById('scan-ring');
 
     let hasCamera = false;
 
@@ -377,8 +377,8 @@
           progressEl.style.width = phase.pct + '%';
           if (oval) {
             const green = frames >= REQUIRED * 0.7;
-            oval.setAttribute('stroke', green ? '#10b981' : 'rgba(16,185,129,0.4)');
-            oval.setAttribute('stroke-dasharray', green ? 'none' : '20 8');
+            oval.style.opacity = green ? '1' : (frames / REQUIRED).toString();
+            if (green) oval.classList.add('shadow-[0_0_20px_#10b981]');
           }
 
           if (frames >= REQUIRED) {
@@ -451,7 +451,7 @@
       console.log(`[POINTAGE] Distance faciale: ${distance.toFixed(4)} (seuil: 0.6)`);
 
       if (distance > 0.6) {
-        showError('Visage Non Reconnu', `Ce visage ne correspond pas au compte de ${user.prenom} ${user.nom}. Distance: ${distance.toFixed(2)}. Seul le titulaire peut pointer.`);
+        showError('Échec de l\'authentification', `Le visage présenté ne correspond pas à l'empreinte biométrique associée à cet identifiant. Pointage refusé.`);
         return;
       }
     }
