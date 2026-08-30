@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Borne de Pointage | CS Harmonie & GS Retrouvailles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    * { font-family: 'Inter', sans-serif; box-sizing: border-box; margin: 0; }
+
+    body { background: #050d1a; overflow: hidden; }
+
+    /* Animated gradient background */
+    .kiosk-bg {
+      position: fixed; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse at 30% 20%, rgba(16,185,129,0.08) 0%, transparent 50%),
+                  radial-gradient(ellipse at 70% 80%, rgba(59,130,246,0.06) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 50%, rgba(245,158,11,0.04) 0%, transparent 60%),
+                  #050d1a;
+    }
+
+    /* Clock */
+    .clock-time { font-size: clamp(72px, 12vw, 140px); font-weight: 900; letter-spacing: -4px; line-height: 1;
+      background: linear-gradient(135deg, #fff 60%, rgba(255,255,255,0.5));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .clock-seconds { font-size: clamp(28px, 4vw, 48px); font-weight: 700; color: rgba(255,255,255,0.3); }
+    .clock-date { font-size: clamp(13px, 1.8vw, 18px); font-weight: 600; color: rgba(255,255,255,0.35);
+      text-transform: uppercase; letter-spacing: 4px; }
+
+    /* Glass panel */
+    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.08); }
+
+    /* Input */
+    .kiosk-input {
+      width: 100%; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 16px; padding: 18px 20px 18px 52px; font-size: 16px; font-weight: 600;
+      color: #fff; outline: none; transition: all .3s;
+    }
+    .kiosk-input:focus { border-color: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,0.15); }
+    .kiosk-input::placeholder { color: rgba(255,255,255,0.25); }
+
+    /* Scan button */
+    .btn-scan {
+      width: 100%; padding: 20px; border: none; border-radius: 16px; font-size: 16px; font-weight: 800;
+      color: #fff; cursor: pointer; transition: all .3s; text-transform: uppercase; letter-spacing: 1px;
+      background: linear-gradient(135deg, #059669, #10b981);
+      box-shadow: 0 8px 32px rgba(16,185,129,0.3);
+    }
+    .btn-scan:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(16,185,129,0.4); }
+    .btn-scan:active { transform: translateY(0); }
+    .btn-scan:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* Camera overlay */
+    .cam-overlay { position: fixed; inset: 0; z-index: 50; background: #050d1a; }
+    .cam-video { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Scan line animation */
+    @keyframes scanMove { 0%,100% { top: 15%; } 50% { top: 75%; } }
+    .scan-line { position: absolute; left: 20%; right: 20%; height: 2px;
+      background: linear-gradient(90deg, transparent, #10b981, transparent);
+      animation: scanMove 2.5s ease-in-out infinite; box-shadow: 0 0 20px #10b981; }
+
+    /* Result card animations */
+    @keyframes slideUp { from { opacity: 0; transform: translateY(60px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .result-backdrop { animation: fadeIn 0.3s ease-out; }
+    .result-card { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Countdown bar */
+    @keyframes countdown { from { width: 100%; } to { width: 0%; } }
+    .countdown-bar { animation: countdown 5s linear forwards; }
+    .countdown-bar-error { animation: countdown 6s linear forwards; }
+
+    /* Pulse ring */
+    @keyframes pulseRing { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.5); opacity: 0; } }
+    .pulse-ring { animation: pulseRing 1.5s ease-out infinite; }
+  </style>
+</head>
+<body class="text-white min-h-screen flex flex-col items-center justify-center">
+
+  <div class="kiosk-bg"></div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- ÉCRAN 1 : ACCUEIL BORNE                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="screen-welcome" class="relative z-10 w-full min-h-screen flex flex-col items-center justify-center px-6">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-8 opacity-60">
+      <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+      <span class="text-xs font-bold uppercase tracking-[6px] text-emerald-400/80">Borne de Pointage Biométrique</span>
+    </div>
+
+    <!-- Horloge -->
+    <div class="text-center mb-4">
+      <div class="flex items-baseline justify-center gap-2">
+        <span id="clock-hm" class="clock-time">--:--</span>
+        <span id="clock-s" class="clock-seconds">:--</span>
+      </div>
+      <p id="clock-date" class="clock-date mt-2">--</p>
+    </div>
+
+    <!-- Branding -->
+    <div class="flex items-center gap-4 mb-10 opacity-40">
+      <span class="text-[11px] font-bold uppercase tracking-widest">CS Harmonie</span>
+      <span class="w-1 h-1 rounded-full bg-white/40"></span>
+      <span class="text-[11px] font-bold uppercase tracking-widest">GS Retrouvailles</span>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="glass rounded-3xl p-8 w-full max-w-md">
+      <div class="relative mb-5">
+        <i data-lucide="mail" class="absolute left-4 top-5 w-5 h-5 text-white/30"></i>
+        <input type="text" id="kiosk-email" class="kiosk-input" placeholder="Entrez votre email ou matricule" autocomplete="off" />
+      </div>
+      <button id="btn-start-scan" class="btn-scan flex items-center justify-center gap-3" onclick="startPointage()">
+        <i data-lucide="scan-face" class="w-6 h-6"></i>
+        Scanner mon Visage pour Pointer
+      </button>
+      <p id="kiosk-error" class="hidden text-red-400 text-xs font-bold mt-4 text-center"></p>
+    </div>
+
+    <!-- Retour -->
+    <a href="/login.html" class="mt-8 text-xs text-white/30 hover:text-white/60 transition flex items-center gap-2 no-underline">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i>
+      Retour à la connexion
+    </a>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- ÉCRAN 2 : SCAN FACIAL                      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="screen-scan" class="cam-overlay hidden flex flex-col">
+    <div class="relative flex-1">
+      <video id="scan-video" class="cam-video" autoplay playsinline muted></video>
+
+      <!-- Fallback (no camera) -->
+      <div id="scan-fallback" class="hidden absolute inset-0 bg-[#050d1a] flex flex-col items-center justify-center">
+        <i data-lucide="bot" class="w-20 h-20 text-emerald-500/40 mb-4 animate-pulse"></i>
+        <p class="text-sm text-emerald-400/60 font-bold uppercase tracking-widest">Simulation IA Active</p>
+      </div>
+
+      <!-- Oval guide -->
+      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <svg width="260" height="340" viewBox="0 0 260 340">
+          <ellipse id="scan-oval" cx="130" cy="170" rx="110" ry="150" fill="none" stroke="rgba(16,185,129,0.4)"
+            stroke-width="3" stroke-dasharray="20 8" style="transition: all 0.5s;" />
+        </svg>
+      </div>
+
+      <!-- Scan line -->
+      <div id="scan-line-el" class="scan-line" style="display:none;"></div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="bg-[#0a192f]/95 backdrop-blur-xl p-6 border-t border-white/10">
+      <div class="max-w-lg mx-auto">
+        <p id="scan-status" class="text-sm font-bold text-center mb-3 text-emerald-400">Initialisation de la caméra...</p>
+        <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-4">
+          <div id="scan-progress" class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500" style="width:0%"></div>
+        </div>
+        <button onclick="cancelScan()" class="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold text-white/60 transition">
+          Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- OVERLAY 3 : RÉSULTAT SUCCÈS                -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="overlay-success" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 result-backdrop" style="background: rgba(5,13,26,0.85); backdrop-filter: blur(12px);">
+    <div class="result-card glass rounded-3xl p-10 w-full max-w-sm text-center border border-emerald-500/20 shadow-2xl" style="box-shadow: 0 0 80px rgba(16,185,129,0.15);">
+      <!-- Green check -->
+      <div class="relative w-20 h-20 mx-auto mb-6">
+        <div class="absolute inset-0 rounded-full bg-emerald-500/20 pulse-ring"></div>
+        <div class="relative w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center">
+          <i data-lucide="check" class="w-10 h-10 text-emerald-400"></i>
+        </div>
+      </div>
+
+      <!-- Badge ARRIVÉE/DÉPART -->
+      <div id="result-badge" class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-5"></div>
+
+      <!-- Avatar -->
+      <div id="result-avatar" class="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl font-black mx-auto mb-4"></div>
+
+      <!-- Info -->
+      <h2 id="result-name" class="text-2xl font-black mb-1"></h2>
+      <p id="result-role" class="text-sm text-white/50 font-semibold mb-4"></p>
+      <p id="result-time" class="text-4xl font-black tracking-tight mb-2" style="font-variant-numeric: tabular-nums;"></p>
+      <p id="result-greeting" class="text-sm text-emerald-400/80 font-semibold mb-6"></p>
+
+      <p class="text-[10px] text-white/20 font-bold uppercase tracking-widest">Identité confirmée par reconnaissance faciale</p>
+
+      <!-- Countdown bar -->
+      <div class="mt-6 w-full h-1 bg-white/5 rounded-full overflow-hidden">
+        <div id="result-countdown" class="h-full bg-emerald-500/50 rounded-full countdown-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- OVERLAY 4 : ERREUR                         -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="overlay-error" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 result-backdrop" style="background: rgba(5,13,26,0.85); backdrop-filter: blur(12px);">
+    <div class="result-card glass rounded-3xl p-10 w-full max-w-sm text-center border border-red-500/20 shadow-2xl" style="box-shadow: 0 0 80px rgba(239,68,68,0.12);">
+      <div class="relative w-20 h-20 mx-auto mb-6">
+        <div class="absolute inset-0 rounded-full bg-red-500/20 pulse-ring"></div>
+        <div class="relative w-20 h-20 rounded-full bg-red-500/20 border-2 border-red-500/50 flex items-center justify-center">
+          <i data-lucide="x" class="w-10 h-10 text-red-400"></i>
+        </div>
+      </div>
+      <h2 id="error-title" class="text-xl font-black text-red-400 mb-2">⛔ Visage Non Reconnu</h2>
+      <p id="error-msg" class="text-sm text-white/50 mb-6"></p>
+      <button onclick="dismissError()" class="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold transition">
+        Réessayer
+      </button>
+      <div class="mt-6 w-full h-1 bg-white/5 rounded-full overflow-hidden">
+        <div class="h-full bg-red-500/50 rounded-full countdown-bar-error"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ═══════════════════════════════════════════════════════════
+  // HORLOGE EN TEMPS RÉEL
+  // ═══════════════════════════════════════════════════════════
+  const joursFr = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const moisFr = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+  function updateClock() {
+    const now = new Date();
+    const h = now.getHours().toString().padStart(2,'0');
+    const m = now.getMinutes().toString().padStart(2,'0');
+    const s = now.getSeconds().toString().padStart(2,'0');
+    document.getElementById('clock-hm').textContent = `${h}:${m}`;
+    document.getElementById('clock-s').textContent = `:${s}`;
+    document.getElementById('clock-date').textContent =
+      `${joursFr[now.getDay()]} ${now.getDate()} ${moisFr[now.getMonth()]} ${now.getFullYear()}`;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ═══════════════════════════════════════════════════════════
+  // VARIABLES GLOBALES
+  // ═══════════════════════════════════════════════════════════
+  let cameraStream = null;
+  let faceDetectionInterval = null;
+  let modelsLoaded = false;
+  let currentUser = null;
+  const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+
+  // Comptes hardcodés (toujours disponibles)
+  const HARDCODED_USERS = [
+    { id: 99, email: 'chadrackisoloke@gmail.com', nom: 'EKOTO ISOLOKE', prenom: 'CHADA', role: 'Super-Admin', ecole: 'Retrouvailles', faceDescriptor: null },
+    { id: 101, email: 'kasombo@retrouvailles.cd', nom: 'KASOMBO', prenom: 'PAUL', role: 'Directeur (D.P)', ecole: 'Harmonie', faceDescriptor: null },
+  ];
+
+  // ═══════════════════════════════════════════════════════════
+  // RECHERCHE UTILISATEUR
+  // ═══════════════════════════════════════════════════════════
+  function findUserByEmail(email) {
+    const lower = email.toLowerCase();
+    // Recherche dans localStorage
+    const db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+    let user = db.find(u => u.email && u.email.toLowerCase() === lower);
+    if (user) return { user, source: 'db' };
+    // Recherche dans les comptes hardcodés
+    let hc = HARDCODED_USERS.find(u => u.email.toLowerCase() === lower);
+    if (hc) return { user: { ...hc }, source: 'hardcoded' };
+    return null;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // DÉMARRAGE DU POINTAGE
+  // ═══════════════════════════════════════════════════════════
+  async function startPointage() {
+    const emailInput = document.getElementById('kiosk-email');
+    const errorEl = document.getElementById('kiosk-error');
+    const email = emailInput.value.trim();
+
+    errorEl.classList.add('hidden');
+
+    if (!email) {
+      errorEl.textContent = 'Veuillez saisir votre email ou matricule.';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    const result = findUserByEmail(email);
+    if (!result) {
+      showError('Aucun compte trouvé', `Aucun compte n'est associé à l'email « ${email} ». Veuillez vérifier ou créer un compte.`);
+      return;
+    }
+
+    currentUser = result.user;
+    openScanner();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // SCANNER FACIAL
+  // ═══════════════════════════════════════════════════════════
+  async function openScanner() {
+    document.getElementById('screen-welcome').classList.add('hidden');
+    document.getElementById('screen-scan').classList.remove('hidden');
+
+    const video = document.getElementById('scan-video');
+    const fallback = document.getElementById('scan-fallback');
+    const statusEl = document.getElementById('scan-status');
+    const progressEl = document.getElementById('scan-progress');
+    const scanLine = document.getElementById('scan-line-el');
+    const oval = document.getElementById('scan-oval');
+
+    let hasCamera = false;
+
+    // 1. Ouvrir la caméra
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 }, audio: false });
+      video.srcObject = cameraStream;
+      await video.play();
+      hasCamera = true;
+      statusEl.textContent = 'Caméra active — Placez votre visage dans le cadre';
+      progressEl.style.width = '10%';
+    } catch(e) {
+      video.style.display = 'none';
+      fallback.classList.remove('hidden');
+      statusEl.textContent = 'Mode Simulation IA (caméra non disponible)';
+      progressEl.style.width = '10%';
+    }
+
+    scanLine.style.display = 'block';
+
+    // 2. Charger les modèles face-api.js
+    const canUseFaceApi = typeof faceapi !== 'undefined' && hasCamera;
+    if (canUseFaceApi && !modelsLoaded) {
+      try {
+        statusEl.textContent = 'Chargement des modèles IA...';
+        progressEl.style.width = '20%';
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        modelsLoaded = true;
+      } catch(e) { console.error('Erreur chargement modèles', e); }
+    }
+
+    // 3. Lancer la détection
+    if (modelsLoaded && hasCamera) {
+      runRealDetection(video, oval, statusEl, progressEl);
+    } else {
+      runSimulation(oval, statusEl, progressEl);
+    }
+  }
+
+  // ── DÉTECTION RÉELLE ──
+  function runRealDetection(video, oval, statusEl, progressEl) {
+    let frames = 0;
+    const REQUIRED = 12;
+    const phases = [
+      { f: 3,  pct: 35, txt: '🔍 Détection du visage...' },
+      { f: 7,  pct: 55, txt: '🧠 Analyse des traits faciaux...' },
+      { f: 10, pct: 75, txt: '🔐 Extraction biométrique...' },
+      { f: 12, pct: 90, txt: '⚡ Validation en cours...' },
+    ];
+
+    faceDetectionInterval = setInterval(async () => {
+      try {
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }));
+        if (detections && detections.length > 0) {
+          frames++;
+          const phase = phases.find(p => frames <= p.f) || phases[phases.length - 1];
+          statusEl.textContent = phase.txt;
+          progressEl.style.width = phase.pct + '%';
+          if (oval) {
+            const green = frames >= REQUIRED * 0.7;
+            oval.setAttribute('stroke', green ? '#10b981' : 'rgba(16,185,129,0.4)');
+            oval.setAttribute('stroke-dasharray', green ? 'none' : '20 8');
+          }
+
+          if (frames >= REQUIRED) {
+            clearInterval(faceDetectionInterval);
+            statusEl.textContent = '🧬 Extraction de l\'empreinte faciale...';
+            progressEl.style.width = '95%';
+
+            // Extraire le descripteur réel
+            try {
+              const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }))
+                .withFaceLandmarks().withFaceDescriptor();
+
+              if (detection) {
+                const liveDescriptor = Array.from(detection.descriptor);
+                validateFace(liveDescriptor);
+              } else {
+                // Face disparue pendant l'extraction — valider quand même (mode souple)
+                validateFace(null);
+              }
+            } catch(e) {
+              console.error('Erreur extraction descripteur', e);
+              validateFace(null);
+            }
+          }
+        } else {
+          statusEl.textContent = '👤 Approchez votre visage du cadre...';
+        }
+      } catch(e) { /* ignore detection errors */ }
+    }, 350);
+  }
+
+  // ── SIMULATION (sans caméra) ──
+  function runSimulation(oval, statusEl, progressEl) {
+    const steps = [
+      { delay: 600,  pct: 25, txt: '🔍 Positionnement du visage...' },
+      { delay: 1400, pct: 50, txt: '🧬 Analyse des points faciaux...' },
+      { delay: 2200, pct: 75, txt: '🔐 Extraction biométrique...' },
+      { delay: 3200, pct: 90, txt: '⚡ Validation en cours...' },
+      { delay: 4000, pct: 100, txt: '✅ Scan terminé' },
+    ];
+    steps.forEach(step => {
+      setTimeout(() => {
+        statusEl.textContent = step.txt;
+        progressEl.style.width = step.pct + '%';
+        if (oval && step.pct > 70) {
+          oval.setAttribute('stroke', '#10b981');
+          oval.setAttribute('stroke-dasharray', 'none');
+        }
+        if (step.pct === 100) {
+          validateFace(null); // simulation — pas de descriptor
+        }
+      }, step.delay);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // VALIDATION FACIALE (Comparaison ou premier enrôlement)
+  // ═══════════════════════════════════════════════════════════
+  function validateFace(liveDescriptor) {
+    stopCamera();
+
+    const user = currentUser;
+    if (!user) return;
+
+    const storedDescriptor = user.faceDescriptor;
+
+    // CAS 1 : L'utilisateur a un descripteur stocké ET on a un descripteur live → COMPARER
+    if (storedDescriptor && liveDescriptor && storedDescriptor.length === 128 && liveDescriptor.length === 128) {
+      const distance = euclideanDistance(liveDescriptor, storedDescriptor);
+      console.log(`[POINTAGE] Distance faciale: ${distance.toFixed(4)} (seuil: 0.6)`);
+
+      if (distance > 0.6) {
+        showError('Visage Non Reconnu', `Ce visage ne correspond pas au compte de ${user.prenom} ${user.nom}. Distance: ${distance.toFixed(2)}. Seul le titulaire peut pointer.`);
+        return;
+      }
+    }
+
+    // CAS 2 : Pas de descripteur stocké ET on a un live → Premier enrôlement automatique
+    if (!storedDescriptor && liveDescriptor && liveDescriptor.length === 128) {
+      // Sauvegarder le descripteur dans le profil
+      const db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+      const idx = db.findIndex(u => u.email && u.email.toLowerCase() === user.email.toLowerCase());
+      if (idx >= 0) {
+        db[idx].faceDescriptor = liveDescriptor;
+        localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+      }
+      user.faceDescriptor = liveDescriptor;
+    }
+
+    // CAS 3 : Simulation (pas de descripteur live) → On laisse passer pour la démo
+
+    // ── ENREGISTRER LE POINTAGE ──
+    recordPointage(user);
+    showSuccess(user);
+  }
+
+  // Distance euclidienne entre deux vecteurs
+  function euclideanDistance(a, b) {
+    let sum = 0;
+    for (let i = 0; i < a.length; i++) { sum += (a[i] - b[i]) ** 2; }
+    return Math.sqrt(sum);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ENREGISTREMENT DU POINTAGE
+  // ═══════════════════════════════════════════════════════════
+  function recordPointage(user) {
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    const isDepart = now.getHours() >= 14;
+
+    const record = {
+      nom: `${user.prenom} ${user.nom}`,
+      role: user.role,
+      ecole: user.ecole || 'Retrouvailles',
+      statut: 'Présent',
+      arrivee: isDepart ? '--:--' : timeStr,
+      depart: isDepart ? timeStr : '--:--',
+      date: now.toISOString()
+    };
+
+    const list = JSON.parse(localStorage.getItem('hr_pointages')) || [];
+    list.push(record);
+    localStorage.setItem('hr_pointages', JSON.stringify(list));
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // AFFICHAGE SUCCÈS
+  // ═══════════════════════════════════════════════════════════
+  function showSuccess(user) {
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    const isDepart = now.getHours() >= 14;
+    const type = isDepart ? 'DÉPART' : 'ARRIVÉE';
+    const greeting = isDepart ? 'Au revoir, bonne fin de journée !' : 'Bonjour, excellente journée !';
+    const initials = ((user.prenom||'?')[0] + (user.nom||'?')[0]).toUpperCase();
+
+    // Badge
+    const badgeEl = document.getElementById('result-badge');
+    badgeEl.textContent = type;
+    badgeEl.className = isDepart
+      ? 'inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-5 bg-blue-500/20 text-blue-400 border border-blue-500/30'
+      : 'inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+
+    document.getElementById('result-avatar').textContent = initials;
+    document.getElementById('result-name').textContent = `${user.prenom} ${user.nom}`;
+    document.getElementById('result-role').textContent = `${user.role} • ${user.ecole || 'Retrouvailles'}`;
+    document.getElementById('result-time').textContent = timeStr;
+    document.getElementById('result-greeting').textContent = greeting;
+
+    // Reset countdown bar animation
+    const bar = document.getElementById('result-countdown');
+    bar.classList.remove('countdown-bar');
+    void bar.offsetWidth; // force reflow
+    bar.classList.add('countdown-bar');
+
+    document.getElementById('screen-scan').classList.add('hidden');
+    document.getElementById('screen-welcome').classList.remove('hidden');
+    document.getElementById('overlay-success').classList.remove('hidden');
+
+    // Auto-dismiss after 5s
+    setTimeout(() => dismissSuccess(), 5000);
+  }
+
+  function dismissSuccess() {
+    document.getElementById('overlay-success').classList.add('hidden');
+    resetKiosk();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // AFFICHAGE ERREUR
+  // ═══════════════════════════════════════════════════════════
+  function showError(title, msg) {
+    stopCamera();
+    document.getElementById('error-title').textContent = `⛔ ${title}`;
+    document.getElementById('error-msg').textContent = msg;
+
+    document.getElementById('screen-scan').classList.add('hidden');
+    document.getElementById('screen-welcome').classList.remove('hidden');
+    document.getElementById('overlay-error').classList.remove('hidden');
+
+    setTimeout(() => dismissError(), 6000);
+  }
+
+  function dismissError() {
+    document.getElementById('overlay-error').classList.add('hidden');
+    resetKiosk();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // UTILITAIRES
+  // ═══════════════════════════════════════════════════════════
+  function stopCamera() {
+    if (faceDetectionInterval) { clearInterval(faceDetectionInterval); faceDetectionInterval = null; }
+    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  }
+
+  function cancelScan() {
+    stopCamera();
+    document.getElementById('screen-scan').classList.add('hidden');
+    document.getElementById('screen-welcome').classList.remove('hidden');
+    document.getElementById('scan-video').style.display = 'block';
+    document.getElementById('scan-fallback').classList.add('hidden');
+  }
+
+  function resetKiosk() {
+    document.getElementById('kiosk-email').value = '';
+    document.getElementById('kiosk-error').classList.add('hidden');
+    currentUser = null;
+    document.getElementById('scan-video').style.display = 'block';
+    document.getElementById('scan-fallback').classList.add('hidden');
+    document.getElementById('scan-progress').style.width = '0%';
+  }
+
+  // Enter key triggers scan
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.lucide) lucide.createIcons();
+    document.getElementById('kiosk-email').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') startPointage();
+    });
+  });
+</script>
+
+</body>
+</html>

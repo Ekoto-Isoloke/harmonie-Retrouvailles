@@ -363,11 +363,11 @@
                 <span id="btn-login-text">Se Connecter à l'Espace Direction</span>
               </button>
               
-              <!-- Bouton Pointage Présence (Nouveau) -->
-              <button type="button" onclick="handlePointageAction(event)" class="w-full py-4 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl shadow-lg font-bold text-sm transition-all shadow-emerald-500/20 hover:shadow-emerald-500/40">
-                <i data-lucide="calendar-check" class="w-5 h-5"></i>
-                <span>Pointage Présence (Personnel)</span>
-              </button>
+              <!-- Bouton Pointage Présence → Borne dédiée -->
+              <a href="/pointage.html" class="w-full py-4 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl shadow-lg font-bold text-sm transition-all shadow-emerald-500/20 hover:shadow-emerald-500/40 no-underline">
+                <i data-lucide="scan-face" class="w-5 h-5"></i>
+                <span>Borne de Pointage (Reconnaissance Faciale)</span>
+              </a>
             </div>
           </form>
 
@@ -1084,7 +1084,8 @@
         ecole: institution || 'Retrouvailles',
         phone, address, courses,
         biometric: true,
-        credentialId: bioCredentialId // Passkey WebAuthn
+        credentialId: bioCredentialId, // Passkey WebAuthn
+        faceDescriptor: window._enrolledFaceDescriptor || null // Empreinte faciale 128-dim pour comparaison
       };
 
       db.push(newUser);
@@ -1273,6 +1274,13 @@
 
       bioCredentialId  = faceData || btoa('face_' + Date.now());
       isBioRegistered  = true;
+      // Store the real 128-dim face descriptor if available
+      try {
+        const parsed = JSON.parse(faceData);
+        if (Array.isArray(parsed) && parsed.length === 128) {
+          window._enrolledFaceDescriptor = parsed;
+        }
+      } catch(e) { /* legacy base64 string, no descriptor */ }
 
       if (ring) { ring.style.strokeDashoffset = '0'; ring.setAttribute('stroke', '#10b981'); }
       if (iconIn) {
@@ -1396,7 +1404,10 @@
       if (tryFaceApi && !faceApiLoaded) {
         try {
           statusTxt.textContent = 'Chargement des modèles IA...';
-          await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights');
+          const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+          await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+          await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+          await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
           faceApiLoaded = true;
         } catch(e) { /* fallback */ }
       }
@@ -1437,12 +1448,24 @@
           }
           if (detectedFrames >= REQUIRED_FRAMES) {
             clearInterval(faceDetectionInterval);
+            progBar.style.width = '95%';
+            statusTxt.textContent = '🧬 Extraction de l\'empreinte faciale...';
+            stepLbl.textContent = 'Encodage biométrique en cours...';
+            // Extract real 128-dim face descriptor for storage/comparison
+            try {
+              const fullDetection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }))
+                .withFaceLandmarks().withFaceDescriptor();
+              if (fullDetection) {
+                capturedFaceData = JSON.stringify(Array.from(fullDetection.descriptor));
+              } else {
+                capturedFaceData = null; // fallback
+              }
+            } catch(e) { capturedFaceData = null; }
             progBar.style.width = '100%';
             if (ovalRing) { ovalRing.style.strokeDashoffset = '0'; ovalRing.setAttribute('stroke', '#10b981'); }
             statusTxt.textContent = '✅ Visage reconnu — Cliquez sur Valider';
             stepLbl.textContent   = 'Scan complet ! Appuyez sur Valider pour enregistrer.';
             faceScanReady    = true;
-            capturedFaceData = btoa('face_real_' + Date.now());
             validateBtn.disabled = false;
             validateBtn.classList.remove('opacity-40', 'cursor-not-allowed');
           }
