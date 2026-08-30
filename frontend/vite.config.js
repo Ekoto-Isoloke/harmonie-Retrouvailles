@@ -20,7 +20,8 @@ export default defineConfig({
         parent_act: resolve(__dirname, 'parent-activation.html'),
         prefet: resolve(__dirname, 'prefet-dashboard.html'),
         rh: resolve(__dirname, 'rh-dashboard.html'),
-        teacher: resolve(__dirname, 'teacher-dashboard.html')
+        teacher: resolve(__dirname, 'teacher-dashboard.html'),
+        pointage: resolve(__dirname, 'pointage.html')
       }
     }
   }
