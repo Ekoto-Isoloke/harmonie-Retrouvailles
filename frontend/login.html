@@ -1279,8 +1279,18 @@
         const parsed = JSON.parse(faceData);
         if (Array.isArray(parsed) && parsed.length === 128) {
           window._enrolledFaceDescriptor = parsed;
+        } else {
+          // ❌ Descripteur invalide → bloquer l'inscription
+          isBioRegistered = false;
+          showToast('⛔ Empreinte faciale non valide. Veuillez relancer le scan avec une caméra fonctionnelle.', 'error');
+          return;
         }
-      } catch(e) { /* legacy base64 string, no descriptor */ }
+      } catch(e) {
+        // ❌ base64 simulé ou données corrompues → bloquer
+        isBioRegistered = false;
+        showToast('⛔ Données biométriques invalides. Scan facial requis avec caméra active.', 'error');
+        return;
+      }
 
       if (ring) { ring.style.strokeDashoffset = '0'; ring.setAttribute('stroke', '#10b981'); }
       if (iconIn) {
@@ -1372,52 +1382,56 @@
         onFaceScanSuccess(capturedFaceData);
       };
 
-      // Démarrer la caméra
+      // Démarrer la caméra (OBLIGATOIRE — pas de simulation)
       let hasCamera = false;
       try {
         cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         video.srcObject = cameraStream;
         await video.play();
         statusTxt.textContent = 'Caméra active — Placez votre visage dans le cadre';
-        stepLbl.textContent = 'Positionnez votre visage...';
+        stepLbl.textContent = 'Positionnez votre visage dans l\'ovale...';
         progBar.style.width = '15%';
         hasCamera = true;
       } catch (e) {
-        // En cas de refus de permission ou d'absence de caméra, on passe en mode Simulation pure
-        statusTxt.textContent = 'Mode Simulation IA (Erreur: ' + e.name + ')';
-        stepLbl.textContent = 'Analyse par intelligence artificielle...';
-        progBar.style.width = '15%';
-        video.style.display = 'none';
-        
-        // Ajouter un fond d'animation futuriste à la place de la vidéo
-        const fallbackBg = document.createElement('div');
-        fallbackBg.id = 'cam-fallback-bg';
-        fallbackBg.className = 'absolute inset-0 bg-[#070f1f] flex flex-col items-center justify-center';
-        fallbackBg.innerHTML = '<i data-lucide="bot" class="w-16 h-16 text-blue-500/50 mb-4 animate-pulse"></i><p class="text-xs text-blue-400 font-bold tracking-widest uppercase">Simulation IA</p>';
-        video.parentElement.insertBefore(fallbackBg, video);
-        if (window.lucide) lucide.createIcons();
+        // ❌ PAS DE CAMÉRA → FERMER LE MODAL ET BLOQUER
+        if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+        modal.style.display = 'none';
+        showToast(
+          '⛔ Caméra requise : L\'enregistrement facial nécessite une caméra. ' +
+          'Autorisez l\'accès à la caméra et réessayez. (' + e.name + ')',
+          'error'
+        );
+        return; // BLOCAGE TOTAL
       }
 
-      // Essayer de charger face-api.js si la caméra est dispo
+      // Essayer de charger face-api.js (obligatoire pour vraie empreinte)
       const tryFaceApi = typeof faceapi !== 'undefined' && hasCamera;
 
       if (tryFaceApi && !faceApiLoaded) {
         try {
-          statusTxt.textContent = 'Chargement des modèles IA...';
+          statusTxt.textContent = 'Chargement des modèles IA biométriques...';
           const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
           await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
           await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
           await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
           faceApiLoaded = true;
-        } catch(e) { /* fallback */ }
+        } catch(e) {
+          // Modèles non chargés → BLOQUER
+          if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+          modal.style.display = 'none';
+          showToast('⛔ Modèles IA indisponibles. Vérifiez votre connexion internet et réessayez.', 'error');
+          return;
+        }
       }
 
       if (faceApiLoaded && hasCamera) {
-        // ── Détection faciale réelle avec face-api.js ──
+        // ── Détection faciale réelle (seule méthode autorisée) ──
         runRealFaceDetection(video, canvas, ovalRing, scanLine, statusTxt, stepLbl, progBar, validateBtn);
       } else {
-        // ── Fallback : simulation réaliste avec ou sans vraie caméra ──
-        runSimulatedScan(ovalRing, scanLine, statusTxt, stepLbl, progBar, validateBtn);
+        // face-api non disponible mais caméra ouverte → blocage
+        if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+        modal.style.display = 'none';
+        showToast('⛔ Système de reconnaissance faciale indisponible. Réessayez avec une connexion internet stable.', 'error');
       }
     }
 
@@ -1458,12 +1472,28 @@
               if (fullDetection) {
                 capturedFaceData = JSON.stringify(Array.from(fullDetection.descriptor));
               } else {
-                capturedFaceData = null; // fallback
+                // ❌ Visage non détecté lors de l'extraction finale → INVALIDE
+                capturedFaceData = null;
               }
             } catch(e) { capturedFaceData = null; }
+
+            if (!capturedFaceData) {
+              // BLOCAGE : on ne déverrouille pas le bouton Valider
+              statusTxt.textContent = '⛔ Extraction échouée — Bougez légèrement et réessayez';
+              stepLbl.textContent = 'Restez immobile, visage bien éclairé';
+              progBar.style.width = '0%';
+              // Relancer la détection après 2 secondes
+              setTimeout(() => {
+                if (cameraStream) {
+                  runRealFaceDetection(video, canvas, ovalRing, scanLine, statusTxt, stepLbl, progBar, validateBtn);
+                }
+              }, 2000);
+              return;
+            }
+
             progBar.style.width = '100%';
             if (ovalRing) { ovalRing.style.strokeDashoffset = '0'; ovalRing.setAttribute('stroke', '#10b981'); }
-            statusTxt.textContent = '✅ Visage reconnu — Cliquez sur Valider';
+            statusTxt.textContent = '✅ Empreinte capturée — Cliquez sur Valider';
             stepLbl.textContent   = 'Scan complet ! Appuyez sur Valider pour enregistrer.';
             faceScanReady    = true;
             validateBtn.disabled = false;
