@@ -303,60 +303,65 @@
   }
 
   // ═══════════════════════════════════════════════════════════
-  // SCANNER FACIAL
+  // SCANNER FACIAL — SÉCURITÉ STRICTE
   // ═══════════════════════════════════════════════════════════
   async function openScanner() {
     document.getElementById('screen-welcome').classList.add('hidden');
     document.getElementById('screen-scan').classList.remove('hidden');
 
-    const video = document.getElementById('scan-video');
-    const fallback = document.getElementById('scan-fallback');
-    const statusEl = document.getElementById('scan-status');
+    const video      = document.getElementById('scan-video');
+    const fallback   = document.getElementById('scan-fallback');
+    const statusEl   = document.getElementById('scan-status');
     const progressEl = document.getElementById('scan-progress');
-    const scanLine = document.getElementById('scan-line-el');
-    const oval = document.getElementById('scan-ring');
+    const scanLine   = document.getElementById('scan-line-el');
+    const oval       = document.getElementById('scan-ring');
 
-    let hasCamera = false;
-
-    // 1. Ouvrir la caméra
+    // ── ÉTAPE 1 : Ouvrir la caméra (obligatoire) ──
     try {
-      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 }, audio: false });
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: 640, height: 480 }, audio: false
+      });
       video.srcObject = cameraStream;
       await video.play();
-      hasCamera = true;
       statusEl.textContent = 'Caméra active — Placez votre visage dans le cadre';
       progressEl.style.width = '10%';
+      scanLine.style.display = 'block';
     } catch(e) {
-      video.style.display = 'none';
-      fallback.classList.remove('hidden');
-      statusEl.textContent = 'Mode Simulation IA (caméra non disponible)';
-      progressEl.style.width = '10%';
+      // ❌ PAS DE CAMÉRA = BLOCAGE IMMÉDIAT
+      document.getElementById('screen-scan').classList.add('hidden');
+      document.getElementById('screen-welcome').classList.remove('hidden');
+      showError('Caméra requise',
+        'La reconnaissance faciale nécessite obligatoirement une caméra fonctionnelle. ' +
+        'Accès caméra refusé ou matériel non disponible. Pointage impossible sans biométrie.');
+      return;
     }
 
-    scanLine.style.display = 'block';
-
-    // 2. Charger les modèles face-api.js
-    const canUseFaceApi = typeof faceapi !== 'undefined' && hasCamera;
-    if (canUseFaceApi && !modelsLoaded) {
+    // ── ÉTAPE 2 : Charger les modèles face-api.js (obligatoire) ──
+    if (!modelsLoaded) {
       try {
-        statusEl.textContent = 'Chargement des modèles IA...';
+        statusEl.textContent = 'Chargement des modèles IA biométriques...';
         progressEl.style.width = '20%';
         await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
         await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
         await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
         modelsLoaded = true;
-      } catch(e) { console.error('Erreur chargement modèles', e); }
+      } catch(e) {
+        // ❌ Modèles IA non disponibles = BLOCAGE
+        stopCamera();
+        document.getElementById('screen-scan').classList.add('hidden');
+        document.getElementById('screen-welcome').classList.remove('hidden');
+        showError('Système biométrique indisponible',
+          'Impossible de charger les modèles de reconnaissance faciale. ' +
+          'Vérifiez votre connexion internet et réessayez.');
+        return;
+      }
     }
 
-    // 3. Lancer la détection
-    if (modelsLoaded && hasCamera) {
-      runRealDetection(video, oval, statusEl, progressEl);
-    } else {
-      runSimulation(oval, statusEl, progressEl);
-    }
+    // ── ÉTAPE 3 : Lancer la détection faciale réelle ──
+    runRealDetection(video, oval, statusEl, progressEl);
   }
 
-  // ── DÉTECTION RÉELLE ──
+  // ── DÉTECTION RÉELLE (seule méthode autorisée) ──
   function runRealDetection(video, oval, statusEl, progressEl) {
     let frames = 0;
     const REQUIRED = 12;
@@ -386,21 +391,23 @@
             statusEl.textContent = '🧬 Extraction de l\'empreinte faciale...';
             progressEl.style.width = '95%';
 
-            // Extraire le descripteur réel
+            // Extraire le descripteur réel (OBLIGATOIRE)
             try {
-              const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }))
-                .withFaceLandmarks().withFaceDescriptor();
+              const detection = await faceapi
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
 
-              if (detection) {
-                const liveDescriptor = Array.from(detection.descriptor);
-                validateFace(liveDescriptor);
+              if (detection && detection.descriptor) {
+                // ✅ Descripteur live obtenu → comparaison stricte
+                validateFace(Array.from(detection.descriptor));
               } else {
-                // Face disparue pendant l'extraction — valider quand même (mode souple)
+                // ❌ Face introuvable lors de l'extraction finale → BLOCAGE
                 validateFace(null);
               }
             } catch(e) {
               console.error('Erreur extraction descripteur', e);
-              validateFace(null);
+              validateFace(null); // Sera bloqué par validateFace
             }
           }
         } else {
@@ -408,30 +415,6 @@
         }
       } catch(e) { /* ignore detection errors */ }
     }, 350);
-  }
-
-  // ── SIMULATION (sans caméra) ──
-  function runSimulation(oval, statusEl, progressEl) {
-    const steps = [
-      { delay: 600,  pct: 25, txt: '🔍 Positionnement du visage...' },
-      { delay: 1400, pct: 50, txt: '🧬 Analyse des points faciaux...' },
-      { delay: 2200, pct: 75, txt: '🔐 Extraction biométrique...' },
-      { delay: 3200, pct: 90, txt: '⚡ Validation en cours...' },
-      { delay: 4000, pct: 100, txt: '✅ Scan terminé' },
-    ];
-    steps.forEach(step => {
-      setTimeout(() => {
-        statusEl.textContent = step.txt;
-        progressEl.style.width = step.pct + '%';
-        if (oval && step.pct > 70) {
-          oval.setAttribute('stroke', '#10b981');
-          oval.setAttribute('stroke-dasharray', 'none');
-        }
-        if (step.pct === 100) {
-          validateFace(null); // simulation — pas de descriptor
-        }
-      }, step.delay);
-    });
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -445,32 +428,39 @@
 
     const storedDescriptor = user.faceDescriptor;
 
-    // CAS 1 : L'utilisateur a un descripteur stocké ET on a un descripteur live → COMPARER
-    if (storedDescriptor && liveDescriptor && storedDescriptor.length === 128 && liveDescriptor.length === 128) {
-      const distance = euclideanDistance(liveDescriptor, storedDescriptor);
-      console.log(`[POINTAGE] Distance faciale: ${distance.toFixed(4)} (seuil: 0.6)`);
+    // ══════════════════════════════════════════════════════════
+    // SÉCURITÉ STRICTE — AUCUN CONTOURNEMENT POSSIBLE
+    // ══════════════════════════════════════════════════════════
 
-      if (distance > 0.6) {
-        showError('Échec de l\'authentification', `Le visage présenté ne correspond pas à l'empreinte biométrique associée à cet identifiant. Pointage refusé.`);
-        return;
-      }
+    // BLOCAGE 1 : Pas d'empreinte faciale enregistrée lors de la création du compte
+    if (!storedDescriptor || !Array.isArray(storedDescriptor) || storedDescriptor.length !== 128) {
+      showError('Empreinte non enregistrée', 
+        'Aucune empreinte faciale n\'est associée à ce compte. ' +
+        'L\'enregistrement du visage se fait UNIQUEMENT lors de la création du compte. ' +
+        'Veuillez contacter l\'administrateur.');
+      return;
     }
 
-    // CAS 2 : Pas de descripteur stocké ET on a un live → Premier enrôlement automatique
-    if (!storedDescriptor && liveDescriptor && liveDescriptor.length === 128) {
-      // Sauvegarder le descripteur dans le profil
-      const db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
-      const idx = db.findIndex(u => u.email && u.email.toLowerCase() === user.email.toLowerCase());
-      if (idx >= 0) {
-        db[idx].faceDescriptor = liveDescriptor;
-        localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
-      }
-      user.faceDescriptor = liveDescriptor;
+    // BLOCAGE 2 : Pas de descripteur live (caméra défaillante ou simulation)
+    if (!liveDescriptor || !Array.isArray(liveDescriptor) || liveDescriptor.length !== 128) {
+      showError('Capture faciale échouée', 
+        'Impossible d\'extraire les données biométriques. ' +
+        'Assurez-vous que la caméra fonctionne et que votre visage est bien visible.');
+      return;
     }
 
-    // CAS 3 : Simulation (pas de descripteur live) → On laisse passer pour la démo
+    // VÉRIFICATION : Comparaison mathématique stricte (128 dimensions)
+    const distance = euclideanDistance(liveDescriptor, storedDescriptor);
+    console.log(`[POINTAGE] Distance faciale: ${distance.toFixed(4)} (seuil: 0.6)`);
 
-    // ── ENREGISTRER LE POINTAGE ──
+    if (distance > 0.6) {
+      showError('Échec de l\'authentification', 
+        'Le visage présenté ne correspond PAS à l\'empreinte biométrique ' +
+        'associée à cet identifiant. Pointage REFUSÉ.');
+      return;
+    }
+
+    // ✅ MATCH CONFIRMÉ — Enregistrer le pointage
     recordPointage(user);
     showSuccess(user);
   }
