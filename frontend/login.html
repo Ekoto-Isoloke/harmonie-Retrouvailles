@@ -619,24 +619,36 @@
 
     function initDB() {
       let db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+      let cloudDB = JSON.parse(localStorage.getItem('hr_cloud_accounts')) || [];
+
+      // 🧹 PURGE AUTOMATIQUE des comptes fictifs résiduels
+      const dummyEmails = ['kasombo@retrouvailles.cd', 'matungulu@retrouvailles.cd', 'enseignant@retrouvailles.cd', 'compta@retrouvailles.cd', 'parent@retrouvailles.cd'];
+      db = db.filter(u => u && u.email && !dummyEmails.includes(u.email.toLowerCase()));
+      cloudDB = cloudDB.filter(u => u && u.email && !dummyEmails.includes(u.email.toLowerCase()));
+      localStorage.setItem('hr_cloud_accounts', JSON.stringify(cloudDB));
+
+      // Si la session active actuelle est un compte fictif, déconnecter immédiatement
+      const currentActive = JSON.parse(localStorage.getItem('hr_user'));
+      if (currentActive && currentActive.email && dummyEmails.includes(currentActive.email.toLowerCase())) {
+        localStorage.removeItem('hr_user');
+        localStorage.removeItem('hr_token');
+      }
 
       // Fusionner les comptes enregistrés sur d'autres appareils (synchronisation cross-device)
-      let cloudDB = JSON.parse(localStorage.getItem('hr_cloud_accounts')) || [];
       cloudDB.forEach(cloudUser => {
         if (!db.some(u => u.email.toLowerCase() === cloudUser.email.toLowerCase())) {
           db.push(cloudUser);
         }
       });
 
-      // Restaurer tous les comptes permanents du personnel
+      // Restaurer uniquement le Super-Admin
       PERMANENT_ACCOUNTS.forEach(account => {
         let existing = db.find(u => u.email.toLowerCase() === account.email.toLowerCase());
         if (!existing) {
           db.push({ ...account, courses: account.courses || '', biometric: false });
         } else {
-          // Corriger un rôle mal initialisé (ex: Enseignant → Préfet pour CHADA)
-          if (account.id === 99 && existing.role === 'Enseignant') {
-            existing.role = 'Préfet';
+          if (account.id === 99) {
+            existing.role = 'Super-Admin';
             existing.nom = 'EKOTO ISOLOKE';
             existing.prenom = 'CHADA';
           }
