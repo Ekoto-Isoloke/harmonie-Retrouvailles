@@ -338,14 +338,26 @@
 
     // ── ÉTAPE 2 : Charger les modèles face-api.js (obligatoire) ──
     if (!modelsLoaded) {
-      try {
-        statusEl.textContent = 'Chargement des modèles IA biométriques...';
-        progressEl.style.width = '20%';
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-        modelsLoaded = true;
-      } catch(e) {
+      statusEl.textContent = 'Chargement des modèles IA biométriques...';
+      progressEl.style.width = '20%';
+      const modelSources = [
+        '/models',
+        'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights',
+        'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights'
+      ];
+      for (const src of modelSources) {
+        try {
+          await faceapi.nets.tinyFaceDetector.loadFromUri(src);
+          await faceapi.nets.faceLandmark68Net.loadFromUri(src);
+          await faceapi.nets.faceRecognitionNet.loadFromUri(src);
+          modelsLoaded = true;
+          console.log('✅ Modèles face-api chargés avec succès depuis :', src);
+          break;
+        } catch (err) {
+          console.warn('Échec chargement depuis ' + src + ', essai source suivante...', err);
+        }
+      }
+      if (!modelsLoaded) {
         // ❌ Modèles IA non disponibles = BLOCAGE
         stopCamera();
         document.getElementById('screen-scan').classList.add('hidden');

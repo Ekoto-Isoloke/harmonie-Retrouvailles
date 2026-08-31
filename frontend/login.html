@@ -1408,15 +1408,25 @@
       const tryFaceApi = typeof faceapi !== 'undefined' && hasCamera;
 
       if (tryFaceApi && !faceApiLoaded) {
-        try {
-          statusTxt.textContent = 'Chargement des modèles IA biométriques...';
-          const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
-          await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-          await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-          await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-          faceApiLoaded = true;
-        } catch(e) {
-          // Modèles non chargés → BLOQUER
+        statusTxt.textContent = 'Chargement des modèles IA biométriques...';
+        const modelSources = [
+          '/models',
+          'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights',
+          'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights'
+        ];
+        for (const src of modelSources) {
+          try {
+            await faceapi.nets.tinyFaceDetector.loadFromUri(src);
+            await faceapi.nets.faceLandmark68Net.loadFromUri(src);
+            await faceapi.nets.faceRecognitionNet.loadFromUri(src);
+            faceApiLoaded = true;
+            console.log('✅ Modèles face-api chargés avec succès depuis :', src);
+            break;
+          } catch (err) {
+            console.warn('Échec chargement depuis ' + src + ', essai source suivante...', err);
+          }
+        }
+        if (!faceApiLoaded) {
           if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
           modal.style.display = 'none';
           showToast('⛔ Modèles IA indisponibles. Vérifiez votre connexion internet et réessayez.', 'error');
