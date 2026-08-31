@@ -2517,75 +2517,481 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // VUE: GESTION DES COMPTES
     // ==========================================
+    // ==========================================
+    // VUE: GESTION DES COMPTES (SUPER-ADMIN SUPRÊME)
+    // ==========================================
     function renderGestionComptes() {
         let db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
         
-        window.editUser = function(id) {
+        // Assurer la présence permanente du Super-Admin s'il n'existe pas encore
+        if (!db.some(u => u.email && (u.email.toLowerCase() === 'chadrackisoloke@gmail.com' || u.email.toLowerCase() === 'admin@retrouvailes.cd'))) {
+            db.unshift({
+                id: 99,
+                email: 'chadrackisoloke@gmail.com',
+                password: 'chada123',
+                role: 'Super-Admin',
+                nom: 'EKOTO ISOLOKE',
+                prenom: 'CHADA',
+                ecole: 'Harmonie-Retrouvailles',
+                phone: '+243827613009',
+                faceDescriptor: null
+            });
+            localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+        }
+
+        // Filtres actuels
+        window._userFilterRole = window._userFilterRole || 'Tous';
+        window._userFilterEcole = window._userFilterEcole || 'Tous';
+        window._userSearchQuery = window._userSearchQuery || '';
+
+        // Appliquer les filtres
+        let filteredUsers = db.filter(u => {
+            const matchRole = window._userFilterRole === 'Tous' || u.role === window._userFilterRole;
+            const matchEcole = window._userFilterEcole === 'Tous' || (u.ecole && u.ecole.includes(window._userFilterEcole)) || u.ecole === 'Harmonie-Retrouvailles';
+            const query = window._userSearchQuery.toLowerCase();
+            const matchQuery = !query || 
+                (u.nom && u.nom.toLowerCase().includes(query)) ||
+                (u.prenom && u.prenom.toLowerCase().includes(query)) ||
+                (u.email && u.email.toLowerCase().includes(query)) ||
+                (u.role && u.role.toLowerCase().includes(query));
+            return matchRole && matchEcole && matchQuery;
+        });
+
+        // Métriques
+        const totalUsers = db.length;
+        const totalEnseignants = db.filter(u => u.role === 'Enseignant' || u.role === 'Professeur' || u.role === 'Instituteur').length;
+        const totalBioEnrolled = db.filter(u => u.faceDescriptor && Array.isArray(u.faceDescriptor) && u.faceDescriptor.length === 128).length;
+        const totalDirection = db.filter(u => ['Super-Admin', 'Direction', 'Préfet', 'Directeur (D.P)', 'D.P', 'D.E'].includes(u.role)).length;
+
+        // Action: Modal d'édition d'utilisateur
+        window.openEditUserModal = function(id) {
             const u = db.find(x => x.id == id);
             if (!u) return;
-            const newEmail = prompt(`Modifier l'email pour ${u.prenom} ${u.nom}`, u.email);
-            if (newEmail !== null && newEmail.trim() !== '') {
-                u.email = newEmail.trim();
-            }
-            const newPwd = prompt(`Modifier le mot de passe pour ${u.prenom} ${u.nom}`, u.password);
-            if (newPwd !== null && newPwd.trim() !== '') {
-                u.password = newPwd.trim();
-            }
-            localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
-            alert('Compte mis à jour avec succès.');
-            renderGestionComptes(); // refresh view
+
+            const modalHtml = `
+                <div id="user-edit-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md fade-in">
+                    <div class="glass-panel border border-white/15 bg-[#0a192f]/95 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative text-white">
+                        <div class="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold">
+                                    <i data-lucide="user-cog" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-black text-lg text-white">Modifier le Compte</h3>
+                                    <p class="text-xs text-gray-400 font-mono">${u.email}</p>
+                                </div>
+                            </div>
+                            <button onclick="document.getElementById('user-edit-modal').remove()" class="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <form id="form-edit-user" onsubmit="event.preventDefault(); window.saveEditedUser(${u.id});" class="space-y-4 text-left">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Prénom</label>
+                                    <input type="text" id="edit-prenom" value="${u.prenom || ''}" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none" required />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Nom</label>
+                                    <input type="text" id="edit-nom" value="${u.nom || ''}" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none" required />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Email / Identifiant</label>
+                                <input type="email" id="edit-email" value="${u.email || ''}" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none" required />
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Rôle</label>
+                                    <select id="edit-role" class="w-full bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none">
+                                        <option value="Super-Admin" ${u.role === 'Super-Admin' ? 'selected' : ''}>Super-Admin</option>
+                                        <option value="Directeur (D.P)" ${u.role === 'Directeur (D.P)' ? 'selected' : ''}>Directeur (D.P) - Harmonie</option>
+                                        <option value="Préfet" ${u.role === 'Préfet' ? 'selected' : ''}>Préfet - Retrouvailles</option>
+                                        <option value="Enseignant" ${u.role === 'Enseignant' ? 'selected' : ''}>Enseignant / Professeur</option>
+                                        <option value="Comptable" ${u.role === 'Comptable' ? 'selected' : ''}>Comptable</option>
+                                        <option value="Parent" ${u.role === 'Parent' ? 'selected' : ''}>Parent</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Institution</label>
+                                    <select id="edit-ecole" class="w-full bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none">
+                                        <option value="Harmonie" ${u.ecole === 'Harmonie' ? 'selected' : ''}>C.S. Harmonie</option>
+                                        <option value="Retrouvailles" ${u.ecole === 'Retrouvailles' ? 'selected' : ''}>G.S. Retrouvailles</option>
+                                        <option value="Harmonie-Retrouvailles" ${u.ecole === 'Harmonie-Retrouvailles' ? 'selected' : ''}>Toutes (Direction)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Mot de passe</label>
+                                <div class="relative">
+                                    <input type="text" id="edit-password" value="${u.password || ''}" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-amber-400 focus:outline-none" required />
+                                </div>
+                            </div>
+
+                            <div class="pt-4 flex items-center justify-end gap-3 border-t border-white/10">
+                                <button type="button" onclick="document.getElementById('user-edit-modal').remove()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold transition">
+                                    Annuler
+                                </button>
+                                <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-black uppercase tracking-wider shadow-lg shadow-amber-500/20 transition">
+                                    Enregistrer les Modifications
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            if (window.lucide) lucide.createIcons();
         };
 
-        window.deleteUser = function(id) {
-            if (id == 1) {
-                alert("Vous ne pouvez pas supprimer le Super-Admin.");
-                return;
-            }
-            if (confirm("Voulez-vous vraiment supprimer ce compte ?")) {
-                db = db.filter(x => x.id != id);
+        // Action: Sauvegarder les modifications
+        window.saveEditedUser = function(id) {
+            const u = db.find(x => x.id == id);
+            if (!u) return;
+            u.prenom = document.getElementById('edit-prenom').value.trim();
+            u.nom = document.getElementById('edit-nom').value.trim();
+            u.email = document.getElementById('edit-email').value.trim();
+            u.role = document.getElementById('edit-role').value;
+            u.ecole = document.getElementById('edit-ecole').value;
+            u.password = document.getElementById('edit-password').value.trim();
+
+            localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+            document.getElementById('user-edit-modal')?.remove();
+            showNotification('Compte mis à jour avec succès', 'success');
+            renderGestionComptes();
+        };
+
+        // Action: Réinitialiser l'empreinte faciale
+        window.resetUserBiometrics = function(id) {
+            const u = db.find(x => x.id == id);
+            if (!u) return;
+            if (confirm(`Voulez-vous réinitialiser l'empreinte faciale de ${u.prenom} ${u.nom} ? L'utilisateur devra ré-enregistrer son visage lors de sa prochaine connexion.`)) {
+                u.faceDescriptor = null;
+                u.biometric = false;
                 localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
-                alert('Compte supprimé.');
+                showNotification(`Empreinte réinitialisée pour ${u.prenom} ${u.nom}.`, 'info');
                 renderGestionComptes();
             }
         };
 
+        // Action: Supprimer un compte
+        window.deleteUserAccount = function(id) {
+            const u = db.find(x => x.id == id);
+            if (!u) return;
+            if (u.email.toLowerCase() === 'chadrackisoloke@gmail.com' || u.email.toLowerCase() === 'admin@retrouvailes.cd') {
+                alert("⛔ Action interdite : Vous ne pouvez pas supprimer le compte Super-Administrateur principal.");
+                return;
+            }
+            if (confirm(`⚠️ Confirmation de suppression : Êtes-vous sûr de vouloir supprimer définitivement le compte de ${u.prenom} ${u.nom} (${u.email}) ?`)) {
+                db = db.filter(x => x.id != id);
+                localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+                showNotification(`Compte de ${u.prenom} ${u.nom} supprimé avec succès.`, 'success');
+                renderGestionComptes();
+            }
+        };
+
+        // Action: Nettoyer tous les comptes fictifs / tests
+        window.cleanupDummyAccounts = function() {
+            if (confirm("🧹 NETTOYAGE COMPLET : Voulez-vous supprimer tous les comptes de test/fictifs pour laisser uniquement le Super-Admin et préparer le système aux vraies données des enseignants ?")) {
+                const superAdmin = db.find(u => u.email.toLowerCase() === 'chadrackisoloke@gmail.com' || u.role === 'Super-Admin') || {
+                    id: 99,
+                    email: 'chadrackisoloke@gmail.com',
+                    password: 'chada123',
+                    role: 'Super-Admin',
+                    nom: 'EKOTO ISOLOKE',
+                    prenom: 'CHADA',
+                    ecole: 'Harmonie-Retrouvailles',
+                    phone: '+243827613009'
+                };
+                
+                // Conserver uniquement le Super-Admin
+                db = [superAdmin];
+                localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+                localStorage.setItem('hr_cloud_accounts', JSON.stringify(db));
+                showNotification("Base nettoyée avec succès ! Seul votre compte Super-Admin a été conservé.", "success");
+                renderGestionComptes();
+            }
+        };
+
+        // Action: Modal création nouvel utilisateur manuel
+        window.openCreateUserModal = function() {
+            const modalHtml = `
+                <div id="user-create-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md fade-in">
+                    <div class="glass-panel border border-white/15 bg-[#0a192f]/95 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative text-white">
+                        <div class="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">
+                                    <i data-lucide="user-plus" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-black text-lg text-white">Créer un Nouveau Compte</h3>
+                                    <p class="text-xs text-gray-400">Ajout d'un membre du personnel par le Super-Admin</p>
+                                </div>
+                            </div>
+                            <button onclick="document.getElementById('user-create-modal').remove()" class="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <form id="form-create-user" onsubmit="event.preventDefault(); window.saveCreatedUser();" class="space-y-4 text-left">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Prénom *</label>
+                                    <input type="text" id="new-prenom" placeholder="Ex: Jacques" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" required />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Nom *</label>
+                                    <input type="text" id="new-nom" placeholder="Ex: ILUNGA" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" required />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Email *</label>
+                                    <input type="email" id="new-email" placeholder="nom@retrouvailles.cd" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" required />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Téléphone</label>
+                                    <input type="text" id="new-phone" placeholder="+243..." class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Rôle *</label>
+                                    <select id="new-role" class="w-full bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none">
+                                        <option value="Enseignant" selected>Enseignant / Professeur</option>
+                                        <option value="Directeur (D.P)">Directeur (D.P) - Primaire</option>
+                                        <option value="Préfet">Préfet - Humanités</option>
+                                        <option value="Comptable">Comptable</option>
+                                        <option value="Parent">Parent</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Établissement *</label>
+                                    <select id="new-ecole" class="w-full bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none">
+                                        <option value="Harmonie">C.S. Harmonie</option>
+                                        <option value="Retrouvailles" selected>G.S. Retrouvailles</option>
+                                        <option value="Harmonie-Retrouvailles">Toutes</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Mot de passe provisoire *</label>
+                                <input type="text" id="new-password" value="pass2026" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-emerald-400 focus:outline-none" required />
+                            </div>
+
+                            <div class="pt-4 flex items-center justify-end gap-3 border-t border-white/10">
+                                <button type="button" onclick="document.getElementById('user-create-modal').remove()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold transition">
+                                    Annuler
+                                </button>
+                                <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition">
+                                    Créer le Compte
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            if (window.lucide) lucide.createIcons();
+        };
+
+        // Sauvegarder nouvel utilisateur
+        window.saveCreatedUser = function() {
+            const email = document.getElementById('new-email').value.trim();
+            if (db.some(u => u.email && u.email.toLowerCase() === email.toLowerCase())) {
+                alert("Cet email est déjà attribué à un autre compte.");
+                return;
+            }
+            const newUser = {
+                id: Date.now(),
+                prenom: document.getElementById('new-prenom').value.trim(),
+                nom: document.getElementById('new-nom').value.trim(),
+                email: email,
+                phone: document.getElementById('new-phone').value.trim(),
+                role: document.getElementById('new-role').value,
+                ecole: document.getElementById('new-ecole').value,
+                password: document.getElementById('new-password').value.trim(),
+                faceDescriptor: null,
+                biometric: false
+            };
+            db.push(newUser);
+            localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+            document.getElementById('user-create-modal')?.remove();
+            showNotification(`Compte créé pour ${newUser.prenom} ${newUser.nom} (${newUser.role})`, 'success');
+            renderGestionComptes();
+        };
+
+        // Table Rows HTML
         let rows = '';
-        db.forEach(u => {
-            rows += `
-                <tr class="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
-                    <td class="py-3 px-4 font-bold text-sm text-gray-900 dark:text-white">${u.prenom || ''} ${u.nom || ''}</td>
-                    <td class="py-3 px-4 text-xs text-gray-500 font-mono">${u.email}</td>
-                    <td class="py-3 px-4 text-xs font-bold text-amber-500">${u.role}</td>
-                    <td class="py-3 px-4 text-xs text-gray-400">${u.ecole || 'N/A'}</td>
-                    <td class="py-3 px-4 text-xs text-gray-400 font-mono">${u.password}</td>
-                    <td class="py-3 px-4 text-right space-x-2">
-                        <button onclick="editUser(${u.id})" class="px-2 py-1 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded transition text-xs font-bold">Modifier</button>
-                        <button onclick="deleteUser(${u.id})" class="px-2 py-1 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded transition text-xs font-bold">Supprimer</button>
+        if (filteredUsers.length === 0) {
+            rows = `
+                <tr>
+                    <td colspan="6" class="py-12 text-center text-gray-500">
+                        <i data-lucide="users-round" class="w-10 h-10 mx-auto mb-2 opacity-30"></i>
+                        <p class="font-bold text-sm">Aucun compte trouvé avec ces critères</p>
                     </td>
                 </tr>
             `;
-        });
+        } else {
+            filteredUsers.forEach(u => {
+                const isSuper = u.role === 'Super-Admin' || u.email.toLowerCase() === 'chadrackisoloke@gmail.com';
+                const hasFace = u.faceDescriptor && Array.isArray(u.faceDescriptor) && u.faceDescriptor.length === 128;
+                
+                // Badges
+                let roleBadge = 'bg-gray-500/20 text-gray-300 border-gray-500/30';
+                if (isSuper) roleBadge = 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.2)] font-black';
+                else if (u.role.includes('Préfet') || u.role.includes('Directeur')) roleBadge = 'bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold';
+                else if (u.role === 'Enseignant') roleBadge = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold';
+                else if (u.role === 'Comptable') roleBadge = 'bg-purple-500/20 text-purple-300 border-purple-500/40 font-bold';
+
+                const bioBadge = hasFace 
+                    ? '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"><i data-lucide="scan-face" class="w-3.5 h-3.5"></i> Empreinte Active</span>'
+                    : '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-gray-500/10 text-gray-400 border border-white/5"><i data-lucide="shield-alert" class="w-3.5 h-3.5 opacity-60"></i> Non Enrôlé</span>';
+
+                const initials = ((u.prenom || '?')[0] + (u.nom || '?')[0]).toUpperCase();
+
+                rows += `
+                    <tr class="border-b border-white/5 hover:bg-white/[0.03] transition-all">
+                        <td class="py-4 px-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl ${isSuper ? 'bg-gradient-to-br from-amber-500 to-amber-700 text-black font-black' : 'bg-white/10 text-white font-bold'} flex items-center justify-center text-xs shadow">
+                                    ${initials}
+                                </div>
+                                <div>
+                                    <p class="font-bold text-sm text-white flex items-center gap-2">
+                                        ${u.prenom || ''} ${u.nom || ''}
+                                        ${isSuper ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">👑 Fondateur</span>' : ''}
+                                    </p>
+                                    <p class="text-xs text-gray-400 font-mono">${u.phone || 'Pas de tél'}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-4 text-xs font-mono text-gray-300">${u.email}</td>
+                        <td class="py-4 px-4">
+                            <span class="inline-block px-2.5 py-1 rounded-lg text-xs border ${roleBadge}">${u.role}</span>
+                        </td>
+                        <td class="py-4 px-4 text-xs font-medium text-gray-300">
+                            <span class="px-2 py-0.5 rounded bg-white/5 border border-white/5">${u.ecole || 'Harmonie'}</span>
+                        </td>
+                        <td class="py-4 px-4">${bioBadge}</td>
+                        <td class="py-4 px-4 text-xs font-mono text-gray-400">
+                            <span class="px-2 py-1 rounded bg-black/40 border border-white/5 select-all">${u.password || '••••••'}</span>
+                        </td>
+                        <td class="py-4 px-4 text-right space-x-1.5 whitespace-nowrap">
+                            <button onclick="openEditUserModal(${u.id})" title="Modifier le compte" class="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-lg transition text-xs font-bold inline-flex items-center gap-1">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                Modifier
+                            </button>
+                            ${hasFace ? `
+                                <button onclick="resetUserBiometrics(${u.id})" title="Réinitialiser l'empreinte faciale" class="p-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-lg transition text-xs font-bold inline-flex items-center gap-1">
+                                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                                    Reset Face
+                                </button>
+                            ` : ''}
+                            ${!isSuper ? `
+                                <button onclick="deleteUserAccount(${u.id})" title="Supprimer définitivement" class="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg transition text-xs font-bold inline-flex items-center gap-1">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    Supprimer
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
 
         ui.content.innerHTML = `
-            <div class="mb-8 fade-in">
-                <h2 class="text-3xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">Gestion des Comptes</h2>
-                <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Administration des utilisateurs et réinitialisation des accès</p>
+            <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 fade-in">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                            <i data-lucide="user-cog" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-black text-white uppercase tracking-tight">Gestion des Comptes</h2>
+                            <p class="text-xs text-gray-400 mt-0.5 uppercase tracking-widest">Autorité Suprême d'Administration • Contrôle d'Accès & Empreintes</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <button onclick="cleanupDummyAccounts()" class="px-4 py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 text-xs font-bold flex items-center gap-2 transition shadow-lg shadow-red-500/10">
+                        <i data-lucide="trash" class="w-4 h-4 text-red-400"></i>
+                        Purger Comptes Fictifs
+                    </button>
+                    <button onclick="openCreateUserModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 transition shadow-lg shadow-emerald-500/20">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        Nouveau Compte
+                    </button>
+                </div>
             </div>
 
-            <div class="glass-panel dark:bg-gray-800 rounded-xl p-6 shadow-sm fade-in" style="animation-delay: 0.1s">
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 fade-in" style="animation-delay: 0.05s">
+                <div class="glass-panel p-4 rounded-2xl border border-white/5 bg-[#112240]/40">
+                    <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Comptes</p>
+                    <p class="text-2xl font-black text-white mt-1">${totalUsers}</p>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl border border-white/5 bg-[#112240]/40">
+                    <p class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Empreintes Actives</p>
+                    <p class="text-2xl font-black text-emerald-400 mt-1">${totalBioEnrolled}</p>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl border border-white/5 bg-[#112240]/40">
+                    <p class="text-[11px] font-bold text-blue-400 uppercase tracking-wider">Enseignants</p>
+                    <p class="text-2xl font-black text-blue-400 mt-1">${totalEnseignants}</p>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl border border-white/5 bg-[#112240]/40">
+                    <p class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Cadres Direction</p>
+                    <p class="text-2xl font-black text-amber-400 mt-1">${totalDirection}</p>
+                </div>
+            </div>
+
+            <!-- Filter & Search Bar -->
+            <div class="glass-panel rounded-2xl p-4 mb-6 border border-white/10 bg-[#0a192f]/60 flex flex-col md:flex-row items-center justify-between gap-4 fade-in" style="animation-delay: 0.1s">
+                <div class="relative w-full md:w-80">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-gray-400"></i>
+                    <input type="text" id="filter-user-search" placeholder="Rechercher par nom, email, rôle..." value="${window._userSearchQuery}" oninput="window._userSearchQuery = this.value; renderGestionComptes();" class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none" />
+                </div>
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <select onchange="window._userFilterRole = this.value; renderGestionComptes();" class="bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-400 focus:outline-none">
+                        <option value="Tous" ${window._userFilterRole === 'Tous' ? 'selected' : ''}>Tous les Rôles</option>
+                        <option value="Super-Admin" ${window._userFilterRole === 'Super-Admin' ? 'selected' : ''}>Super-Admin</option>
+                        <option value="Préfet" ${window._userFilterRole === 'Préfet' ? 'selected' : ''}>Préfet</option>
+                        <option value="Directeur (D.P)" ${window._userFilterRole === 'Directeur (D.P)' ? 'selected' : ''}>Directeur (D.P)</option>
+                        <option value="Enseignant" ${window._userFilterRole === 'Enseignant' ? 'selected' : ''}>Enseignants</option>
+                        <option value="Comptable" ${window._userFilterRole === 'Comptable' ? 'selected' : ''}>Comptables</option>
+                        <option value="Parent" ${window._userFilterRole === 'Parent' ? 'selected' : ''}>Parents</option>
+                    </select>
+                    <select onchange="window._userFilterEcole = this.value; renderGestionComptes();" class="bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-400 focus:outline-none">
+                        <option value="Tous" ${window._userFilterEcole === 'Tous' ? 'selected' : ''}>Toutes les Écoles</option>
+                        <option value="Harmonie" ${window._userFilterEcole === 'Harmonie' ? 'selected' : ''}>C.S. Harmonie</option>
+                        <option value="Retrouvailles" ${window._userFilterEcole === 'Retrouvailles' ? 'selected' : ''}>G.S. Retrouvailles</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Main Table Panel -->
+            <div class="glass-panel rounded-2xl border border-white/10 bg-[#0a192f]/70 overflow-hidden shadow-xl fade-in" style="animation-delay: 0.15s">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left">
+                    <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="border-b border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                <th class="pb-3 px-4">Utilisateur</th>
-                                <th class="pb-3 px-4">Email</th>
-                                <th class="pb-3 px-4">Rôle</th>
-                                <th class="pb-3 px-4">École</th>
-                                <th class="pb-3 px-4">Mot de passe</th>
-                                <th class="pb-3 px-4 text-right">Actions</th>
+                            <tr class="border-b border-white/10 bg-white/[0.02] text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                                <th class="py-3.5 px-4">Utilisateur / Contact</th>
+                                <th class="py-3.5 px-4">Email / Login</th>
+                                <th class="py-3.5 px-4">Rôle</th>
+                                <th class="py-3.5 px-4">Établissement</th>
+                                <th class="py-3.5 px-4">Statut Biométrique</th>
+                                <th class="py-3.5 px-4">Mot de passe</th>
+                                <th class="py-3.5 px-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-white/5 text-sm">
                             ${rows}
                         </tbody>
                     </table>
