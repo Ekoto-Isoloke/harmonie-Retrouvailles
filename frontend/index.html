@@ -98,16 +98,6 @@
 
           <!-- Zone d'actions spécifiques (Au coin) -->
           <div class="flex items-center gap-3 pl-6 border-l-2 border-gray-700/60">
-            <!-- Bouton DIRECTION GÉNÉRALE (Promoteur & Famille) -->
-            <a href="/admin-login.html"
-              class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-amber-600/25 hover:from-amber-500/40 hover:to-amber-600/40 text-amber-300 font-display font-bold text-[13px] border border-amber-500/50 transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] backdrop-blur-sm">
-              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"></path>
-              </svg>
-              Direction Générale
-            </a>
-
-
             <!-- 2. Bouton "Direction" -->
             <a href="/login.html"
               class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-800/60 text-white font-display font-semibold text-[13px] hover:bg-gray-700 border border-gray-700 transition-all shadow-sm backdrop-blur-sm">
@@ -127,6 +117,15 @@
               </svg>
               Présence
             </a>
+
+                        <!-- BOUTON DIRECTION GÉNÉRALE (Juste avant l'admin) -->
+            <button onclick="openDgModal()"
+              class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-amber-600/25 hover:from-amber-500/40 hover:to-amber-600/40 text-amber-300 font-display font-bold text-[13px] border border-amber-500/50 transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] backdrop-blur-sm cursor-pointer">
+              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"></path>
+              </svg>
+              Direction Générale
+            </button>
 
             <!-- 3. Icône unique "Espace Admin" (Tout au coin) -->
             <a href="/admin-login.html" title="Espace Administration"
@@ -199,16 +198,6 @@
       </nav>
 
       <div class="flex flex-col gap-3">
-        <!-- Bouton DIRECTION GÉNÉRALE Mobile -->
-        <a href="/admin-login.html"
-          class="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-amber-600/25 text-amber-300 font-display font-bold text-[14px] border border-amber-500/50 shadow-lg backdrop-blur-sm">
-          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"></path>
-          </svg>
-          Direction Générale
-        </a>
-
-
         <a href="/login.html"
           class="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-[#112240]/60 border border-white/5/80 text-white font-display font-semibold text-[14px] border border-white/10 backdrop-blur-sm">
           <svg class="w-5 h-5 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -225,6 +214,14 @@
           </svg>
           Présence (Pointage)
         </a>
+                <!-- Bouton DIRECTION GÉNÉRALE Mobile (Juste avant l'admin) -->
+        <button onclick="openDgModal()"
+          class="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-amber-600/25 text-amber-300 font-display font-bold text-[14px] border border-amber-500/50 shadow-lg backdrop-blur-sm cursor-pointer">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"></path>
+          </svg>
+          Direction Générale
+        </button>
         <a href="/admin-login.html"
           class="flex items-center justify-center px-4 py-3 text-[14px] font-medium text-gray-400 hover:text-gold-600 transition-colors">
           Accès Administration (Technique)
@@ -561,6 +558,278 @@
 
     </div>
   </div>
+
+
+  <!-- ==================================================== -->
+  <!-- MODAL DIRECTION GÉNÉRALE (HAUTE GAMME / PRESTIGE)    -->
+  <!-- ==================================================== -->
+  <div id="dg-modal" class="fixed inset-0 z-[9999] bg-gray-950/85 backdrop-blur-xl flex items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none p-4">
+    <div id="dg-modal-box" class="relative bg-[#0A192F]/95 backdrop-blur-2xl border border-amber-500/30 rounded-[28px] shadow-[0_20px_60px_rgba(0,0,0,0.8)] w-full max-w-md overflow-hidden transform scale-95 transition-all duration-300">
+      
+      <!-- Bouton Fermer -->
+      <button onclick="closeDgModal()" class="absolute top-5 right-5 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition z-20">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+
+      <!-- En-tête Prestigieux -->
+      <div class="pt-8 px-8 pb-4 text-center border-b border-white/10 relative overflow-hidden">
+        <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-40 h-40 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-gray-950 shadow-lg shadow-amber-500/20">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"></path></svg>
+        </div>
+        <h2 class="text-2xl font-black text-white tracking-tight uppercase">Direction Générale</h2>
+        <p class="text-xs text-amber-300/80 font-medium mt-1 uppercase tracking-widest">Espace Exécutif • Promoteur & Famille</p>
+
+        <!-- Switcher Onglets : Se Connecter / Créer un Compte -->
+        <div class="flex p-1 bg-white/5 border border-white/10 rounded-xl mt-5">
+          <button type="button" id="dg-tab-login" onclick="switchDgTab('login')" class="flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all bg-gradient-to-r from-amber-500 to-amber-600 text-gray-950 shadow-md">
+            Se Connecter
+          </button>
+          <button type="button" id="dg-tab-register" onclick="switchDgTab('register')" class="flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all text-gray-400 hover:text-white">
+            Créer un Compte
+          </button>
+        </div>
+      </div>
+
+      <!-- Corps du Modal -->
+      <div class="p-8">
+        <!-- Message Toast / Alerte interne -->
+        <div id="dg-alert" class="hidden mb-4 p-3 rounded-xl text-xs font-bold"></div>
+
+        <!-- FORMULAIRE 1 : CONNEXION (Email + Mot de Passe) -->
+        <form id="dg-form-login" onsubmit="handleDgLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-[11px] font-black text-gray-300 uppercase tracking-wider mb-1.5">Adresse Email</label>
+            <div class="relative">
+              <input type="email" id="dg-login-email" required placeholder="ex: promoteur@harmonie-retrouvailles.cd"
+                class="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition" />
+              <svg class="w-4 h-4 text-amber-400/70 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-black text-gray-300 uppercase tracking-wider mb-1.5">Mot de Passe</label>
+            <div class="relative">
+              <input type="password" id="dg-login-password" required placeholder="••••••••"
+                class="w-full pl-10 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition" />
+              <svg class="w-4 h-4 text-amber-400/70 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              <button type="button" onclick="togglePassVisibility('dg-login-password')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit"
+            class="w-full mt-2 py-3.5 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-amber-500/20 active:scale-[0.98] transition cursor-pointer">
+            Se Connecter
+          </button>
+        </form>
+
+        <!-- FORMULAIRE 2 : CRÉER UN COMPTE (Email + Mot de passe + Confirmer) -->
+        <form id="dg-form-register" onsubmit="handleDgRegister(event)" class="space-y-4 hidden">
+          <div>
+            <label class="block text-[11px] font-black text-gray-300 uppercase tracking-wider mb-1.5">Adresse Email</label>
+            <div class="relative">
+              <input type="email" id="dg-reg-email" required placeholder="Votre adresse email personnelle"
+                class="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition" />
+              <svg class="w-4 h-4 text-amber-400/70 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-black text-gray-300 uppercase tracking-wider mb-1.5">Créer le Mot de Passe</label>
+            <div class="relative">
+              <input type="password" id="dg-reg-password" required placeholder="Au moins 4 caractères"
+                class="w-full pl-10 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition" />
+              <svg class="w-4 h-4 text-amber-400/70 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              <button type="button" onclick="togglePassVisibility('dg-reg-password')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-black text-gray-300 uppercase tracking-wider mb-1.5">Confirmer le Mot de Passe</label>
+            <div class="relative">
+              <input type="password" id="dg-reg-confirm" required placeholder="Répétez le mot de passe"
+                class="w-full pl-10 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition" />
+              <svg class="w-4 h-4 text-amber-400/70 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              <button type="button" onclick="togglePassVisibility('dg-reg-confirm')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit"
+            class="w-full mt-2 py-3.5 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-amber-500/20 active:scale-[0.98] transition cursor-pointer">
+            Finaliser & Créer mon Compte
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====================================================
+    // LOGIQUE MODAL DIRECTION GÉNÉRALE
+    // ====================================================
+    window.openDgModal = function() {
+      const modal = document.getElementById('dg-modal');
+      const box = document.getElementById('dg-modal-box');
+      if (!modal || !box) return;
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modal.classList.add('opacity-100', 'pointer-events-auto');
+      box.classList.remove('scale-95');
+      box.classList.add('scale-100');
+      switchDgTab('login');
+    };
+
+    window.closeDgModal = function() {
+      const modal = document.getElementById('dg-modal');
+      const box = document.getElementById('dg-modal-box');
+      if (!modal || !box) return;
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modal.classList.remove('opacity-100', 'pointer-events-auto');
+      box.classList.add('scale-95');
+      box.classList.remove('scale-100');
+    };
+
+    // Fermer sur clic backdrop ou touche Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeDgModal();
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      const modal = document.getElementById('dg-modal');
+      if (modal) {
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) closeDgModal();
+        });
+      }
+    });
+
+    window.switchDgTab = function(tab) {
+      const tabLogin = document.getElementById('dg-tab-login');
+      const tabReg = document.getElementById('dg-tab-register');
+      const formLogin = document.getElementById('dg-form-login');
+      const formReg = document.getElementById('dg-form-register');
+      const alertEl = document.getElementById('dg-alert');
+      if (alertEl) alertEl.classList.add('hidden');
+
+      if (tab === 'login') {
+        tabLogin.className = 'flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all bg-gradient-to-r from-amber-500 to-amber-600 text-gray-950 shadow-md';
+        tabReg.className = 'flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all text-gray-400 hover:text-white';
+        formLogin.classList.remove('hidden');
+        formReg.classList.add('hidden');
+      } else {
+        tabReg.className = 'flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all bg-gradient-to-r from-amber-500 to-amber-600 text-gray-950 shadow-md';
+        tabLogin.className = 'flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all text-gray-400 hover:text-white';
+        formReg.classList.remove('hidden');
+        formLogin.classList.add('hidden');
+      }
+    };
+
+    window.togglePassVisibility = function(id) {
+      const el = document.getElementById(id);
+      if (el) el.type = el.type === 'password' ? 'text' : 'password';
+    };
+
+    window.showDgAlert = function(msg, isSuccess = false) {
+      const alertEl = document.getElementById('dg-alert');
+      if (!alertEl) return;
+      alertEl.textContent = msg;
+      alertEl.className = isSuccess 
+        ? 'mb-4 p-3 rounded-xl text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
+        : 'mb-4 p-3 rounded-xl text-xs font-bold bg-rose-500/15 border border-rose-500/30 text-rose-300';
+      alertEl.classList.remove('hidden');
+    };
+
+    window.handleDgLogin = function(e) {
+      e.preventDefault();
+      const email = document.getElementById('dg-login-email').value.trim().toLowerCase();
+      const password = document.getElementById('dg-login-password').value;
+
+      const db = JSON.parse(localStorage.getItem('hr_users_db_v2') || '[]');
+      
+      let user = db.find(u => u.email && u.email.toLowerCase() === email && u.password === password);
+      if (!user && (email === 'chadrackisoloke@gmail.com' || email === 'admin@retrouvailes.cd') && (password === 'chada123' || password === 'admin')) {
+        user = {
+          id: 99,
+          email: email,
+          role: 'Super-Admin',
+          nom: 'Direction',
+          prenom: 'Générale',
+          ecole: 'Harmonie-Retrouvailles'
+        };
+      }
+
+      if (!user) {
+        showDgAlert('Identifiants incorrects ou compte introuvable.');
+        return;
+      }
+
+      const allowed = ['Direction Générale', 'Super-Admin', 'Direction', 'Directeur (D.P)', 'Préfet'];
+      if (!allowed.includes(user.role)) {
+        showDgAlert('Ce compte est enregistré comme ' + user.role + '. L\'accès Direction Générale est réservé au Promoteur et à sa délégation.');
+        return;
+      }
+
+      localStorage.setItem('hr_user', JSON.stringify(user));
+      localStorage.setItem('hr_token', 'dg_session_' + Date.now());
+      showDgAlert('Connexion réussie ! Redirection en cours...', true);
+      setTimeout(() => {
+        window.location.href = '/admin-dashboard.html';
+      }, 500);
+    };
+
+    window.handleDgRegister = function(e) {
+      e.preventDefault();
+      const email = document.getElementById('dg-reg-email').value.trim().toLowerCase();
+      const password = document.getElementById('dg-reg-password').value;
+      const confirm = document.getElementById('dg-reg-confirm').value;
+
+      if (password !== confirm) {
+        showDgAlert('Les mots de passe ne correspondent pas.');
+        return;
+      }
+      if (password.length < 4) {
+        showDgAlert('Le mot de passe doit contenir au moins 4 caractères.');
+        return;
+      }
+
+      const db = JSON.parse(localStorage.getItem('hr_users_db_v2') || '[]');
+      if (db.some(u => u.email && u.email.toLowerCase() === email)) {
+        showDgAlert('Un compte existe déjà avec cette adresse email. Veuillez vous connecter.');
+        return;
+      }
+
+      const newAccount = {
+        id: Date.now(),
+        email: email,
+        password: password,
+        role: 'Direction Générale',
+        nom: 'Direction Générale',
+        prenom: 'Membre',
+        ecole: 'Harmonie-Retrouvailles',
+        createdAt: new Date().toISOString()
+      };
+
+      db.push(newAccount);
+      localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+
+      const cloudDB = JSON.parse(localStorage.getItem('hr_cloud_accounts') || '[]');
+      cloudDB.push(newAccount);
+      localStorage.setItem('hr_cloud_accounts', JSON.stringify(cloudDB));
+
+      localStorage.setItem('hr_user', JSON.stringify(newAccount));
+      localStorage.setItem('hr_token', 'dg_session_' + Date.now());
+
+      showDgAlert('Compte Direction Générale créé avec succès ! Bienvenue. Redirection...', true);
+      setTimeout(() => {
+        window.location.href = '/admin-dashboard.html';
+      }, 700);
+    };
+  </script>
 
 </body>
 </html>
