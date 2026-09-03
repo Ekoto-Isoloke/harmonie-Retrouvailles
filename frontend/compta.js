@@ -10,6 +10,22 @@ if (!token || !userStr) {
 }
 
 const user = JSON.parse(userStr);
+
+// Sécurité Anti-Zombie : Vérifier que le compte existe dans la base active
+const activeDb = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+const dummyEmails = ['kasombo@retrouvailles.cd', 'matungulu@retrouvailles.cd', 'enseignant@retrouvailles.cd', 'compta@retrouvailles.cd', 'parent@retrouvailles.cd'];
+const isSuperAdminUser = user.email && (user.email.toLowerCase() === 'chadrackisoloke@gmail.com' || user.email.toLowerCase() === 'admin@retrouvailes.cd');
+const isDummy = user.email && dummyEmails.includes(user.email.toLowerCase());
+const existsInDb = activeDb.some(u => u.email && u.email.toLowerCase() === (user.email || '').toLowerCase());
+
+if (isDummy || (!isSuperAdminUser && !existsInDb)) {
+  localStorage.removeItem('hr_user');
+  localStorage.removeItem('hr_token');
+  alert("⛔ Session expirée : Ce compte a été purgé ou supprimé par l'administrateur.");
+  window.location.href = '/login.html';
+  throw new Error("User deleted");
+}
+
 const allowedRoles = ['Comptable', 'Super-Admin', 'Direction'];
 if (!allowedRoles.includes(user.role)) {
   alert("⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nVotre rôle ne vous donne pas accès à la Comptabilité.");

@@ -145,10 +145,9 @@
       <div class="relative w-64 h-64 mx-auto rounded-full overflow-hidden border-4 border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.2)] mb-8 bg-[#050d1a]">
         <video id="scan-video" class="w-full h-full object-cover transform scale-x-[-1]" autoplay playsinline muted></video>
 
-        <!-- Fallback (no camera) -->
         <div id="scan-fallback" class="hidden absolute inset-0 bg-[#050d1a] flex flex-col items-center justify-center">
-          <i data-lucide="bot" class="w-16 h-16 text-emerald-500/40 mb-2 animate-pulse"></i>
-          <p class="text-[10px] text-emerald-400/60 font-bold uppercase tracking-widest">Simulation</p>
+          <i data-lucide="camera-off" class="w-16 h-16 text-red-500/50 mb-2 animate-pulse"></i>
+          <p class="text-[10px] text-red-400 font-bold uppercase tracking-widest">Caméra requise</p>
         </div>
 
         <!-- Scanning overlay animation -->

@@ -735,6 +735,22 @@
       
       try {
         currentParentUser = JSON.parse(userStr);
+
+        // Vérification de sécurité : le compte existe-t-il toujours dans la base active ?
+        const activeDb = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+        const dummyEmails = ['kasombo@retrouvailles.cd', 'matungulu@retrouvailles.cd', 'enseignant@retrouvailles.cd', 'compta@retrouvailles.cd', 'parent@retrouvailles.cd'];
+        const isSuperAdminUser = currentParentUser.email && (currentParentUser.email.toLowerCase() === 'chadrackisoloke@gmail.com' || currentParentUser.email.toLowerCase() === 'admin@retrouvailes.cd');
+        const isDummy = currentParentUser.email && dummyEmails.includes(currentParentUser.email.toLowerCase());
+        const existsInDb = activeDb.some(u => u.email && u.email.toLowerCase() === (currentParentUser.email || '').toLowerCase());
+
+        if (isDummy || (!isSuperAdminUser && !existsInDb)) {
+          localStorage.removeItem('hr_user');
+          localStorage.removeItem('hr_token');
+          alert("⛔ Session expirée : Ce compte n'existe plus ou a été purgé par l'administrateur.");
+          window.location.href = '/login.html';
+          return;
+        }
+
         const role = currentParentUser.role;
         
         // Strict RBAC: block Enseignant, Préfet, Comptable, Direction (unless Super-Admin testing)

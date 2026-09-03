@@ -101,6 +101,21 @@
       throw new Error('Session invalide');
     }
 
+    // Vérification de sécurité : le compte existe-t-il toujours dans la base active ?
+    const activeDb = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+    const dummyEmails = ['kasombo@retrouvailles.cd', 'matungulu@retrouvailles.cd', 'enseignant@retrouvailles.cd', 'compta@retrouvailles.cd', 'parent@retrouvailles.cd'];
+    const isSuperAdminUser = user.email && (user.email.toLowerCase() === 'chadrackisoloke@gmail.com' || user.email.toLowerCase() === 'admin@retrouvailes.cd');
+    const isDummy = user.email && dummyEmails.includes(user.email.toLowerCase());
+    const existsInDb = activeDb.some(u => u.email && u.email.toLowerCase() === (user.email || '').toLowerCase());
+
+    if (isDummy || (!isSuperAdminUser && !existsInDb)) {
+      localStorage.removeItem('hr_user');
+      localStorage.removeItem('hr_token');
+      alert("⛔ Session expirée : Ce compte n'existe plus ou a été purgé par l'administrateur.");
+      window.location.href = '/login.html';
+      throw new Error('Compte inexistant');
+    }
+
     // STRICT RBAC CHECK: Accès réservé au corps enseignant et à la Direction
     const allowedTeacherRoles = ['Enseignant', 'Professeur', 'Instituteur', 'Institutrice', 'Super-Admin', 'Direction', 'Direction Générale'];
     if (!allowedTeacherRoles.includes(user.role)) {
