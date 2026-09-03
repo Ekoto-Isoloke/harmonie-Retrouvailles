@@ -233,9 +233,169 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
+    // RENDER: DIRECTION GÉNÉRALE COCKPIT
+    // ==========================================
+    function renderDirectionGeneraleCockpit() {
+        const harmonie  = db.institutions['Harmonie'];
+        const retro     = db.institutions['Retrouvailles'];
+        const allPtH    = db.rh.pointages.filter(p => p.ecole === 'Harmonie');
+        const allPtR    = db.rh.pointages.filter(p => p.ecole === 'Retrouvailles');
+        const pctH      = allPtH.length > 0 ? Math.round((allPtH.filter(p => p.statut === 'Présent').length / allPtH.length) * 100) : 0;
+        const pctR      = allPtR.length > 0 ? Math.round((allPtR.filter(p => p.statut === 'Présent').length / allPtR.length) * 100) : 0;
+        const soldeH    = harmonie.finance.revenus  - harmonie.finance.depenses;
+        const soldeR    = retro.finance.revenus     - retro.finance.depenses;
+        const totalRev  = harmonie.finance.revenus  + retro.finance.revenus;
+        const totalDep  = harmonie.finance.depenses + retro.finance.depenses;
+        const totalSold = soldeH + soldeR;
+        const totalElev = harmonie.pedagogie.eleves.length + retro.pedagogie.eleves.length;
+        const today     = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+        ui.content.innerHTML = `
+            <div class="mb-8 flex flex-col md:flex-row justify-between items-start gap-4">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                            <i data-lucide="landmark" class="w-5 h-5 text-gray-950"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-black text-white uppercase tracking-tight">Cockpit Direction Générale</h2>
+                            <p class="text-[11px] text-amber-300/80 uppercase tracking-widest font-bold">Supervision Exécutive — Promoteur & Famille</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 uppercase tracking-widest">${today}</p>
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span class="text-xs font-black text-amber-400 uppercase tracking-widest">Vue Consolidée — 2 Établissements</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="glass-panel p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 flex flex-col gap-2">
+                    <div class="flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-emerald-400"></i><span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Recettes Totales</span></div>
+                    <h3 class="text-2xl font-black text-white">$${totalRev.toLocaleString()}</h3>
+                    <span class="text-[10px] text-gray-400">Harmonie + Retrouvailles</span>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-rose-500/20 bg-rose-500/5 flex flex-col gap-2">
+                    <div class="flex items-center gap-2"><i data-lucide="trending-down" class="w-5 h-5 text-rose-400"></i><span class="text-[10px] font-black text-rose-400 uppercase tracking-widest">Dépenses Totales</span></div>
+                    <h3 class="text-2xl font-black text-white">$${totalDep.toLocaleString()}</h3>
+                    <span class="text-[10px] text-gray-400">Consolidé groupe</span>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5 flex flex-col gap-2">
+                    <div class="flex items-center gap-2"><i data-lucide="wallet" class="w-5 h-5 text-amber-400"></i><span class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Solde Net Groupe</span></div>
+                    <h3 class="text-2xl font-black ${totalSold >= 0 ? 'text-emerald-400' : 'text-rose-400'}">$${totalSold.toLocaleString()}</h3>
+                    <span class="text-[10px] text-gray-400">${totalSold >= 0 ? 'Excédent' : 'Déficit'} budgétaire</span>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5 flex flex-col gap-2">
+                    <div class="flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i><span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Total Élèves</span></div>
+                    <h3 class="text-2xl font-black text-white">${totalElev}</h3>
+                    <span class="text-[10px] text-gray-400">Inscrits dans le groupe</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+                <div class="glass-panel rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/5 to-transparent overflow-hidden">
+                    <div class="flex items-center gap-3 px-6 py-4 border-b border-white/10">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-xl">🏫</div>
+                        <div><h3 class="font-black text-white text-base">C.S. Harmonie</h3><p class="text-[10px] text-emerald-400 uppercase tracking-widest font-bold">Primaire & Maternelle</p></div>
+                        <div class="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 border border-emerald-500/30 rounded-lg">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="text-[10px] font-black text-emerald-300 uppercase">En ligne</span>
+                        </div>
+                    </div>
+                    <div class="p-6 grid grid-cols-3 gap-4">
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recettes</p><p class="text-lg font-black text-emerald-400">$${harmonie.finance.revenus.toLocaleString()}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dépenses</p><p class="text-lg font-black text-rose-400">$${harmonie.finance.depenses.toLocaleString()}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Solde</p><p class="text-lg font-black ${soldeH >= 0 ? 'text-amber-400' : 'text-rose-400'}">$${soldeH.toLocaleString()}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Présence</p><p class="text-lg font-black text-cyan-400">${pctH}%</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Élèves</p><p class="text-lg font-black text-blue-400">${harmonie.pedagogie.eleves.length}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Classes</p><p class="text-lg font-black text-purple-400">${harmonie.pedagogie.classes.length}</p></div>
+                    </div>
+                    <div class="px-6 pb-5 flex gap-2">
+                        <a href="/prefet-dashboard.html?view=harmonie" class="flex-1 py-2.5 bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser</a>
+                        <a href="/compta-dashboard.html" class="py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold rounded-xl text-center transition">💰 Finance</a>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-3xl border border-purple-500/30 bg-gradient-to-b from-purple-500/5 to-transparent overflow-hidden">
+                    <div class="flex items-center gap-3 px-6 py-4 border-b border-white/10">
+                        <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-xl">🎓</div>
+                        <div><h3 class="font-black text-white text-base">G.S. Retrouvailles</h3><p class="text-[10px] text-purple-400 uppercase tracking-widest font-bold">Humanités & Secondaire</p></div>
+                        <div class="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/15 border border-purple-500/30 rounded-lg">
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+                            <span class="text-[10px] font-black text-purple-300 uppercase">En ligne</span>
+                        </div>
+                    </div>
+                    <div class="p-6 grid grid-cols-3 gap-4">
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recettes</p><p class="text-lg font-black text-emerald-400">$${retro.finance.revenus.toLocaleString()}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dépenses</p><p class="text-lg font-black text-rose-400">$${retro.finance.depenses.toLocaleString()}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Solde</p><p class="text-lg font-black ${soldeR >= 0 ? 'text-amber-400' : 'text-rose-400'}">$${soldeR.toLocaleString()}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Présence</p><p class="text-lg font-black text-cyan-400">${pctR}%</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Élèves</p><p class="text-lg font-black text-blue-400">${retro.pedagogie.eleves.length}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Classes</p><p class="text-lg font-black text-purple-400">${retro.pedagogie.classes.length}</p></div>
+                    </div>
+                    <div class="px-6 pb-5 flex gap-2">
+                        <a href="/prefet-dashboard.html?view=retrouvailles" class="flex-1 py-2.5 bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser</a>
+                        <a href="/compta-dashboard.html" class="py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold rounded-xl text-center transition">💰 Finance</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 rounded-3xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent mb-6">
+                <h3 class="font-black text-sm uppercase tracking-widest text-amber-300 mb-4 flex items-center gap-2">
+                    <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Accès Rapide — Immersion Directe
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <a href="/prefet-dashboard.html?view=harmonie" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 rounded-2xl transition group">
+                        <span class="text-2xl">🏫</span><span class="text-[10px] font-black text-gray-300 group-hover:text-emerald-300 uppercase tracking-wider text-center">Direction Harmonie</span>
+                    </a>
+                    <a href="/prefet-dashboard.html?view=retrouvailles" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-purple-500/15 border border-white/10 hover:border-purple-500/40 rounded-2xl transition group">
+                        <span class="text-2xl">🎓</span><span class="text-[10px] font-black text-gray-300 group-hover:text-purple-300 uppercase tracking-wider text-center">Direction Retrouvailles</span>
+                    </a>
+                    <a href="/compta-dashboard.html" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-yellow-500/15 border border-white/10 hover:border-yellow-500/40 rounded-2xl transition group">
+                        <span class="text-2xl">💰</span><span class="text-[10px] font-black text-gray-300 group-hover:text-yellow-300 uppercase tracking-wider text-center">Caisse & Trésorerie</span>
+                    </a>
+                    <a href="/teacher-dashboard.html" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-blue-500/15 border border-white/10 hover:border-blue-500/40 rounded-2xl transition group">
+                        <span class="text-2xl">👨‍🏫</span><span class="text-[10px] font-black text-gray-300 group-hover:text-blue-300 uppercase tracking-wider text-center">Corps Enseignant</span>
+                    </a>
+                    <a href="/pointage.html" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-cyan-500/15 border border-white/10 hover:border-cyan-500/40 rounded-2xl transition group">
+                        <span class="text-2xl">⏱️</span><span class="text-[10px] font-black text-gray-300 group-hover:text-cyan-300 uppercase tracking-wider text-center">Borne Biométrique</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 rounded-3xl border border-white/10">
+                <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4 flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4 text-blue-400"></i> Journal d'Activités Groupe
+                </h3>
+                <div class="space-y-3 max-h-64 overflow-y-auto pr-1">
+                    ${[...db.rh.journalDirection].sort((a,b) => b.date > a.date ? 1 : -1).slice(0, 8).map(j => `
+                        <div class="flex items-start gap-3 p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition">
+                            <div class="w-7 h-7 rounded-full ${j.ecole === 'Retrouvailles' ? 'bg-purple-500/20 text-purple-400' : 'bg-emerald-500/20 text-emerald-400'} flex items-center justify-center text-[10px] font-black shrink-0">${j.ecole === 'Retrouvailles' ? '🎓' : '🏫'}</div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="text-xs font-bold text-white truncate">${j.action}</p>
+                                    <span class="text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider shrink-0 ${j.ecole === 'Retrouvailles' ? 'bg-purple-500/20 text-purple-300' : 'bg-emerald-500/20 text-emerald-300'}">${j.ecole}</span>
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-0.5">${j.detail}</p>
+                                <p class="text-[9px] text-gray-500 mt-0.5 font-mono">${j.heure} — ${j.date}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+    }
+
+    // ==========================================
     // RENDER: DASHBOARD
     // ==========================================
     function renderDashboard() {
+        // Cockpit exécutif dédié pour Direction Générale
+        if (user.role === 'Direction Générale') {
+            renderDirectionGeneraleCockpit();
+            return;
+        }
         const inst = db.institutions[db.ecoleActive];
         const allPointages = db.rh.pointages.filter(p => p.ecole === db.ecoleActive);
         const presenceRate = allPointages.length > 0 ? Math.round((allPointages.filter(p => p.statut === 'Présent').length / allPointages.length) * 100) : 0;
