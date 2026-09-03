@@ -3001,12 +3001,66 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
+    // EXTRACTION DYNAMIQUE DES POINTAGES LIVE KIOSK (hr_pointages)
+    // ==========================================
+    function getLivePointages(ecoleActive) {
+        const todayIso = new Date().toISOString().split('T')[0];
+        const activeUsers = JSON.parse(localStorage.getItem('hr_users_db_v2') || '[]');
+        const rawPointages = JSON.parse(localStorage.getItem('hr_pointages') || '[]');
+
+        const todayPointages = rawPointages.filter(p => {
+            const pDate = p.date ? p.date.split('T')[0] : (p.arrivee ? todayIso : '');
+            return pDate === todayIso;
+        });
+
+        function checkLate(timeStr) {
+            if (!timeStr || timeStr === '--:--' || timeStr === '—') return false;
+            const parts = timeStr.split(':');
+            const h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+            return (h > 7) || (h === 7 && m > 30);
+        }
+
+        const list = [];
+        activeUsers.forEach(u => {
+            if (u.role === 'Super-Admin') return;
+            if (ecoleActive !== 'Tous' && u.ecole !== ecoleActive) return;
+            const fullName = (u.prenom + ' ' + u.nom).toLowerCase();
+            const pt = todayPointages.find(p =>
+                (p.nom && p.nom.toLowerCase() === fullName) ||
+                (p.email && p.email.toLowerCase() === (u.email || '').toLowerCase())
+            );
+            if (pt) {
+                const arrTime = pt.arrivee && pt.arrivee !== '--:--' ? pt.arrivee : null;
+                list.push({
+                    id: u.id,
+                    nom: u.prenom + ' ' + u.nom,
+                    role: u.role,
+                    ecole: u.ecole || 'Retrouvailles',
+                    arrivee: arrTime || '—',
+                    depart: pt.depart && pt.depart !== '--:--' ? pt.depart : '—',
+                    statut: arrTime ? (checkLate(arrTime) ? 'Retard' : 'Présent') : 'Absent'
+                });
+            } else {
+                list.push({
+                    id: u.id,
+                    nom: u.prenom + ' ' + u.nom,
+                    role: u.role,
+                    ecole: u.ecole || 'Retrouvailles',
+                    arrivee: '—',
+                    depart: '—',
+                    statut: 'Absent'
+                });
+            }
+        });
+        return list;
+    }
+
+    // ==========================================
     // RENDER: RAPPORT DE PRÉSENCE JOURNALIÈRE DÉDIÉ (SUPER-ADMIN)
     // ==========================================
     function renderPresenceJournaliere() {
         const today = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
-        const todayIso = new Date().toISOString().split('T')[0];
-        const allPointages = db.rh.pointages.filter(p => p.ecole === db.ecoleActive || db.ecoleActive === 'Tous');
+        const allPointages = getLivePointages(db.ecoleActive);
         const presentCount = allPointages.filter(p => p.statut === 'Présent' || p.statut === 'Terminé').length;
         const retardCount = allPointages.filter(p => p.statut === 'Retard').length;
         const absentCount = allPointages.filter(p => p.statut === 'Absent').length;
@@ -3022,60 +3076,49 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div>
                             <h2 class="text-3xl font-black text-white uppercase tracking-tight">Rapport de Présence Journalière</h2>
-                            <p class="text-xs text-gray-400 mt-0.5 uppercase tracking-widest">${db.ecoleActive} — Registre Officiel • ${today}</p>
+                            <p class="text-xs text-gray-400 mt-0.5 uppercase tracking-widest">${db.ecoleActive} — Registre Biométrique • ${today}</p>
                         </div>
                     </div>
                 </div>
-                
                 <div class="flex flex-wrap items-center gap-3">
-                    <button onclick="window.openPresenceScanner ? window.openPresenceScanner() : alert('Initialisation du capteur facial...')" 
-                        class="px-5 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-gray-950 font-black rounded-2xl text-xs flex items-center gap-2 shadow-xl shadow-emerald-500/25 transition-all hover:scale-105">
-                        <i data-lucide="camera" class="w-4 h-4"></i> Scanner Facial (Pointage)
-                    </button>
-                    <button onclick="printDailyPresenceReport('${db.ecoleActive}')" 
+                    <button onclick="printDailyPresenceReport('${db.ecoleActive}')"
                         class="px-5 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl text-xs flex items-center gap-2 border border-white/15 transition shadow-lg">
                         <i data-lucide="printer" class="w-4 h-4 text-emerald-400"></i> Imprimer Rapport A4
                     </button>
-                    <button onclick="exportPresenceCSV('${db.ecoleActive}')" 
+                    <button onclick="exportPresenceCSV('${db.ecoleActive}')"
                         class="px-5 py-3 bg-white/5 hover:bg-white/10 text-cyan-300 font-bold rounded-2xl text-xs flex items-center gap-2 border border-white/10 transition shadow-lg">
                         <i data-lucide="file-spreadsheet" class="w-4 h-4 text-cyan-400"></i> Exporter CSV
                     </button>
                 </div>
             </div>
 
-            <!-- KPI Cards Grid -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div class="glass-panel p-6 rounded-3xl border border-emerald-500/30 bg-emerald-500/5 relative overflow-hidden">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Taux d'Assiduité</span>
-                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-xs">
-                            %
-                        </div>
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-xs">%</div>
                     </div>
                     <div class="text-3xl font-black text-white">${rate}%</div>
                     <div class="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
                         <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style="width: ${rate}%"></div>
                     </div>
                 </div>
-
                 <div class="glass-panel p-6 rounded-3xl border border-emerald-500/20 bg-emerald-500/5">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Présents</span>
                         <i data-lucide="user-check" class="w-5 h-5 text-emerald-400"></i>
                     </div>
                     <div class="text-3xl font-black text-emerald-400">${presentCount}</div>
-                    <p class="text-[10px] text-gray-400 mt-2 font-medium">Arrivées validées à l'heure</p>
+                    <p class="text-[10px] text-gray-400 mt-2 font-medium">Arrivées validées avant 07h30</p>
                 </div>
-
                 <div class="glass-panel p-6 rounded-3xl border border-amber-500/20 bg-amber-500/5">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Retards</span>
                         <i data-lucide="clock" class="w-5 h-5 text-amber-400"></i>
                     </div>
                     <div class="text-3xl font-black text-amber-400">${retardCount}</div>
-                    <p class="text-[10px] text-gray-400 mt-2 font-medium">Arrivées après 08h00</p>
+                    <p class="text-[10px] text-gray-400 mt-2 font-medium">Arrivées après 07h30</p>
                 </div>
-
                 <div class="glass-panel p-6 rounded-3xl border border-rose-500/20 bg-rose-500/5">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-[10px] font-black text-rose-400 uppercase tracking-widest">Absents</span>
@@ -3086,20 +3129,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
 
-            <!-- Registre Table with Filters -->
             <div class="glass-panel p-8 rounded-[2.5rem] shadow-2xl border border-white/10 bg-[#0A192F]/80">
                 <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
                     <div>
                         <h3 class="font-black text-lg text-white uppercase tracking-wider flex items-center gap-2">
                             <i data-lucide="list-checks" class="w-5 h-5 text-emerald-400"></i> Registre Détaillé des Pointages
                         </h3>
-                        <p class="text-xs text-gray-400 mt-0.5">Historique des entrées et sorties en temps réel</p>
+                        <p class="text-xs text-gray-400 mt-0.5">Données en temps réel depuis la borne biométrique</p>
                     </div>
-
                     <div class="flex flex-wrap items-center gap-2">
                         <div class="relative">
                             <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                            <input type="text" id="presence-search-input" oninput="filterPresenceTable(this.value)" placeholder="Rechercher un agent..." 
+                            <input type="text" id="presence-search-input" oninput="filterPresenceTable(this.value)" placeholder="Rechercher un agent..."
                                 class="pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 w-48 transition" />
                         </div>
                         <button onclick="filterPresenceByStatus('all')" class="presence-filter-btn active px-3 py-2 bg-emerald-500 text-gray-950 font-black rounded-xl text-xs transition">Tous (${totalStaff})</button>
@@ -3124,66 +3165,56 @@ document.addEventListener('DOMContentLoaded', () => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5 text-sm" id="presence-table-tbody">
-                            ${allPointages.map(p => {
+                            ${allPointages.length === 0 ? `
+                                <tr><td colspan="8" class="py-12 text-center text-gray-500">
+                                    <i data-lucide="scan-face" class="w-8 h-8 mx-auto mb-2 opacity-30"></i>
+                                    <p class="font-bold">Aucun pointage enregistré aujourd'hui</p>
+                                    <p class="text-xs mt-1">Les agents doivent se pointer via la borne biométrique</p>
+                                </td></tr>
+                            ` : allPointages.map(p => {
                                 const isLate = p.statut === 'Retard';
                                 const isAbsent = p.statut === 'Absent';
-                                const statusClass = isAbsent 
-                                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' 
-                                    : (isLate 
-                                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
-                                        : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30');
+                                const statusClass = isAbsent ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                    : (isLate ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                    : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30');
                                 const roleColorsMap = {
-                                    'Direction': 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+                                    'Directeur (D.P)': 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
                                     'Directeur Général': 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+                                    'Préfet des Études': 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
                                     'Enseignant': 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
-                                    'Préfet': 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
                                     'Comptable': 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                                 };
                                 const roleBadge = roleColorsMap[p.role] || 'bg-gray-500/20 text-gray-300 border border-gray-500/30';
-
+                                const initials = p.nom.split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
                                 return `
                                     <tr class="hover:bg-white/5 transition-colors presence-row" data-statut="${p.statut}" data-name="${p.nom.toLowerCase()}">
                                         <td class="py-4 px-4">
                                             <div class="flex items-center gap-3">
-                                                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white flex items-center justify-center font-black text-sm shadow-md">
-                                                    ${p.nom.split(' ').map(n=>n[0]).join('').slice(0,2)}
-                                                </div>
+                                                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white flex items-center justify-center font-black text-sm shadow-md">${initials}</div>
                                                 <div>
                                                     <p class="font-bold text-white leading-tight">${p.nom}</p>
-                                                    <p class="text-xs text-gray-400 font-mono">ID-${String(p.id).padStart(4,'0')}</p>
+                                                    <p class="text-xs text-gray-400 font-mono">ID-${String(p.id||0).padStart(4,'0')}</p>
                                                 </div>
                                             </div>
                                         </td>
+                                        <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${roleBadge}">${p.role||'Agent'}</span></td>
+                                        <td class="py-4 px-4 text-xs font-semibold text-gray-300">${p.ecole}</td>
+                                        <td class="py-4 px-4 font-mono font-bold ${isAbsent?'text-gray-500':'text-emerald-300'}">${p.arrivee}</td>
+                                        <td class="py-4 px-4 font-mono font-bold ${p.depart!=='—'?'text-blue-300':'text-gray-500'}">${p.depart!=='—'?p.depart:'En poste'}</td>
                                         <td class="py-4 px-4">
-                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${roleBadge}">
-                                                ${p.role || 'Agent'}
-                                            </span>
-                                        </td>
-                                        <td class="py-4 px-4 text-xs font-semibold text-gray-300">${p.ecole || db.ecoleActive}</td>
-                                        <td class="py-4 px-4 font-mono font-bold ${isAbsent ? 'text-gray-500' : 'text-emerald-300'}">
-                                            ${p.arrivee || '—'}
-                                        </td>
-                                        <td class="py-4 px-4 font-mono font-bold ${p.statut === 'Terminé' ? 'text-blue-300' : 'text-gray-500'}">
-                                            ${p.depart || (p.statut === 'Terminé' ? '16:30' : 'En poste')}
-                                        </td>
-                                        <td class="py-4 px-4">
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-white/5 border border-white/10 text-cyan-300">
-                                                <i data-lucide="scan-face" class="w-3.5 h-3.5 text-cyan-400"></i> Facial IA
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-white/5 border border-white/10 ${isAbsent?'text-gray-500':'text-cyan-300'}">
+                                                <i data-lucide="${isAbsent?'user-x':'scan-face'}" class="w-3.5 h-3.5"></i> ${isAbsent?'Absent':'Facial IA'}
                                             </span>
                                         </td>
                                         <td class="py-4 px-4">
                                             <span class="px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wide inline-flex items-center gap-1.5 ${statusClass}">
-                                                <span class="w-1.5 h-1.5 rounded-full ${isAbsent ? 'bg-rose-400' : isLate ? 'bg-amber-400' : 'bg-emerald-400'}"></span>
+                                                <span class="w-1.5 h-1.5 rounded-full ${isAbsent?'bg-rose-400':isLate?'bg-amber-400':'bg-emerald-400'}"></span>
                                                 ${p.statut}
                                             </span>
                                         </td>
                                         <td class="py-4 px-4 text-right">
                                             <div class="flex items-center justify-end gap-1.5">
-                                                <button title="Envoyer Rappel SMS" onclick="alert('Notification SMS envoyée à ${p.nom}')" 
-                                                    class="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-gray-400 hover:text-amber-400 transition">
-                                                    <i data-lucide="message-square" class="w-4 h-4"></i>
-                                                </button>
-                                                <button title="Fiche Individuelle" onclick="printIndividualPresence('${p.nom}', '${p.role}', '${p.arrivee}', '${p.statut}')" 
+                                                <button title="Fiche Individuelle" onclick="printIndividualPresence('${p.nom}', '${p.role}', '${p.arrivee}', '${p.statut}')"
                                                     class="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-gray-400 hover:text-emerald-400 transition">
                                                     <i data-lucide="file-text" class="w-4 h-4"></i>
                                                 </button>
@@ -3207,7 +3238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.printDailyPresenceReport = function(ecole) {
         const today = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
         const instName = ecole === 'Retrouvailles' ? 'GROUPE SCOLAIRE RETROUVAILLES' : 'COMPLEXE SCOLAIRE HARMONIE';
-        const allPointages = db.rh.pointages.filter(p => p.ecole === ecole || ecole === 'Tous');
+        const allPointages = getLivePointages(ecole);
         const presents = allPointages.filter(p => p.statut === 'Présent' || p.statut === 'Terminé').length;
         const retards = allPointages.filter(p => p.statut === 'Retard').length;
         const absents = allPointages.filter(p => p.statut === 'Absent').length;
@@ -3215,159 +3246,101 @@ document.addEventListener('DOMContentLoaded', () => {
         const rate = total > 0 ? Math.round((presents / total) * 100) : 0;
 
         const printWindow = window.open('', '', 'height=800,width=1000');
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html lang="fr">
-            <head>
-                <meta charset="UTF-8">
-                <title>Rapport Officiel de Présence Journalière - ${ecole}</title>
-                <style>
-                    body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; margin: 30px; line-height: 1.4; }
-                    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 20px; }
-                    .header-left { text-align: left; }
-                    .header-right { text-align: right; }
-                    .school-title { font-size: 18px; font-weight: 900; text-transform: uppercase; margin: 0; color: #0d8b6d; }
-                    .school-sub { font-size: 11px; color: #555; text-transform: uppercase; margin-top: 3px; font-weight: bold; }
-                    .report-title { text-align: center; margin: 25px 0 15px 0; }
-                    .report-title h1 { font-size: 20px; text-transform: uppercase; font-weight: 900; margin: 0; text-decoration: underline; }
-                    .report-title p { font-size: 12px; font-weight: bold; color: #333; margin-top: 5px; }
-                    
-                    .stats-box { display: flex; justify-content: space-around; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 20px; text-align: center; }
-                    .stat-item h4 { margin: 0; font-size: 18px; font-weight: 900; color: #0f172a; }
-                    .stat-item p { margin: 2px 0 0 0; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; }
-
-                    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-                    th { background-color: #0f172a; color: #fff; padding: 10px 8px; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; border: 1px solid #0f172a; }
-                    td { padding: 8px; border: 1px solid #cbd5e1; }
-                    tr:nth-child(even) { background-color: #f8fafc; }
-                    
-                    .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-                    .badge-present { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-                    .badge-retard { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-                    .badge-absent { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-
-                    .footer { margin-top: 40px; display: flex; justify-content: space-between; page-break-inside: avoid; }
-                    .signature-box { width: 220px; text-align: center; border-top: 1px solid #000; padding-top: 5px; font-size: 11px; font-weight: bold; }
-                    .certif { font-size: 9px; color: #666; text-align: center; margin-top: 30px; font-style: italic; }
-                    
-                    @media print {
-                        body { margin: 15mm 10mm; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <div class="header-left">
-                        <h2 class="school-title">RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h2>
-                        <div class="school-sub">MINISTÈRE DE L'ÉDUCATION NATIONALE ET NOUVELLE CITOYENNETÉ</div>
-                        <div class="school-sub" style="color: #0d8b6d; font-size: 13px; margin-top: 4px;">${instName}</div>
-                    </div>
-                    <div class="header-right">
-                        <div style="font-size: 11px; font-weight: bold;">SYSTÈME ERP DE SUPER-ADMINISTRATION</div>
-                        <div style="font-size: 10px; color: #666;">Date d'édition : ${new Date().toLocaleString('fr-FR')}</div>
-                        <div style="font-size: 10px; color: #0d8b6d; font-weight: bold;">Certification Biométrique Validée</div>
-                    </div>
+        printWindow.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+            <title>Rapport Officiel de Présence - ${ecole}</title>
+            <style>
+                body{font-family:'Segoe UI',Arial,sans-serif;color:#111;margin:30px;line-height:1.4}
+                .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px double #000;padding-bottom:15px;margin-bottom:20px}
+                .school-title{font-size:18px;font-weight:900;text-transform:uppercase;margin:0;color:#0d8b6d}
+                .school-sub{font-size:11px;color:#555;text-transform:uppercase;margin-top:3px;font-weight:bold}
+                .report-title{text-align:center;margin:25px 0 15px}
+                .report-title h1{font-size:20px;text-transform:uppercase;font-weight:900;margin:0;text-decoration:underline}
+                .report-title p{font-size:12px;font-weight:bold;color:#333;margin-top:5px}
+                .stats-box{display:flex;justify-content:space-around;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;margin-bottom:20px;text-align:center}
+                .stat-item h4{margin:0;font-size:18px;font-weight:900;color:#0f172a}
+                .stat-item p{margin:2px 0 0;font-size:10px;font-weight:bold;text-transform:uppercase;color:#64748b}
+                table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+                th{background-color:#0f172a;color:#fff;padding:10px 8px;text-align:left;font-weight:bold;text-transform:uppercase;font-size:10px;letter-spacing:.5px;border:1px solid #0f172a}
+                td{padding:8px;border:1px solid #cbd5e1}
+                tr:nth-child(even){background-color:#f8fafc}
+                .badge{display:inline-block;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:bold;text-transform:uppercase}
+                .badge-present{background:#dcfce7;color:#15803d;border:1px solid #86efac}
+                .badge-retard{background:#fef3c7;color:#b45309;border:1px solid #fde68a}
+                .badge-absent{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5}
+                .footer{margin-top:40px;display:flex;justify-content:space-between;page-break-inside:avoid}
+                .signature-box{width:220px;text-align:center;border-top:1px solid #000;padding-top:5px;font-size:11px;font-weight:bold}
+                .certif{font-size:9px;color:#666;text-align:center;margin-top:30px;font-style:italic}
+                @media print{body{margin:15mm 10mm}}
+            </style></head><body>
+            <div class="header">
+                <div>
+                    <h2 class="school-title">RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h2>
+                    <div class="school-sub">MINISTÈRE DE L'ÉDUCATION NATIONALE ET NOUVELLE CITOYENNETÉ</div>
+                    <div class="school-sub" style="color:#0d8b6d;font-size:13px;margin-top:4px">${instName}</div>
                 </div>
-
-                <div class="report-title">
-                    <h1>RAPPORT OFFICIEL DE PRÉSENCE JOURNALIÈRE</h1>
-                    <p>Séance du ${today}</p>
+                <div style="text-align:right">
+                    <div style="font-size:11px;font-weight:bold">SYSTÈME ERP DE SUPER-ADMINISTRATION</div>
+                    <div style="font-size:10px;color:#666">Date d'édition : ${new Date().toLocaleString('fr-FR')}</div>
+                    <div style="font-size:10px;color:#0d8b6d;font-weight:bold">Certification Biométrique Validée</div>
                 </div>
-
-                <div class="stats-box">
-                    <div class="stat-item">
-                        <h4>${total}</h4>
-                        <p>Effectif Total</p>
-                    </div>
-                    <div class="stat-item">
-                        <h4 style="color: #15803d;">${presents}</h4>
-                        <p>Présents</p>
-                    </div>
-                    <div class="stat-item">
-                        <h4 style="color: #b45309;">${retards}</h4>
-                        <p>Retards</p>
-                    </div>
-                    <div class="stat-item">
-                        <h4 style="color: #b91c1c;">${absents}</h4>
-                        <p>Absents</p>
-                    </div>
-                    <div class="stat-item">
-                        <h4 style="color: #0d8b6d;">${rate}%</h4>
-                        <p>Taux d'Assiduité</p>
-                    </div>
-                </div>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;">N°</th>
-                            <th style="width: 30%;">Nom & Prénom de l'Agent</th>
-                            <th style="width: 20%;">Fonction / Rôle</th>
-                            <th style="width: 15%;">Heure d'Arrivée</th>
-                            <th style="width: 15%;">Heure de Départ</th>
-                            <th style="width: 15%;">Statut Validé</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${allPointages.map((p, idx) => `
-                            <tr>
-                                <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
-                                <td style="font-weight: bold;">${p.nom}</td>
-                                <td>${p.role || 'Personnel'}</td>
-                                <td style="font-family: monospace; font-weight: bold;">${p.arrivee || '—'}</td>
-                                <td style="font-family: monospace;">${p.depart || (p.statut === 'Terminé' ? '16:30' : 'En poste')}</td>
-                                <td>
-                                    <span class="badge ${p.statut === 'Absent' ? 'badge-absent' : p.statut === 'Retard' ? 'badge-retard' : 'badge-present'}">
-                                        ${p.statut}
-                                    </span>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-
-                <div class="footer">
-                    <div class="signature-box">
-                        Le Superviseur RH / Direction
-                    </div>
-                    <div class="signature-box">
-                        Le Chef d'Établissement (Sceau & Signature)
-                    </div>
-                </div>
-
-                <div class="certif">
-                    Document généré automatiquement par le module de Reconnaissance Faciale IA • Plateforme Harmonie & Retrouvailles
-                </div>
-            </body>
-            </html>
-        `);
+            </div>
+            <div class="report-title">
+                <h1>RAPPORT OFFICIEL DE PRÉSENCE JOURNALIÈRE</h1>
+                <p>Séance du ${today}</p>
+            </div>
+            <div class="stats-box">
+                <div class="stat-item"><h4>${total}</h4><p>Effectif Total</p></div>
+                <div class="stat-item"><h4 style="color:#15803d">${presents}</h4><p>Présents</p></div>
+                <div class="stat-item"><h4 style="color:#b45309">${retards}</h4><p>Retards</p></div>
+                <div class="stat-item"><h4 style="color:#b91c1c">${absents}</h4><p>Absents</p></div>
+                <div class="stat-item"><h4 style="color:#0d8b6d">${rate}%</h4><p>Taux d'Assiduité</p></div>
+            </div>
+            <table>
+                <thead><tr>
+                    <th style="width:5%">N°</th>
+                    <th style="width:30%">Nom & Prénom</th>
+                    <th style="width:20%">Fonction / Rôle</th>
+                    <th style="width:10%">École</th>
+                    <th style="width:12%">Heure Arrivée</th>
+                    <th style="width:12%">Heure Départ</th>
+                    <th style="width:11%">Statut</th>
+                </tr></thead>
+                <tbody>
+                    ${allPointages.map((p, idx) => `<tr>
+                        <td style="text-align:center;font-weight:bold">${idx+1}</td>
+                        <td style="font-weight:bold">${p.nom}</td>
+                        <td>${p.role||'Personnel'}</td>
+                        <td>${p.ecole}</td>
+                        <td style="font-family:monospace;font-weight:bold">${p.arrivee}</td>
+                        <td style="font-family:monospace">${p.depart!=='—'?p.depart:'En poste'}</td>
+                        <td><span class="badge ${p.statut==='Absent'?'badge-absent':p.statut==='Retard'?'badge-retard':'badge-present'}">${p.statut}</span></td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+            <div class="footer">
+                <div class="signature-box">Le Superviseur RH / Direction</div>
+                <div class="signature-box">Le Chef d'Établissement (Sceau & Signature)</div>
+            </div>
+            <div class="certif">Document généré automatiquement — Reconnaissance Faciale IA • Harmonie & Retrouvailles</div>
+            </body></html>`);
         printWindow.document.close();
         printWindow.focus();
-        setTimeout(() => {
-            printWindow.print();
-        }, 500);
+        setTimeout(() => printWindow.print(), 500);
     };
 
     window.exportPresenceCSV = function(ecole) {
-        const allPointages = db.rh.pointages.filter(p => p.ecole === ecole || ecole === 'Tous');
-        const headers = ["ID", "Nom_Prenom", "Role", "Ecole", "Arrivee", "Depart", "Statut", "Methode"];
+        const allPointages = getLivePointages(ecole);
+        const headers = ['ID', 'Nom_Prenom', 'Role', 'Ecole', 'Arrivee', 'Depart', 'Statut', 'Methode'];
         const rows = allPointages.map(p => [
-            p.id,
-            `"${p.nom}"`,
-            `"${p.role || 'Personnel'}"`,
-            `"${p.ecole || db.ecoleActive}"`,
-            p.arrivee || '—',
-            p.depart || (p.statut === 'Terminé' ? '16:30' : 'En poste'),
-            p.statut,
-            "Reconnaissance_Faciale_IA"
+            p.id, '"' + p.nom + '"', '"' + (p.role||'Personnel') + '"', '"' + p.ecole + '"',
+            p.arrivee, p.depart !== '—' ? p.depart : 'En poste', p.statut, 'Reconnaissance_Faciale_IA'
         ]);
-        
-        let csvContent = "\uFEFF" + headers.join(";") + "\n" + rows.map(r => r.join(";")).join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        let csv = '\uFEFF' + headers.join(';') + '\n' + rows.map(r => r.join(';')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Rapport_Presence_${ecole}_${new Date().toISOString().split('T')[0]}.csv`);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Rapport_Presence_${ecole}_${new Date().toISOString().split('T')[0]}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -3383,24 +3356,67 @@ document.addEventListener('DOMContentLoaded', () => {
             event.target.classList.remove('bg-white/5', 'text-gray-300');
         }
         document.querySelectorAll('.presence-row').forEach(row => {
-            if (statut === 'all' || row.dataset.statut === statut) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
+            row.style.display = (statut === 'all' || row.dataset.statut === statut) ? '' : 'none';
         });
     };
 
     window.filterPresenceTable = function(search) {
         const query = search.toLowerCase();
         document.querySelectorAll('.presence-row').forEach(row => {
-            const name = row.dataset.name || '';
-            row.style.display = name.includes(query) ? '' : 'none';
+            row.style.display = (row.dataset.name || '').includes(query) ? '' : 'none';
         });
     };
 
     window.printIndividualPresence = function(nom, role, arrivee, statut) {
-        alert(`Fiche de présence individuelle générée pour ${nom} (${role}) — Heure: ${arrivee} — Statut: ${statut}`);
+        const today = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+            <title>Fiche Individuelle - ${nom}</title>
+            <style>
+                body{font-family:'Segoe UI',Arial,sans-serif;color:#111;margin:40px;line-height:1.5}
+                .card{border:2px solid #0f172a;border-radius:12px;padding:25px}
+                .header{text-align:center;border-bottom:2px solid #cbd5e1;padding-bottom:15px;margin-bottom:20px}
+                .header h2{margin:0;font-size:16px;text-transform:uppercase;color:#0d8b6d}
+                .header h1{margin:5px 0 0;font-size:20px;text-transform:uppercase;font-weight:900}
+                .label{font-weight:bold;color:#475569;text-transform:uppercase;font-size:10px}
+                .val{font-size:14px;font-weight:bold;margin-top:2px}
+                .status-stamp{border:3px solid;padding:8px 15px;border-radius:8px;font-size:16px;font-weight:900;text-transform:uppercase;display:inline-block;transform:rotate(-3deg);margin:15px 0}
+                .stamp-present{border-color:#15803d;color:#15803d}
+                .stamp-retard{border-color:#b45309;color:#b45309}
+                .stamp-absent{border-color:#b91c1c;color:#b91c1c}
+                .footer-sigs{display:flex;justify-content:space-between;margin-top:40px;padding-top:20px;border-top:1px solid #e2e8f0}
+                .sig-box{text-align:center;width:45%;font-size:12px}
+                .sig-line{margin-top:40px;border-top:1px dashed #94a3b8;padding-top:5px;font-weight:bold}
+                .certif{font-size:9px;color:#64748b;text-align:center;margin-top:15px;font-style:italic}
+            </style></head><body>
+            <div class="card">
+                <div class="header">
+                    <h2>Ministère de l'Éducation Nationale — R.D.C.</h2>
+                    <h1>FICHE INDIVIDUELLE DE POINTAGE BIOMÉTRIQUE</h1>
+                    <p style="font-size:11px;color:#64748b;margin-top:4px">Séance officielle du ${today}</p>
+                </div>
+                <table style="width:100%;font-size:13px;border-collapse:collapse">
+                    <tr>
+                        <td style="padding:10px 0;width:50%"><span class="label">Agent du Personnel :</span><div class="val">${nom}</div></td>
+                        <td style="padding:10px 0"><span class="label">Rôle / Fonction :</span><div class="val">${role}</div></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px 0"><span class="label">Heure de Pointage :</span><div class="val" style="font-family:monospace;font-size:18px">${arrivee||'—'}</div></td>
+                        <td style="padding:10px 0"><span class="label">Mécanisme :</span><div class="val">Reconnaissance Faciale IA ✓</div></td>
+                    </tr>
+                </table>
+                <div style="text-align:center;margin:20px 0">
+                    <div class="status-stamp stamp-${statut==='Absent'?'absent':statut==='Retard'?'retard':'present'}">Pointage : ${statut}</div>
+                </div>
+                <div class="footer-sigs">
+                    <div class="sig-box">Signature de l'Agent<div class="sig-line"></div></div>
+                    <div class="sig-box">Visa de la Direction (RH)<div class="sig-line"></div></div>
+                </div>
+                <div class="certif">Empreinte faciale validée à 128 dimensions — Certifié conforme • Plateforme Harmonie-Retrouvailles</div>
+            </div></body></html>`);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => printWindow.print(), 500);
     };
 
     async function renderClasseVirtuelle() {
