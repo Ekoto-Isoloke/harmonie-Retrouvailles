@@ -193,34 +193,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashboardNav = document.querySelector('a[data-target="dashboard"] span');
         if (dashboardNav) dashboardNav.textContent = 'Cockpit Exécutif';
 
-        // Modules techniques masqués par défaut pour alléger l'expérience du Promoteur (Gestion des comptes masqué, RH & Pointages conservé)
-        const technicalModules = ['gestion-comptes', 'communication', 'dossier360', 'coffrefort', 'classe-virtuelle'];
-        technicalModules.forEach(target => {
+        // Suppression pure et simple des modules non désirés pour la Direction Générale
+        const modulesToRemove = ['gestion-comptes', 'communication', 'dossier360', 'coffrefort', 'classe-virtuelle'];
+        modulesToRemove.forEach(target => {
             const el = document.querySelector(`a[data-target="${target}"]`);
-            if (el) el.style.display = 'none';
+            if (el) el.remove();
         });
-
-        // Bouton repliable élégant si le Promoteur souhaite consulter les modules techniques
-        const navContainer = document.getElementById('sidebar-nav');
-        if (navContainer) {
-            const toggleToolsBtn = document.createElement('button');
-            toggleToolsBtn.type = 'button';
-            toggleToolsBtn.id = 'toggle-dg-tools-btn';
-            toggleToolsBtn.className = 'mt-4 mx-1 px-3 py-2 rounded-xl border border-white/10 text-[11px] font-bold text-gray-400 hover:text-white hover:bg-white/5 transition flex items-center justify-between cursor-pointer';
-            toggleToolsBtn.innerHTML = '<span>⚙️ Modules Techniques ERP</span><span id="tools-chevron" class="text-[10px]">▼ Afficher</span>';
-            let toolsVisible = false;
-            toggleToolsBtn.onclick = () => {
-                toolsVisible = !toolsVisible;
-                technicalModules.forEach(target => {
-                    const el = document.querySelector(`a[data-target="${target}"]`);
-                    if (el) el.style.display = toolsVisible ? 'flex' : 'none';
-                });
-                const ch = document.getElementById('tools-chevron');
-                if (ch) ch.textContent = toolsVisible ? '▲ Masquer' : '▼ Afficher';
-                if (window.lucide) lucide.createIcons();
-            };
-            navContainer.appendChild(toggleToolsBtn);
-        }
     }
 
     let currentView = 'dashboard';
