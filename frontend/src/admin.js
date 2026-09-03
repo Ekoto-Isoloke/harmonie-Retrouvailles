@@ -193,8 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashboardNav = document.querySelector('a[data-target="dashboard"] span');
         if (dashboardNav) dashboardNav.textContent = 'Cockpit Exécutif';
 
-        // Modules techniques masqués par défaut pour alléger l\'expérience du Promoteur
-        const technicalModules = ['rh', 'communication', 'dossier360', 'coffrefort', 'classe-virtuelle'];
+        // Modules techniques masqués par défaut pour alléger l'expérience du Promoteur (Gestion des comptes masqué, RH & Pointages conservé)
+        const technicalModules = ['gestion-comptes', 'communication', 'dossier360', 'coffrefort', 'classe-virtuelle'];
         technicalModules.forEach(target => {
             const el = document.querySelector(`a[data-target="${target}"]`);
             if (el) el.style.display = 'none';
