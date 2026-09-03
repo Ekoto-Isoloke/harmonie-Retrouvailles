@@ -752,6 +752,23 @@
       const db = JSON.parse(localStorage.getItem('hr_users_db_v2') || '[]');
       
       let user = db.find(u => u.email && u.email.toLowerCase() === email && u.password === password);
+      
+      // Compte Promoteur officiel par défaut
+      if (!user && (email === 'promoteur@harmonie-retrouvailles.cd' || email === 'promoteur@retrouvailles.cd') && (password === 'password' || password === 'admin' || password === 'promoteur123')) {
+        user = {
+          id: 100,
+          email: 'promoteur@harmonie-retrouvailles.cd',
+          password: password,
+          role: 'Direction Générale',
+          nom: 'Promoteur',
+          prenom: 'Direction Générale',
+          ecole: 'Harmonie-Retrouvailles'
+        };
+        db.push(user);
+        localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+      }
+
+      // Compte Super-Admin permanent
       if (!user && (email === 'chadrackisoloke@gmail.com' || email === 'admin@retrouvailes.cd') && (password === 'chada123' || password === 'admin')) {
         user = {
           id: 99,
@@ -764,7 +781,7 @@
       }
 
       if (!user) {
-        showDgAlert('Identifiants incorrects ou compte introuvable.');
+        showDgAlert("Compte introuvable ou mot de passe incorrect. Si c'est votre 1ère connexion, cliquez sur l'onglet 'Créer un Compte' juste au-dessus pour activer votre compte en 10 secondes.");
         return;
       }
 
