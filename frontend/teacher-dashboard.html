@@ -29,6 +29,15 @@
   </style>
 </head>
 <body class="text-white min-h-screen flex flex-col md:flex-row overflow-x-hidden">
+  <!-- BANNIÈRE EXÉCUTIVE DIRECTION GÉNÉRALE -->
+  <div id="dg-executive-banner" class="hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 text-gray-950 px-4 py-2 flex items-center justify-between text-xs font-black shadow-xl">
+    <div class="flex items-center gap-2">
+      <span>🏛️</span>
+      <span class="tracking-wide uppercase">Session Direction Générale — Mode Supervision Pédagogique</span>
+    </div>
+    <a href="/admin-dashboard.html" class="px-3 py-1 rounded-lg bg-gray-950 text-amber-300 font-black hover:bg-black transition shadow">↩ Retour au Tableau de Bord Central</a>
+  </div>
+
 
   <!-- SIDEBAR -->
   <aside class="w-full md:w-64 md:min-h-screen glass flex flex-col py-6 px-4 shrink-0 md:fixed md:left-0 md:top-0 md:bottom-0 z-40">
@@ -130,6 +139,7 @@
     // Affichage du nom complet et du rôle exact choisi lors de l'inscription
     const fullName = [user.prenom, user.nom].filter(Boolean).join(' ');
     document.getElementById('teacher-name').textContent = fullName || 'Inconnu';
+    if (user.role === 'Direction Générale' || user.role === 'Super-Admin') { const b = document.getElementById('dg-executive-banner'); if (b) b.classList.remove('hidden'); }
     document.getElementById('teacher-role').textContent = user.role || 'Agent';
     const initials = ((user.prenom || '')[0] || '') + ((user.nom || '')[0] || '');
     document.getElementById('teacher-avatar').textContent = initials.toUpperCase() || '?';

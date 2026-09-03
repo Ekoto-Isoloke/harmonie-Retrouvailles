@@ -301,6 +301,61 @@
 
             <!-- Actions & Toggles -->
             <div class="flex items-center gap-5">
+                <!-- Bouton Direction Générale (Passerelle & Supervision) -->
+                <div class="relative">
+                    <button id="btn-direction-generale" onclick="toggleDirectionGeneraleMenu(event)"
+                        class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 text-amber-300 font-black text-xs flex items-center gap-2 transition-all shadow-lg shadow-amber-500/10 active:scale-95">
+                        <i data-lucide="landmark" class="w-4 h-4 text-amber-400"></i>
+                        <span>Direction Générale</span>
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5 opacity-70"></i>
+                    </button>
+                    <!-- Dropdown Menu Passerelle Direction Générale -->
+                    <div id="dropdown-direction-generale" class="hidden absolute right-0 mt-2 w-80 bg-[#0A192F]/95 backdrop-blur-2xl border border-amber-500/30 rounded-2xl shadow-2xl p-3 z-50">
+                        <div class="px-3 py-2 border-b border-white/10 mb-2">
+                            <p class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Supervision Exécutive</p>
+                            <p class="text-xs font-bold text-white">Passerelle Direction Générale</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Accès direct aux espaces en immersion</p>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <a href="/prefet-dashboard.html?view=harmonie" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold transition group">
+                                <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">🏫</div>
+                                <div>
+                                    <div class="text-gray-200 group-hover:text-emerald-400 font-bold">Direction Harmonie</div>
+                                    <div class="text-[10px] text-gray-400">Primaire & Maternelle (D.P)</div>
+                                </div>
+                            </a>
+                            <a href="/prefet-dashboard.html?view=retrouvailles" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold transition group">
+                                <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">🎓</div>
+                                <div>
+                                    <div class="text-gray-200 group-hover:text-purple-400 font-bold">Direction Retrouvailles</div>
+                                    <div class="text-[10px] text-gray-400">Humanités & Secondaire (Préfet)</div>
+                                </div>
+                            </a>
+                            <a href="/compta-dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold transition group">
+                                <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">💰</div>
+                                <div>
+                                    <div class="text-gray-200 group-hover:text-emerald-400 font-bold">Caisse & Trésorerie</div>
+                                    <div class="text-[10px] text-gray-400">Recouvrement & Comptabilité</div>
+                                </div>
+                            </a>
+                            <a href="/teacher-dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold transition group">
+                                <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">👨‍🏫</div>
+                                <div>
+                                    <div class="text-gray-200 group-hover:text-blue-400 font-bold">Corps Enseignant</div>
+                                    <div class="text-[10px] text-gray-400">Pédagogie & Classes Virtuelles</div>
+                                </div>
+                            </a>
+                            <a href="/pointage.html" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold transition group">
+                                <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">⏱️</div>
+                                <div>
+                                    <div class="text-gray-200 group-hover:text-cyan-400 font-bold">Borne Biométrique</div>
+                                    <div class="text-[10px] text-gray-400">Terminal de pointage live</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Institution Switcher -->
                 <div class="bg-white/10 dark:bg-gray-700 rounded-lg p-1 flex text-sm font-medium">
                     <button

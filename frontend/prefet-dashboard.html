@@ -94,6 +94,11 @@
     // Mise à jour de l'identité
     const fullName = [user.prenom, user.nom].filter(Boolean).join(' ');
     document.getElementById('prefet-name').textContent = fullName || 'Agent EPST';
+    if (user.role === 'Direction Générale' || user.role === 'Super-Admin') {
+      const dgBanner = document.getElementById('dg-executive-banner');
+      if (dgBanner) dgBanner.classList.remove('hidden');
+    }
+
     document.getElementById('prefet-role').textContent = `${role} • ${ecole}`;
     const initials = ((user.prenom || '')[0] || '') + ((user.nom || '')[0] || '');
     document.getElementById('prefet-avatar').textContent = initials.toUpperCase() || 'AG';

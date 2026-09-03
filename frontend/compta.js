@@ -26,7 +26,7 @@ if (isDummy || (!isSuperAdminUser && !existsInDb)) {
   throw new Error("User deleted");
 }
 
-const allowedRoles = ['Comptable', 'Super-Admin', 'Direction'];
+const allowedRoles = ['Comptable', 'Super-Admin', 'Direction', 'Direction Générale'];
 if (!allowedRoles.includes(user.role)) {
   alert("⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nVotre rôle ne vous donne pas accès à la Comptabilité.");
   if (user.role === 'Parent') window.location.href = '/parent-dashboard.html';
@@ -354,3 +354,8 @@ if (logoutBtn) {
 // ===== Init =====
 updateStats();
 renderRecents();
+
+if (user && (user.role === 'Direction Générale' || user.role === 'Super-Admin')) {
+  const b = document.getElementById('dg-executive-banner');
+  if (b) b.classList.remove('hidden');
+}

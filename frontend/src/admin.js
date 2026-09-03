@@ -125,8 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // SECURITY CHECK 2: Strict RBAC - SEUL le Super-Admin a accès au panneau d'administration global
-    const isSuperAdmin = user.role === 'Super-Admin';
+    // SECURITY CHECK 2: Strict RBAC - Super-Admin & Direction Générale ont accès au panneau global
+    const isSuperAdmin = user.role === 'Super-Admin' || user.role === 'Direction Générale';
 
     if (!isSuperAdmin) {
         // Directeur / Préfet / DP / DE / DD / Sur École attempt
@@ -2608,6 +2608,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Rôle</label>
                                     <select id="edit-role" class="w-full bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none">
                                         <option value="Super-Admin" ${u.role === 'Super-Admin' ? 'selected' : ''}>Super-Admin</option>
+                                        <option value="Direction Générale" ${u.role === 'Direction Générale' ? 'selected' : ''}>Direction Générale</option>
                                         <option value="Directeur (D.P)" ${u.role === 'Directeur (D.P)' ? 'selected' : ''}>Directeur (D.P) - Harmonie</option>
                                         <option value="Préfet" ${u.role === 'Préfet' ? 'selected' : ''}>Préfet - Retrouvailles</option>
                                         <option value="Enseignant" ${u.role === 'Enseignant' ? 'selected' : ''}>Enseignant / Professeur</option>
@@ -2765,6 +2766,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Rôle *</label>
                                     <select id="new-role" class="w-full bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none">
                                         <option value="Enseignant" selected>Enseignant / Professeur</option>
+                                        <option value="Direction Générale">Direction Générale</option>
                                         <option value="Directeur (D.P)">Directeur (D.P) - Primaire</option>
                                         <option value="Préfet">Préfet - Humanités</option>
                                         <option value="Comptable">Comptable</option>
@@ -2963,6 +2965,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <option value="Tous" ${window._userFilterRole === 'Tous' ? 'selected' : ''}>Tous les Rôles</option>
                         <option value="Super-Admin" ${window._userFilterRole === 'Super-Admin' ? 'selected' : ''}>Super-Admin</option>
                         <option value="Préfet" ${window._userFilterRole === 'Préfet' ? 'selected' : ''}>Préfet</option>
+                        <option value="Direction Générale" ${window._userFilterRole === 'Direction Générale' ? 'selected' : ''}>Direction Générale</option>
                         <option value="Directeur (D.P)" ${window._userFilterRole === 'Directeur (D.P)' ? 'selected' : ''}>Directeur (D.P)</option>
                         <option value="Enseignant" ${window._userFilterRole === 'Enseignant' ? 'selected' : ''}>Enseignants</option>
                         <option value="Comptable" ${window._userFilterRole === 'Comptable' ? 'selected' : ''}>Comptables</option>
@@ -3590,3 +3593,19 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 });
+
+    // ==========================================
+    // MENU SUPERVISION: DIRECTION GÉNÉRALE
+    // ==========================================
+    window.toggleDirectionGeneraleMenu = function(e) {
+        if (e) e.stopPropagation();
+        const el = document.getElementById('dropdown-direction-generale');
+        if (el) el.classList.toggle('hidden');
+    };
+    document.addEventListener('click', function(e) {
+        const btn = document.getElementById('btn-direction-generale');
+        const menu = document.getElementById('dropdown-direction-generale');
+        if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
+    });
