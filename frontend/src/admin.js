@@ -5,41 +5,34 @@ import './style.css';
 // ETAT GLOBAL (Mocked Database in LocalStorage)
 // ==========================================
 // DB VERSION: Increment this to force a reset on user browsers
-const DB_VERSION = 20;
+const DB_VERSION = 40;
 
 const defaultData = {
-    version: DB_VERSION,
+    version: 40,
     ecoleActive: 'Harmonie',
     institutions: {
         Harmonie: {
             finance: {
-                revenus: 45000,
-                depenses: 12000,
+                revenus: 0,
+                depenses: 0,
                 fraisScolaires: [
                     { classe: '1ère Maternelle', montant: 150 }, { classe: '2ème Maternelle', montant: 150 }, { classe: '3ème Maternelle', montant: 150 },
                     { classe: '1ère Primaire', montant: 170 }, { classe: '2ème Primaire', montant: 170 }, { classe: '3ème Primaire', montant: 170 },
                     { classe: '4ème Primaire', montant: 170 }, { classe: '5ème Primaire', montant: 170 }, { classe: '6ème Primaire', montant: 170 }
                 ],
-                recentPayments: [
-                    { id: '101', student: 'Leki Marc', amount: 150, date: '2026-06-25', motif: 'Frais Scolaires', mode: 'Mobile', classe: '1ère Primaire' }
-                ]
+                recentPayments: []
             },
             pedagogie: {
                 classes: ['1ère Maternelle', '2ème Maternelle', '3ème Maternelle', '1ère Primaire', '2ème Primaire', '3ème Primaire', '4ème Primaire', '5ème Primaire', '6ème Primaire'],
-                eleves: [
-                    { nom: 'Leki Marc', classe: '1ère Primaire', paye: 150 },
-                    { nom: 'Kabea Sarah', classe: '1ère Maternelle', paye: 400 }
-                ],
-                nouvellesInscriptions: [
-                    { id: 'REG-001', nom: 'Nkole Jonathan', classe: '1ère Primaire', date: '2026-06-28', statut: 'En attente' }
-                ]
+                eleves: [],
+                nouvellesInscriptions: []
             },
-            comms: { smsEnvoyes: 800, whatsappEnvoyes: 200 }
+            comms: { smsEnvoyes: 0, whatsappEnvoyes: 0 }
         },
         Retrouvailles: {
             finance: {
-                revenus: 25000,
-                depenses: 8000,
+                revenus: 0,
+                depenses: 0,
                 fraisScolaires: [
                     { classe: '7ème EB', montant: 190 }, { classe: '8ème EB', montant: 190 },
                     { classe: '1ère Humanités', montantTech: 200, montantNonTech: 190 },
@@ -47,63 +40,29 @@ const defaultData = {
                     { classe: '3ème Humanités', montantTech: 200, montantNonTech: 190 },
                     { classe: '4ème Humanités', montantTech: 230, montantNonTech: 200 }
                 ],
-                recentPayments: [
-                    { id: '201', student: 'Baya Paul', amount: 90, date: '2026-06-24', motif: 'Frais Scolaires', mode: 'Caisse', classe: '7ème EB' }
-                ]
+                recentPayments: []
             },
             pedagogie: {
                 classes: ['7ème EB', '8ème EB', '1ère Humanités', '2ème Humanités', '3ème Humanités', '4ème Humanités'],
                 sections: ['Technique', 'Non Technique'],
                 optionsTech: ['Commerciale et Gestion', 'Secrétariat-Bureautique', 'Informatique de Gestion', 'Électricité', 'Mécanique Générale', 'Construction', 'Électronique', 'Nutrition-Alimentation', 'Puériculture', 'Coupe et Couture', 'Esthétique', 'Nursing (Soins Infirmiers)', 'Accoucheuse', 'Agriculture', 'Élevage', 'Pêche et Pisciculture'],
                 optionsNonTech: ['Math-Physique', 'Chimie-Biologie', 'Latin-Philosophie', 'Histoire-Géo-Socio-Économie', 'Pédagogie Générale'],
-                eleves: [
-                    { nom: 'Baya Paul', classe: '7ème EB', paye: 90 },
-                    { nom: 'Tshilanda Alice', classe: '1ère Humanités', paye: 0, section: 'Non Technique', option: 'Chimie-Biologie' }
-                ],
-                nouvellesInscriptions: [
-                    { id: 'REG-002', nom: 'Kabongo Merveille', classe: '1ère Humanités', section: 'Scientifique', option: 'Chimie-Biologie', date: '2026-06-29', statut: 'En attente' }
-                ]
+                eleves: [],
+                nouvellesInscriptions: []
             },
-            comms: { smsEnvoyes: 450, whatsappEnvoyes: 150 }
+            comms: { smsEnvoyes: 0, whatsappEnvoyes: 0 }
         }
     },
     rh: {
         comptes: [
-            { id: 1, nom: 'Mutombo', prenom: 'Patient', role: 'Direction', statut: 'Actif', ecole: 'Harmonie', email: 'patient.mutombo@harmonie.cd', classes: [], login: 'P.MUTOMBO' },
-            { id: 2, nom: 'Kabila', prenom: 'Joëlle', role: 'Direction', statut: 'Actif', ecole: 'Retrouvailles', email: 'joelle.kabila@retrouvailles.cd', classes: [], login: 'J.KABILA' },
-            { id: 3, nom: 'Baya', prenom: 'Paul', role: 'Enseignant', statut: 'Actif', ecole: 'Retrouvailles', email: 'paul.baya@retrouvailles.cd', classes: ['3ème Humanités (Math-Physique)', '2ème Humanités (Chimie-Bio)'], login: 'P.BAYA' },
-            { id: 4, nom: 'Leki', prenom: 'Christine', role: 'Enseignant', statut: 'Actif', ecole: 'Harmonie', email: 'christine.leki@harmonie.cd', classes: ['1ère Primaire', '2ème Primaire'], login: 'C.LEKI' },
-            { id: 5, nom: 'Nkole', prenom: 'Jean-Pierre', role: 'DP', statut: 'Actif', ecole: 'Harmonie', email: 'jp.nkole@harmonie.cd', classes: [], login: 'JP.NKOLE' },
-            { id: 6, nom: 'Tshilanda', prenom: 'Marc', role: 'Préfet', statut: 'Actif', ecole: 'Retrouvailles', email: 'm.tshilanda@retrouvailles.cd', classes: [], login: 'M.TSHILANDA' },
-            { id: 7, nom: 'Kabongo', prenom: 'Marie', role: 'Comptable', statut: 'Actif', ecole: 'Harmonie', email: 'marie.kabongo@harmonie.cd', classes: [], login: 'M.KABONGO' },
-            { id: 8, nom: 'Ilunga', prenom: 'Robert', role: 'Sur école', statut: 'Actif', ecole: 'Harmonie', email: 'r.ilunga@harmonie.cd', classes: [], login: 'R.ILUNGA' },
-            { id: 9, nom: 'Mbuyi', prenom: 'Sarah', role: 'D.E', statut: 'Actif', ecole: 'Retrouvailles', email: 's.mbuyi@retrouvailles.cd', classes: [], login: 'S.MBUYI' },
-            { id: 10, nom: 'Kasongo', prenom: 'Luc', role: 'D.D', statut: 'Actif', ecole: 'Retrouvailles', email: 'l.kasongo@retrouvailles.cd', classes: [], login: 'L.KASONGO' }
+            { id: 1, nom: 'KASOMBO', prenom: 'Paul', role: 'Directeur (D.P)', statut: 'Actif', ecole: 'Harmonie', email: 'kasombo@retrouvailles.cd', classes: [], login: 'P.KASOMBO' },
+            { id: 2, nom: 'MATUNGULU', prenom: 'Alain', role: 'Préfet', statut: 'Actif', ecole: 'Retrouvailles', email: 'matungulu@retrouvailles.cd', classes: [], login: 'A.MATUNGULU' }
         ],
-        pointages: [
-            { id: 1, nom: 'Mutombo Patient', date: '2026-07-13', statut: 'Présent', arrivee: '07:30', role: 'Direction', ecole: 'Harmonie', retardMin: 0 },
-            { id: 2, nom: 'Kabila Joëlle', date: '2026-07-13', statut: 'Présent', arrivee: '07:45', role: 'Direction', ecole: 'Retrouvailles', retardMin: 0 },
-            { id: 3, nom: 'Baya Paul', date: '2026-07-13', statut: 'Retard', arrivee: '08:25', role: 'Enseignant', ecole: 'Retrouvailles', retardMin: 25 },
-            { id: 4, nom: 'Leki Christine', date: '2026-07-13', statut: 'Présent', arrivee: '07:55', role: 'Enseignant', ecole: 'Harmonie', retardMin: 0 },
-            { id: 5, nom: 'Nkole Jean-Pierre', date: '2026-07-13', statut: 'Absent', arrivee: '—', role: 'Préfet', ecole: 'Harmonie', retardMin: 0 },
-            { id: 6, nom: 'Tshilanda Marc', date: '2026-07-13', statut: 'Présent', arrivee: '07:40', role: 'Préfet', ecole: 'Retrouvailles', retardMin: 0 },
-            { id: 7, nom: 'Kabongo Marie', date: '2026-07-13', statut: 'Présent', arrivee: '08:00', role: 'Comptable', ecole: 'Harmonie', retardMin: 0 },
-            { id: 8, nom: 'Ilunga Robert', date: '2026-07-13', statut: 'Retard', arrivee: '08:18', role: 'Sur école', ecole: 'Harmonie', retardMin: 18 }
-        ],
-        journalDirection: [
-            { id: 1, auteur: 'Mutombo Patient', role: 'Direction', action: 'Inscription approuvée', detail: 'Dossier REG-001 — Nkole Jonathan validé', heure: '09:15', date: '2026-07-13', ecole: 'Harmonie', type: 'success' },
-            { id: 2, auteur: 'Kabila Joëlle', role: 'Direction', action: 'Connexion au système', detail: 'Accès depuis IP 192.168.1.14', heure: '07:48', date: '2026-07-13', ecole: 'Retrouvailles', type: 'info' },
-            { id: 3, auteur: 'Mutombo Patient', role: 'Direction', action: 'Message envoyé aux parents', detail: 'Devoir de Math — 3ème Humanités (32 parents notifiés)', heure: '10:02', date: '2026-07-13', ecole: 'Harmonie', type: 'success' },
-            { id: 4, auteur: 'Kabila Joëlle', role: 'Direction', action: 'Rapport de clôture', detail: 'Rapport journalier soumis pour validation', heure: '16:45', date: '2026-07-12', ecole: 'Retrouvailles', type: 'warning' },
-            { id: 5, auteur: 'Mutombo Patient', role: 'Direction', action: 'Compte créé', detail: 'Nouveau compte Enseignant — Ilunga Robert', heure: '11:30', date: '2026-07-11', ecole: 'Harmonie', type: 'info' }
-        ]
+        pointages: [],
+        journalDirection: []
     },
     commsGlobal: { autoSmsRetard: true, autoWaRappel: true }
 };
-
-// ==========================================
-// DB ENGINE
-// ==========================================
 let db;
 try {
     let s = localStorage.getItem('admin_db');
@@ -711,53 +670,36 @@ document.addEventListener('DOMContentLoaded', () => {
         renderRapportJournalierOfficiel();
     }
 
-    // Helper: Base de données des Rapports Journaliers
+    // Helper: Base de données des Rapports Journaliers avec Synchronisation Neon BD
     function getDailyReportsDb() {
-        if (!localStorage.getItem('hr_daily_reports')) {
-            const defaultReports = [
-                {
-                    id: 'REP-HAR-20260904-01',
-                    date: '2026-09-04',
-                    ecole: 'Harmonie',
-                    auteur: { nom: 'KASOMBO', prenom: 'PAUL', role: 'Directeur (D.P)', email: 'kasombo@retrouvailles.cd' },
-                    status: 'approved',
-                    submittedAt: '2026-09-04T12:30:00.000Z',
-                    approvedBy: { nom: 'EKOTO ISOLOKE', prenom: 'CHADA', role: 'Super-Admin', approvedAt: '2026-09-04T13:15:00.000Z', visaNumber: 'VISA-SA-HAR-0904' },
-                    activiteJournaliere: "Journée d'enseignement régulière dans toutes les classes primaires et maternelles. Déroulement du contrôle mensuel de calcul rapide en 4ème et 5ème primaire. Réunion de coordination pédagogique tenue à 12h45.",
-                    aiExecutiveSummary: "Journée académique sereine au C.S. Harmonie avec 96% de présence élèves et 100% de cours assurés. Deux visites institutionnelles enregistrées et aucun incident disciplinaire.",
-                    effectifEleves: { totalInscrits: 310, presents: 298, absents: 12, tauxAssiduite: 96.1 },
-                    personnelEnseignants: { totalEnseignants: 14, presents: 14, absents: 0, retards: 1, detailsRetards: "Inst. KASONGO Jean (07h36 - +6min)" },
-                    visiteurs: [
-                        { heure: "09h10", nom: "Mme TSHILOMBO Marie", qualite: "Inspectrice Itinérante EPST", but: "Contrôle des dossiers d'inscription 6ème", suite: "Dossiers conformes, visa accordé" },
-                        { heure: "11h00", nom: "M. KABEYA Patrick", qualite: "Parent d'élève (5ème Prim.)", but: "Demande de suivi pédagogique", suite: "Reçu en audience par le D.P" }
-                    ],
-                    disciplineClimat: { incidents: "Aucun incident majeur. Climat serein.", infirmerie: "1 élève soigné pour céphalée légère.", conduiteGenerale: "Excellente discipline d'ensemble" },
-                    directivesDirecteur: "Veiller à l'affichage des résultats d'évaluations avant samedi midi.",
-                    directivesPromoteur: "Très bon travail de suivi. Maintenir la rigueur sur l'assiduité des maîtres de 6ème. — Le Promoteur"
-                },
-                {
-                    id: 'REP-RET-20260904-01',
-                    date: '2026-09-04',
-                    ecole: 'Retrouvailles',
-                    auteur: { nom: 'MATUNGULU', prenom: 'ALAIN', role: 'Préfet', email: 'matungulu@retrouvailles.cd' },
-                    status: 'approved',
-                    submittedAt: '2026-09-04T12:45:00.000Z',
-                    approvedBy: { nom: 'EKOTO ISOLOKE', prenom: 'CHADA', role: 'Super-Admin', approvedAt: '2026-09-04T13:20:00.000Z', visaNumber: 'VISA-SA-RET-0904' },
-                    activiteJournaliere: "Évaluations mi-trimestrielles en Sciences Commerciales et Bio-Chimie. Passage de l'équipe technique de la Sous-Division pour vérification des listes TENASOSP. Les cours de l'après-midi se sont déroulés normalement.",
-                    aiExecutiveSummary: "G.S. Retrouvailles : Tenue des évaluations mi-trimestrielles en toute conformité. 2 retards d'enseignants notés et régularisés. Visite de la Sous-Division satisfaisante.",
-                    effectifEleves: { totalInscrits: 420, presents: 402, absents: 18, tauxAssiduite: 95.7 },
-                    personnelEnseignants: { totalEnseignants: 22, presents: 21, absents: 1, retards: 2, detailsRetards: "Prof. ILUNGA Jacques (07h42), Prof. MBUYI Alain (07h38)" },
-                    visiteurs: [
-                        { heure: "10h15", nom: "Inspecteur Principal LUKUSA", qualite: "Sous-Division Kinshasa Est", but: "Vérification des registres TENASOSP", suite: "Procès-verbal de conformité signé" }
-                    ],
-                    disciplineClimat: { incidents: "1 cas de bavardage répété en 4ème Bio-Chimie (avertissement verbal).", infirmerie: "2 élèves reçus pour fatigue passagère.", conduiteGenerale: "Bonne tenue générale" },
-                    directivesDirecteur: "Clôture impérative de l'encodage des cotes du 1er trimestre ce vendredi soir.",
-                    directivesPromoteur: ""
-                }
-            ];
-            localStorage.setItem('hr_daily_reports', JSON.stringify(defaultReports));
+        let reports = [];
+        try {
+            const raw = localStorage.getItem('hr_daily_reports');
+            if (raw) {
+                reports = JSON.parse(raw) || [];
+                // Suppression absolue des faux rapports d'essai
+                reports = reports.filter(r => !r.id.startsWith('REP-HAR-20260904-') && !r.id.startsWith('REP-RET-20260904-'));
+                localStorage.setItem('hr_daily_reports', JSON.stringify(reports));
+            }
+        } catch (e) { reports = []; }
+
+        // Synchronisation Cloud Neon BD en arrière-plan
+        if (!window._syncNeonRapports) {
+            window._syncNeonRapports = true;
+            fetch('/api/rapports')
+                .then(r => r.ok ? r.json() : [])
+                .then(cloudReports => {
+                    if (Array.isArray(cloudReports) && cloudReports.length > 0) {
+                        localStorage.setItem('hr_daily_reports', JSON.stringify(cloudReports));
+                        if (currentView === 'finance') {
+                            renderRapportJournalierOfficiel();
+                        }
+                    }
+                })
+                .catch(() => {});
         }
-        return JSON.parse(localStorage.getItem('hr_daily_reports')) || [];
+
+        return reports;
     }
 
     window.selectedEcoleRapport = null;
@@ -772,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderRapportJournalierOfficiel();
     };
 
-    window.approuverRapportParSuperAdmin = function(reportId) {
+    window.approuverRapportParSuperAdmin = async function(reportId) {
         const reports = getDailyReportsDb();
         const rep = reports.find(r => r.id === reportId);
         if (!rep) return;
@@ -788,14 +730,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         localStorage.setItem('hr_daily_reports', JSON.stringify(reports));
-        alert(`✅ Rapport #${reportId} visé et approuvé avec succès !
 
-Numéro de Visa Officiel : ${visaNo}
-Le rapport est désormais immédiatement visible par la Direction Générale.`);
+        // Enregistrement sécurisé dans Neon BD
+        try {
+            await fetch('/api/rapports', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rep)
+            });
+        } catch(e) {
+            console.warn('Sauvegarde cloud différée:', e);
+        }
+
+        alert(`✅ Rapport #${reportId} visé et approuvé avec succès !\n\nNuméro de Visa Officiel : ${visaNo}\nLe rapport est désormais certifié et accessible par la Direction Générale.`);
         renderRapportJournalierOfficiel();
     };
 
-    window.demanderRevisionRapport = function(reportId) {
+    window.demanderRevisionRapport = async function(reportId) {
         const motif = prompt("Précisez le motif de révision pour le Directeur / Préfet :");
         if (!motif) return;
 
@@ -807,11 +758,19 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
         rep.revisionMotif = motif;
         localStorage.setItem('hr_daily_reports', JSON.stringify(reports));
 
+        try {
+            await fetch('/api/rapports', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rep)
+            });
+        } catch(e) {}
+
         alert(`🔄 Demande de correction transmise au ${rep.auteur.role} de ${rep.ecole}.`);
         renderRapportJournalierOfficiel();
     };
 
-    window.savePromoteurDirective = function(reportId) {
+    window.savePromoteurDirective = async function(reportId) {
         const input = document.getElementById(`directive-promoteur-${reportId}`);
         if (!input) return;
         const text = input.value.trim();
@@ -823,9 +782,18 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
         rep.directivesPromoteur = text;
         localStorage.setItem('hr_daily_reports', JSON.stringify(reports));
 
-        alert("💾 Directive de la Direction Générale enregistrée et scellée dans le rapport officiel !");
+        try {
+            await fetch('/api/rapports', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rep)
+            });
+        } catch(e) {}
+
+        alert("💾 Directive de la Direction Générale enregistrée et scellée dans Neon BD !");
         renderRapportJournalierOfficiel();
     };
+
 
     function renderRapportJournalierOfficiel() {
         const reports = getDailyReportsDb();
@@ -848,7 +816,7 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                 <div class="mb-10 text-center max-w-3xl mx-auto">
                     <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-black uppercase tracking-widest mb-3 shadow-lg shadow-amber-500/10">
                         <span>🏛️</span>
-                        <span>Supervision Exécutive • Zéro Donnée Financière</span>
+                        <span>Supervision Exécutive • Données Certifiées</span>
                     </div>
                     <h2 class="text-3xl md:text-4xl font-black text-white uppercase tracking-tight">
                         Rapports Journaliers de Direction
@@ -915,11 +883,11 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                                     🏫
                                 </div>
                                 <div class="text-right">
-                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
-                                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                                        Rapport Disponible
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${harRep ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-gray-500/20 text-gray-400 border border-gray-500/40'} flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full ${harRep ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}"></span>
+                                        ${harRep ? 'Rapport Disponible' : 'En Attente de Rapport'}
                                     </span>
-                                    <p class="text-[9px] text-gray-400 mt-1 font-mono">Visa : ${harRep?.approvedBy?.visaNumber || 'VISA-SA-HAR-0904'}</p>
+                                    <p class="text-[9px] text-gray-400 mt-1 font-mono">${harRep ? ('Visa : ' + harRep.approvedBy?.visaNumber) : 'Aucun visa émis'}</p>
                                 </div>
                             </div>
 
@@ -931,20 +899,20 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                                     Direction Locale : <strong class="text-white">Directeur (D.P) KASOMBO Paul</strong>
                                 </p>
                                 <p class="text-[11px] text-gray-400">
-                                    Dernier rapport : <strong class="text-emerald-400">${harRep?.date || 'Aujourd\'hui'}</strong> • Statut : <strong class="text-emerald-300">Approuvé & Certifié</strong>
+                                    ${harRep ? `Dernier rapport : <strong class="text-emerald-400">${harRep.date}</strong> • Statut : <strong class="text-emerald-300">Approuvé</strong>` : 'En attente de la rentrée et des inscriptions'}
                                 </p>
                             </div>
 
                             <div class="grid grid-cols-3 gap-2 mt-4 p-3 rounded-xl bg-black/30 border border-white/5 text-center">
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Élèves</p><p class="text-sm font-black text-white">${harRep?.effectifEleves?.presents || 298}</p></div>
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Enseignants</p><p class="text-sm font-black text-emerald-400">${harRep?.personnelEnseignants?.presents || 14}</p></div>
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Visiteurs</p><p class="text-sm font-black text-amber-400">${harRep?.visiteurs?.length || 2}</p></div>
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Élèves</p><p class="text-sm font-black text-white">${harRep ? harRep.effectifEleves.presents : '0'}</p></div>
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Enseignants</p><p class="text-sm font-black text-emerald-400">${harRep ? harRep.personnelEnseignants.presents : '--'}</p></div>
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Visiteurs</p><p class="text-sm font-black text-amber-400">${harRep ? (harRep.visiteurs?.length || 0) : 0}</p></div>
                             </div>
                         </div>
 
                         <div class="mt-8 pt-4 border-t border-white/10 flex items-center justify-between">
                             <span class="text-xs font-black uppercase tracking-wider text-emerald-300 group-hover:underline">
-                                Voir les Détails du Rapport Harmonie
+                                Consulter le Rapport Harmonie
                             </span>
                             <span class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-black group-hover:translate-x-1 transition">➔</span>
                         </div>
@@ -961,11 +929,11 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                                     🎓
                                 </div>
                                 <div class="text-right">
-                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1.5">
-                                        <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-                                        Rapport Disponible
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${retRep ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-gray-500/20 text-gray-400 border border-gray-500/40'} flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full ${retRep ? 'bg-purple-400 animate-pulse' : 'bg-gray-400'}"></span>
+                                        ${retRep ? 'Rapport Disponible' : 'En Attente de Rapport'}
                                     </span>
-                                    <p class="text-[9px] text-gray-400 mt-1 font-mono">Visa : ${retRep?.approvedBy?.visaNumber || 'VISA-SA-RET-0904'}</p>
+                                    <p class="text-[9px] text-gray-400 mt-1 font-mono">${retRep ? ('Visa : ' + retRep.approvedBy?.visaNumber) : 'Aucun visa émis'}</p>
                                 </div>
                             </div>
 
@@ -977,20 +945,20 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                                     Direction Locale : <strong class="text-white">Préfet des Études MATUNGULU Alain</strong>
                                 </p>
                                 <p class="text-[11px] text-gray-400">
-                                    Dernier rapport : <strong class="text-purple-400">${retRep?.date || 'Aujourd\'hui'}</strong> • Statut : <strong class="text-purple-300">Approuvé & Certifié</strong>
+                                    ${retRep ? `Dernier rapport : <strong class="text-purple-400">${retRep.date}</strong> • Statut : <strong class="text-purple-300">Approuvé</strong>` : 'En attente de la rentrée et des inscriptions'}
                                 </p>
                             </div>
 
                             <div class="grid grid-cols-3 gap-2 mt-4 p-3 rounded-xl bg-black/30 border border-white/5 text-center">
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Élèves</p><p class="text-sm font-black text-white">${retRep?.effectifEleves?.presents || 402}</p></div>
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Enseignants</p><p class="text-sm font-black text-purple-400">${retRep?.personnelEnseignants?.presents || 21}</p></div>
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Visiteurs</p><p class="text-sm font-black text-amber-400">${retRep?.visiteurs?.length || 1}</p></div>
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Élèves</p><p class="text-sm font-black text-white">${retRep ? retRep.effectifEleves.presents : '0'}</p></div>
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Enseignants</p><p class="text-sm font-black text-purple-400">${retRep ? retRep.personnelEnseignants.presents : '--'}</p></div>
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Visiteurs</p><p class="text-sm font-black text-amber-400">${retRep ? (retRep.visiteurs?.length || 0) : 0}</p></div>
                             </div>
                         </div>
 
                         <div class="mt-8 pt-4 border-t border-white/10 flex items-center justify-between">
                             <span class="text-xs font-black uppercase tracking-wider text-purple-300 group-hover:underline">
-                                Voir les Détails du Rapport Retrouvailles
+                                Consulter le Rapport Retrouvailles
                             </span>
                             <span class="w-8 h-8 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-black group-hover:translate-x-1 transition">➔</span>
                         </div>
@@ -1215,7 +1183,7 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                                 <span>👑</span>
                                 <span>Directive & Prise d'Acte de la Direction Générale (Promoteur)</span>
                             </label>
-                            <span class="text-[10px] text-amber-400/80 uppercase tracking-widest font-bold">Visible par la Direction de l'École</span>
+                            <span class="text-[10px] text-amber-400/80 uppercase tracking-widest font-bold">Sauvegardé dans Neon BD</span>
                         </div>
                         <textarea id="directive-promoteur-${latestApproved.id}" rows="2" placeholder="Inscrivez ici vos remarques, instructions ou félicitations pour le Préfet ou le D.P..."
                             class="w-full p-3 bg-black/40 border border-amber-500/30 rounded-xl text-xs text-white placeholder-gray-500 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 leading-relaxed">${latestApproved.directivesPromoteur || ''}</textarea>
@@ -1228,11 +1196,15 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                     </div>
                 </div>
             ` : `
-                <div class="glass-panel p-12 rounded-3xl border border-white/10 text-center space-y-3 mb-8">
-                    <div class="w-16 h-16 rounded-full bg-white/5 text-gray-400 flex items-center justify-center mx-auto text-2xl">📋</div>
-                    <h3 class="text-lg font-bold text-white">Aucun rapport validé pour ${selectedEco === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}</h3>
-                    <p class="text-xs text-gray-400 max-w-md mx-auto">
-                        Le rapport journalier pour cet établissement est en cours de préparation par la Direction ou en attente du visa officiel du Super-Administrateur.
+                <div class="glass-panel p-12 rounded-3xl border border-white/10 text-center space-y-4 mb-8">
+                    <div class="w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto text-3xl">
+                        🏫
+                    </div>
+                    <h3 class="text-xl font-black text-white uppercase tracking-tight">Aucun rapport validé pour ${selectedEco === 'Harmonie' ? 'le C.S. Harmonie' : 'le G.S. Retrouvailles'}</h3>
+                    <p class="text-xs text-gray-400 max-w-lg mx-auto leading-relaxed">
+                        Le système officiel est prêt et sécurisé avec la base de données <strong>Neon BD</strong>.
+                        <br><br>
+                        <span class="text-amber-300 font-bold">En attente de la rentrée scolaire, des inscriptions officielles des enfants et de l'envoi du premier rapport officiel par la Direction (${selectedEco === 'Harmonie' ? 'Directeur D.P KASOMBO Paul' : 'Préfet des Études MATUNGULU Alain'}).</span>
                     </p>
                 </div>
             `}
@@ -1244,7 +1216,7 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                     Archives des Rapports Journaliers — ${selectedEco === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}
                 </h3>
                 <div class="space-y-3">
-                    ${approvedForSchool.map(r => `
+                    ${approvedForSchool.length > 0 ? approvedForSchool.map(r => `
                         <div class="p-4 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between gap-4 hover:bg-white/10 transition">
                             <div class="space-y-0.5">
                                 <div class="flex items-center gap-2">
@@ -1259,7 +1231,7 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                                 <i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimer A4
                             </button>
                         </div>
-                    `).join('')}
+                    `).join('') : '<p class="text-xs text-gray-400 italic py-2">Aucune archive pour le moment. En attente des premières activités scolaires.</p>'}
                 </div>
             </div>
         `;

@@ -116,22 +116,11 @@
     const enseignants = allUsers.filter(u => u.ecole === ecole && ['Enseignant', 'Professeur', 'Instituteur', 'Institutrice', 'Sur École'].includes(u.role));
 
     // Base de données Discipline Locale
-    if (!localStorage.getItem('hr_incidents_db')) {
-      localStorage.setItem('hr_incidents_db', JSON.stringify([
-        { id: 1, date: '19/08/2026', heure: '08:15', eleve: 'KABONGO MUKENDI Marcel', classe: '1ère Humanités', motif: 'Retard répété (3ème fois)', sanction: 'Avertissement écrit & Billet vert', statut: 'Clos', ecole: 'Retrouvailles' },
-        { id: 2, date: '19/08/2026', heure: '10:30', eleve: 'TSHILANDA Alice', classe: '3ème Sc. Électricité', motif: 'Uniforme non conforme', sanction: 'Convocation tuteur', statut: 'En cours', ecole: 'Retrouvailles' },
-        { id: 3, date: '18/08/2026', heure: '11:00', eleve: 'MBAYO Patrick', classe: '5ème Primaire A', motif: 'Bagarre en récréation', sanction: 'Entretien pédagogique', statut: 'Clos', ecole: 'Harmonie' }
-      ]));
-    }
+    if (!localStorage.getItem('hr_incidents_db')) { localStorage.setItem('hr_incidents_db', JSON.stringify([])); }
     let incidentsDb = JSON.parse(localStorage.getItem('hr_incidents_db')) || [];
 
     // Base de données Inspections & Visites de Classe
-    if (!localStorage.getItem('hr_inspections_db')) {
-      localStorage.setItem('hr_inspections_db', JSON.stringify([
-        { id: 1, date: '18/08/2026', prof: 'Prof. ILUNGA Jacques', branche: 'Mathématique (Algèbre)', classe: '4ème Sc. Physique', note: '18/20', avis: 'Excellente tenue de la fiche pédagogique et maîtrise didactique.', ecole: 'Retrouvailles' },
-        { id: 2, date: '17/08/2026', prof: 'Inst. MUKUNA Sarah', branche: 'Français (Lecture)', classe: '3ème Primaire', note: '16/20', avis: 'Bonne participation des élèves, veiller au tableau noir.', ecole: 'Harmonie' }
-      ]));
-    }
+    if (!localStorage.getItem('hr_inspections_db')) { localStorage.setItem('hr_inspections_db', JSON.stringify([])); }
     let inspectionsDb = JSON.parse(localStorage.getItem('hr_inspections_db')) || [];
 
     // Base de données des Affectations de Classes & Horaires par le D.E (Secondaire)
@@ -1861,56 +1850,39 @@
     // MODULE : RAPPORT JOURNALIER (HARMONIE & RETROUVAILLES)
     // ══════════════════════════════════════════════════════════════
     function getDailyReportsDb() {
-      if (!localStorage.getItem('hr_daily_reports')) {
-        const defaultReports = [
-          {
-            id: 'REP-HAR-20260904-01',
-            date: '2026-09-04',
-            ecole: 'Harmonie',
-            auteur: { nom: 'KASOMBO', prenom: 'PAUL', role: 'Directeur (D.P)', email: 'kasombo@retrouvailles.cd' },
-            status: 'approved',
-            submittedAt: '2026-09-04T12:30:00.000Z',
-            approvedBy: { nom: 'EKOTO ISOLOKE', prenom: 'CHADA', role: 'Super-Admin', approvedAt: '2026-09-04T13:15:00.000Z', visaNumber: 'VISA-SA-HAR-0904' },
-            activiteJournaliere: "Journée d'enseignement régulière dans toutes les classes primaires et maternelles. Déroulement du contrôle mensuel de calcul rapide en 4ème et 5ème primaire. Réunion de coordination pédagogique tenue à 12h45.",
-            aiExecutiveSummary: "Journée académique sereine au C.S. Harmonie avec 96% de présence élèves et 100% de cours assurés. Deux visites institutionnelles enregistrées et aucun incident disciplinaire.",
-            effectifEleves: { totalInscrits: 310, presents: 298, absents: 12, tauxAssiduite: 96.1 },
-            personnelEnseignants: { totalEnseignants: 14, presents: 14, absents: 0, retards: 1, detailsRetards: "Inst. KASONGO Jean (07h36 - +6min)" },
-            visiteurs: [
-              { heure: "09h10", nom: "Mme TSHILOMBO Marie", qualite: "Inspectrice Itinérante EPST", but: "Contrôle des dossiers d'inscription 6ème", suite: "Dossiers conformes, visa accordé" },
-              { heure: "11h00", nom: "M. KABEYA Patrick", qualite: "Parent d'élève (5ème Prim.)", but: "Demande de suivi pédagogique", suite: "Reçu en audience par le D.P" }
-            ],
-            disciplineClimat: { incidents: "Aucun incident majeur. Climat serein.", infirmerie: "1 élève soigné pour céphalée légère.", conduiteGenerale: "Excellente discipline d'ensemble" },
-            directivesDirecteur: "Veiller à l'affichage des résultats d'évaluations avant samedi midi.",
-            directivesPromoteur: "Très bon travail de suivi. Maintenir la rigueur sur l'assiduité des maîtres de 6ème. — Le Promoteur"
-          },
-          {
-            id: 'REP-RET-20260904-01',
-            date: '2026-09-04',
-            ecole: 'Retrouvailles',
-            auteur: { nom: 'MATUNGULU', prenom: 'ALAIN', role: 'Préfet', email: 'matungulu@retrouvailles.cd' },
-            status: 'approved',
-            submittedAt: '2026-09-04T12:45:00.000Z',
-            approvedBy: { nom: 'EKOTO ISOLOKE', prenom: 'CHADA', role: 'Super-Admin', approvedAt: '2026-09-04T13:20:00.000Z', visaNumber: 'VISA-SA-RET-0904' },
-            activiteJournaliere: "Évaluations mi-trimestrielles en Sciences Commerciales et Bio-Chimie. Passage de l'équipe technique de la Sous-Division pour vérification des listes TENASOSP. Les cours de l'après-midi se sont déroulés normalement.",
-            aiExecutiveSummary: "G.S. Retrouvailles : Tenue des évaluations mi-trimestrielles en toute conformité. 2 retards d'enseignants notés et régularisés. Visite de la Sous-Division satisfaisante.",
-            effectifEleves: { totalInscrits: 420, presents: 402, absents: 18, tauxAssiduite: 95.7 },
-            personnelEnseignants: { totalEnseignants: 22, presents: 21, absents: 1, retards: 2, detailsRetards: "Prof. ILUNGA Jacques (07h42), Prof. MBUYI Alain (07h38)" },
-            visiteurs: [
-              { heure: "10h15", nom: "Inspecteur Principal LUKUSA", qualite: "Sous-Division Kinshasa Est", but: "Vérification des registres TENASOSP", suite: "Procès-verbal de conformité signé" }
-            ],
-            disciplineClimat: { incidents: "1 cas de bavardage répété en 4ème Bio-Chimie (avertissement verbal).", infirmerie: "2 élèves reçus pour fatigue passagère.", conduiteGenerale: "Bonne tenue générale" },
-            directivesDirecteur: "Clôture impérative de l'encodage des cotes du 1er trimestre ce vendredi soir.",
-            directivesPromoteur: ""
-          }
-        ];
-        localStorage.setItem('hr_daily_reports', JSON.stringify(defaultReports));
+      let reports = [];
+      try {
+        const raw = localStorage.getItem('hr_daily_reports');
+        if (raw) {
+          reports = JSON.parse(raw) || [];
+          reports = reports.filter(r => !r.id.startsWith('REP-HAR-20260904-') && !r.id.startsWith('REP-RET-20260904-'));
+          localStorage.setItem('hr_daily_reports', JSON.stringify(reports));
+        }
+      } catch (e) { reports = []; }
+
+      // Synchronisation Cloud Neon BD
+      if (!window._syncNeonPrefet) {
+        window._syncNeonPrefet = true;
+        fetch('/api/rapports')
+          .then(r => r.ok ? r.json() : [])
+          .then(cloudReports => {
+            if (Array.isArray(cloudReports) && cloudReports.length > 0) {
+              localStorage.setItem('hr_daily_reports', JSON.stringify(cloudReports));
+              if (currentActiveTab === 'rapport_journalier') {
+                renderMainContent('rapport_journalier');
+              }
+            }
+          })
+          .catch(() => {});
       }
-      return JSON.parse(localStorage.getItem('hr_daily_reports')) || [];
+
+      return reports;
     }
 
     window.saveDailyReportsDb = function(reports) {
       localStorage.setItem('hr_daily_reports', JSON.stringify(reports));
     };
+
 
     function viewRapportJournalierPrefet() {
       const reports = getDailyReportsDb();
@@ -1955,12 +1927,12 @@
               </div>
               <div>
                 <label class="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1.5">Élèves Présents ce Jour</label>
-                <input type="number" id="rep-eleves-presents" value="${Math.round(eleves.length * 0.96)}" required
+                <input type="number" id="rep-eleves-presents" value="${eleves.length}" required
                   class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-emerald-300 font-bold outline-none focus:border-emerald-400">
               </div>
               <div>
                 <label class="block text-[10px] font-black text-rose-400 uppercase tracking-widest mb-1.5">Élèves Absents</label>
-                <input type="number" id="rep-eleves-absents" value="${Math.max(0, eleves.length - Math.round(eleves.length * 0.96))}" required
+                <input type="number" id="rep-eleves-absents" value="0" required
                   class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-rose-300 font-bold outline-none focus:border-rose-400">
               </div>
             </div>
@@ -1969,22 +1941,22 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 rounded-2xl bg-white/5 border border-white/10">
               <div>
                 <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Enseignants Prévus</label>
-                <input type="number" id="rep-profs-total" value="${ecole === 'Harmonie' ? 14 : 22}" required
+                <input type="number" id="rep-profs-total" value="${enseignants.length || 0}" required
                   class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white outline-none focus:border-amber-400">
               </div>
               <div>
                 <label class="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1.5">Enseignants Présents</label>
-                <input type="number" id="rep-profs-presents" value="${ecole === 'Harmonie' ? 14 : 21}" required
+                <input type="number" id="rep-profs-presents" value="${enseignants.length || 0}" required
                   class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-emerald-300 font-bold outline-none focus:border-emerald-400">
               </div>
               <div>
                 <label class="block text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1.5">Retards Constatés</label>
-                <input type="number" id="rep-profs-retards" value="1" required
+                <input type="number" id="rep-profs-retards" value="0" required
                   class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-amber-300 font-bold outline-none focus:border-amber-400">
               </div>
               <div>
                 <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Détail des Retards (Noms & Heures)</label>
-                <input type="text" id="rep-profs-retards-detail" placeholder="ex: Prof. ILUNGA (07h40)" value="1 agent avec 10 min de retard"
+                <input type="text" id="rep-profs-retards-detail" placeholder="ex: Prof. ILUNGA (07h40)" value="" placeholder="Ex: Aucun retard constaté"
                   class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white outline-none focus:border-amber-400">
               </div>
             </div>
@@ -2002,7 +1974,7 @@
                 </button>
               </div>
               <textarea id="rep-activites" rows="4" required placeholder="Décrivez le déroulement des cours, évaluations, inspections, faits marquants de la journée..."
-                class="w-full p-4 bg-black/40 border border-white/10 rounded-2xl text-xs text-white leading-relaxed outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400">Déroulement normal des enseignements dans toutes les sections. Respect strict des horaires de cours. Contrôle de présence matinal effectué à 07h30. Les devoirs surveillés se sont déroulés dans le calme.</textarea>
+                class="w-full p-4 bg-black/40 border border-white/10 rounded-2xl text-xs text-white leading-relaxed outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"></textarea>
             </div>
 
             <!-- Ligne 4 : Registre des Visiteurs Extérieurs -->
@@ -2029,14 +2001,7 @@
                     </tr>
                   </thead>
                   <tbody id="visitors-rows" class="divide-y divide-white/5">
-                    <tr>
-                      <td class="py-2"><input type="text" value="09h30" class="w-16 px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
-                      <td class="py-2"><input type="text" value="M. TSHIMANGA Joseph" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
-                      <td class="py-2"><input type="text" value="Parent d'élève" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
-                      <td class="py-2"><input type="text" value="Renseignements scolarité" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
-                      <td class="py-2"><input type="text" value="Reçu en direction" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
-                      <td class="py-2"><button type="button" onclick="this.closest('tr').remove()" class="text-rose-400 hover:text-rose-300">✕</button></td>
-                    </tr>
+                    <!-- Registre propre : vide par défaut, à remplir lors des arrivées de visiteurs -->
                   </tbody>
                 </table>
               </div>
@@ -2175,85 +2140,102 @@ L'assiduité du corps enseignant a permis le maintien d'une cadence académique 
       alert("✨ Rédaction optimisée par l'Assistant IA Institutionnel !");
     };
 
-    window.submitRapportJournalier = function(e) {
+    window.submitRapportJournalier = async function(e) {
       e.preventDefault();
       const date = document.getElementById('rep-date').value;
-      const totalEleves = parseInt(document.getElementById('rep-eleves-total').value) || 0;
-      const elevesPresents = parseInt(document.getElementById('rep-eleves-presents').value) || 0;
-      const elevesAbsents = parseInt(document.getElementById('rep-eleves-absents').value) || 0;
-      
-      const totalProfs = parseInt(document.getElementById('rep-profs-total').value) || 0;
+      const totalInscrits = parseInt(document.getElementById('rep-eleves-total').value) || 0;
+      const presents = parseInt(document.getElementById('rep-eleves-presents').value) || 0;
+      const absents = parseInt(document.getElementById('rep-eleves-absents').value) || 0;
+      const tauxAssiduite = totalInscrits > 0 ? Math.round((presents / totalInscrits) * 1000) / 10 : 0;
+
+      const profsTotal = parseInt(document.getElementById('rep-profs-total').value) || 0;
       const profsPresents = parseInt(document.getElementById('rep-profs-presents').value) || 0;
       const profsRetards = parseInt(document.getElementById('rep-profs-retards').value) || 0;
-      const detailsRetards = document.getElementById('rep-profs-retards-detail').value;
+      const profsRetardsDetail = document.getElementById('rep-profs-retards-detail').value.trim();
 
-      const activites = document.getElementById('rep-activites').value;
-      const discipline = document.getElementById('rep-discipline').value;
-      const infirmerie = document.getElementById('rep-infirmerie').value;
-      const directives = document.getElementById('rep-directives').value;
+      const activiteJournaliere = document.getElementById('rep-activites').value.trim();
 
-      // Extract visitors from table
-      const visitorsRows = document.querySelectorAll('#visitors-rows tr');
+      // Collecte visiteurs
       const visiteurs = [];
-      visitorsRows.forEach(row => {
+      const visitorRows = document.querySelectorAll('#visitors-rows tr');
+      visitorRows.forEach(row => {
         const inputs = row.querySelectorAll('input');
         if (inputs.length >= 5 && inputs[1].value.trim()) {
           visiteurs.push({
-            heure: inputs[0].value.trim() || '--:--',
+            heure: inputs[0].value.trim(),
             nom: inputs[1].value.trim(),
-            qualite: inputs[2].value.trim() || 'Visiteur',
-            but: inputs[3].value.trim() || 'Audience',
-            suite: inputs[4].value.trim() || 'Reçu'
+            qualite: inputs[2].value.trim(),
+            but: inputs[3].value.trim(),
+            suite: inputs[4].value.trim()
           });
         }
       });
 
-      const reports = getDailyReportsDb();
-      const reportId = `REP-${ecole.substring(0,3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+      const incidents = document.getElementById('rep-incidents').value.trim();
+      const infirmerie = document.getElementById('rep-infirmerie').value.trim();
+      const directivesDirecteur = document.getElementById('rep-directives').value.trim();
+
+      // Génération de la Synthèse Exécutive IA
+      const aiExecutiveSummary = `Journée du ${date} au ${ecole === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'} : ${totalInscrits} élèves inscrits avec ${presents} présences (${tauxAssiduite}%). ${profsPresents}/${profsTotal} enseignants présents (${profsRetards} retard(s)). ${visiteurs.length} visiteur(s) reçu(s). Discipline : ${incidents || 'Calme'}.`;
+
+      const repId = `REP-${ecole.substring(0,3).toUpperCase()}-${date.replace(/-/g,'')}-${Date.now().toString().slice(-4)}`;
 
       const newReport = {
-        id: reportId,
+        id: repId,
         date: date,
         ecole: ecole,
         auteur: {
-          nom: (user && user.nom) || (isDP ? 'KASOMBO' : 'MATUNGULU'),
-          prenom: (user && user.prenom) || (isDP ? 'PAUL' : 'ALAIN'),
-          role: role,
-          email: (user && user.email) || 'direction@ecole.cd'
+          nom: user.nom || 'DIRECTION',
+          prenom: user.prenom || '',
+          role: user.role || 'Direction',
+          email: user.email || ''
         },
-        status: 'submitted', // Soumis au Super-Admin pour approbation obligatoire
+        status: 'submitted',
         submittedAt: new Date().toISOString(),
-        activiteJournaliere: activites,
-        aiExecutiveSummary: `Rapport journalier soumis par le ${role} : ${elevesPresents} élèves présents sur ${totalEleves}. Enseignants : ${profsPresents}/${totalProfs}. Climat stable.`,
+        activiteJournaliere: activiteJournaliere,
+        aiExecutiveSummary: aiExecutiveSummary,
         effectifEleves: {
-          totalInscrits: totalEleves,
-          presents: elevesPresents,
-          absents: elevesAbsents,
-          tauxAssiduite: totalEleves > 0 ? Math.round((elevesPresents / totalEleves) * 1000) / 10 : 0
+          totalInscrits: totalInscrits,
+          presents: presents,
+          absents: absents,
+          tauxAssiduite: tauxAssiduite
         },
         personnelEnseignants: {
-          totalEnseignants: totalProfs,
+          totalEnseignants: profsTotal,
           presents: profsPresents,
-          absents: Math.max(0, totalProfs - profsPresents),
+          absents: Math.max(0, profsTotal - profsPresents),
           retards: profsRetards,
-          detailsRetards: detailsRetards
+          detailsRetards: profsRetardsDetail
         },
         visiteurs: visiteurs,
         disciplineClimat: {
-          incidents: discipline,
-          infirmerie: infirmerie,
-          conduiteGenerale: "Conforme aux règlements"
+          incidents: incidents || 'Rien à signaler.',
+          infirmerie: infirmerie || 'Rien à signaler.'
         },
-        directivesDirecteur: directives,
-        directivesPromoteur: ""
+        directivesDirecteur: directivesDirecteur,
+        directivesPromoteur: '',
+        approvedBy: null
       };
 
-      reports.push(newReport);
+      const reports = getDailyReportsDb();
+      reports.unshift(newReport);
       saveDailyReportsDb(reports);
 
-      alert(`✅ Rapport journalier #${reportId} soumis avec succès au Super-Administrateur pour visa officiel !`);
-      switchView('rapport_journalier');
+      // Enregistrement sécurisé dans Neon BD
+      try {
+        await fetch('/api/rapports', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newReport)
+        });
+      } catch(err) {
+        console.warn('Envoi Neon BD différé:', err);
+      }
+
+      alert(`✅ Rapport journalier officiel émis avec succès !\n\nID : ${repId}\nStatut : Soumis au Super-Administrateur pour visa légal avant transmission à la Direction Générale.`);
+      renderMainContent('rapport_journalier');
     };
+
 
     window.printReportDocument = function(reportId) {
       const reports = getDailyReportsDb();

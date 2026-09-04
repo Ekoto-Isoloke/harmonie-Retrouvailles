@@ -3,16 +3,46 @@
   "outputDirectory": "frontend/dist",
   "installCommand": "echo skip",
   "cleanUrls": true,
-
   "rewrites": [
-    { "source": "/api/parent/enfants", "destination": "/api/parent/enfants.js" },
-    { "source": "/api/inscription", "destination": "/api/inscription.js" },
-    { "source": "/api/bio/face", "destination": "/api/bio/face.js" },
-    { "source": "/api/auth/login", "destination": "/api/auth/login.js" },
-    { "source": "/api/utilisateurs", "destination": "/api/utilisateurs.js" },
-    { "source": "/api/rh/pointages", "destination": "/api/rh/pointages.js" },
-    { "source": "/api/rh/pointage/arrivee", "destination": "/api/rh/pointage/arrivee.js" },
-    { "source": "/api/rh/pointage/depart", "destination": "/api/rh/pointage/depart.js" },
-    { "source": "/api/visio", "destination": "/api/visio.js" }
+    {
+      "source": "/api/rapports",
+      "destination": "/api/rapports.js"
+    },
+    {
+      "source": "/api/parent/enfants",
+      "destination": "/api/parent/enfants.js"
+    },
+    {
+      "source": "/api/inscription",
+      "destination": "/api/inscription.js"
+    },
+    {
+      "source": "/api/bio/face",
+      "destination": "/api/bio/face.js"
+    },
+    {
+      "source": "/api/auth/login",
+      "destination": "/api/auth/login.js"
+    },
+    {
+      "source": "/api/utilisateurs",
+      "destination": "/api/utilisateurs.js"
+    },
+    {
+      "source": "/api/rh/pointages",
+      "destination": "/api/rh/pointages.js"
+    },
+    {
+      "source": "/api/rh/pointage/arrivee",
+      "destination": "/api/rh/pointage/arrivee.js"
+    },
+    {
+      "source": "/api/rh/pointage/depart",
+      "destination": "/api/rh/pointage/depart.js"
+    },
+    {
+      "source": "/api/visio",
+      "destination": "/api/visio.js"
+    }
   ]
 }
