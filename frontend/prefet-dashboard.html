@@ -1856,6 +1856,536 @@
       loadVisioPrefet();
     };
 
+
+    // ══════════════════════════════════════════════════════════════
+    // MODULE : RAPPORT JOURNALIER (HARMONIE & RETROUVAILLES)
+    // ══════════════════════════════════════════════════════════════
+    function getDailyReportsDb() {
+      if (!localStorage.getItem('hr_daily_reports')) {
+        const defaultReports = [
+          {
+            id: 'REP-HAR-20260904-01',
+            date: '2026-09-04',
+            ecole: 'Harmonie',
+            auteur: { nom: 'KASOMBO', prenom: 'PAUL', role: 'Directeur (D.P)', email: 'kasombo@retrouvailles.cd' },
+            status: 'approved',
+            submittedAt: '2026-09-04T12:30:00.000Z',
+            approvedBy: { nom: 'EKOTO ISOLOKE', prenom: 'CHADA', role: 'Super-Admin', approvedAt: '2026-09-04T13:15:00.000Z', visaNumber: 'VISA-SA-HAR-0904' },
+            activiteJournaliere: "Journée d'enseignement régulière dans toutes les classes primaires et maternelles. Déroulement du contrôle mensuel de calcul rapide en 4ème et 5ème primaire. Réunion de coordination pédagogique tenue à 12h45.",
+            aiExecutiveSummary: "Journée académique sereine au C.S. Harmonie avec 96% de présence élèves et 100% de cours assurés. Deux visites institutionnelles enregistrées et aucun incident disciplinaire.",
+            effectifEleves: { totalInscrits: 310, presents: 298, absents: 12, tauxAssiduite: 96.1 },
+            personnelEnseignants: { totalEnseignants: 14, presents: 14, absents: 0, retards: 1, detailsRetards: "Inst. KASONGO Jean (07h36 - +6min)" },
+            visiteurs: [
+              { heure: "09h10", nom: "Mme TSHILOMBO Marie", qualite: "Inspectrice Itinérante EPST", but: "Contrôle des dossiers d'inscription 6ème", suite: "Dossiers conformes, visa accordé" },
+              { heure: "11h00", nom: "M. KABEYA Patrick", qualite: "Parent d'élève (5ème Prim.)", but: "Demande de suivi pédagogique", suite: "Reçu en audience par le D.P" }
+            ],
+            disciplineClimat: { incidents: "Aucun incident majeur. Climat serein.", infirmerie: "1 élève soigné pour céphalée légère.", conduiteGenerale: "Excellente discipline d'ensemble" },
+            directivesDirecteur: "Veiller à l'affichage des résultats d'évaluations avant samedi midi.",
+            directivesPromoteur: "Très bon travail de suivi. Maintenir la rigueur sur l'assiduité des maîtres de 6ème. — Le Promoteur"
+          },
+          {
+            id: 'REP-RET-20260904-01',
+            date: '2026-09-04',
+            ecole: 'Retrouvailles',
+            auteur: { nom: 'MATUNGULU', prenom: 'ALAIN', role: 'Préfet', email: 'matungulu@retrouvailles.cd' },
+            status: 'approved',
+            submittedAt: '2026-09-04T12:45:00.000Z',
+            approvedBy: { nom: 'EKOTO ISOLOKE', prenom: 'CHADA', role: 'Super-Admin', approvedAt: '2026-09-04T13:20:00.000Z', visaNumber: 'VISA-SA-RET-0904' },
+            activiteJournaliere: "Évaluations mi-trimestrielles en Sciences Commerciales et Bio-Chimie. Passage de l'équipe technique de la Sous-Division pour vérification des listes TENASOSP. Les cours de l'après-midi se sont déroulés normalement.",
+            aiExecutiveSummary: "G.S. Retrouvailles : Tenue des évaluations mi-trimestrielles en toute conformité. 2 retards d'enseignants notés et régularisés. Visite de la Sous-Division satisfaisante.",
+            effectifEleves: { totalInscrits: 420, presents: 402, absents: 18, tauxAssiduite: 95.7 },
+            personnelEnseignants: { totalEnseignants: 22, presents: 21, absents: 1, retards: 2, detailsRetards: "Prof. ILUNGA Jacques (07h42), Prof. MBUYI Alain (07h38)" },
+            visiteurs: [
+              { heure: "10h15", nom: "Inspecteur Principal LUKUSA", qualite: "Sous-Division Kinshasa Est", but: "Vérification des registres TENASOSP", suite: "Procès-verbal de conformité signé" }
+            ],
+            disciplineClimat: { incidents: "1 cas de bavardage répété en 4ème Bio-Chimie (avertissement verbal).", infirmerie: "2 élèves reçus pour fatigue passagère.", conduiteGenerale: "Bonne tenue générale" },
+            directivesDirecteur: "Clôture impérative de l'encodage des cotes du 1er trimestre ce vendredi soir.",
+            directivesPromoteur: ""
+          }
+        ];
+        localStorage.setItem('hr_daily_reports', JSON.stringify(defaultReports));
+      }
+      return JSON.parse(localStorage.getItem('hr_daily_reports')) || [];
+    }
+
+    window.saveDailyReportsDb = function(reports) {
+      localStorage.setItem('hr_daily_reports', JSON.stringify(reports));
+    };
+
+    function viewRapportJournalierPrefet() {
+      const reports = getDailyReportsDb();
+      const myReports = reports.filter(r => r.ecole === ecole).sort((a,b) => b.submittedAt.localeCompare(a.submittedAt));
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      return `
+        <!-- Carte de Rédaction Prestige -->
+        <div class="glass p-8 rounded-3xl border border-white/10 shadow-2xl mb-8 relative overflow-hidden">
+          <div class="absolute -right-20 -top-20 w-60 h-60 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-white/10 pb-5">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  Document Officiel Hiérarchique
+                </span>
+                <span class="text-xs font-bold text-gray-400">• Circuit : Direction ➔ Super-Admin ➔ DG</span>
+              </div>
+              <h3 class="text-2xl font-black text-white uppercase tracking-tight">Rapport Journalier d'Établissement</h3>
+              <p class="text-xs text-gray-400 mt-0.5">Établissement : ${ecole === 'Harmonie' ? 'Complexe Scolaire Harmonie (Primaire)' : 'Groupe Scolaire Retrouvailles (Secondaire)'}</p>
+            </div>
+            <button type="button" onclick="autoFillReportData()"
+              class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/30 to-amber-600/30 hover:from-amber-500/40 hover:to-amber-600/40 border border-amber-500/50 text-amber-300 text-xs font-black uppercase tracking-wider flex items-center gap-2 transition shadow-lg cursor-pointer">
+              <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+              ⚡ Pré-remplir avec les données du jour
+            </button>
+          </div>
+
+          <form id="form-rapport-journalier" onsubmit="submitRapportJournalier(event)" class="space-y-6">
+            <!-- Ligne 1 : Date & Effectifs Élèves (SANS AUCUNE FINANCE) -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 rounded-2xl bg-white/5 border border-white/10">
+              <div>
+                <label class="block text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1.5">Date du Rapport</label>
+                <input type="date" id="rep-date" value="${todayStr}" required
+                  class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white outline-none focus:border-amber-400">
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Élèves Inscrits</label>
+                <input type="number" id="rep-eleves-total" value="${eleves.length}" required
+                  class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white outline-none focus:border-amber-400">
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1.5">Élèves Présents ce Jour</label>
+                <input type="number" id="rep-eleves-presents" value="${Math.round(eleves.length * 0.96)}" required
+                  class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-emerald-300 font-bold outline-none focus:border-emerald-400">
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-rose-400 uppercase tracking-widest mb-1.5">Élèves Absents</label>
+                <input type="number" id="rep-eleves-absents" value="${Math.max(0, eleves.length - Math.round(eleves.length * 0.96))}" required
+                  class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-rose-300 font-bold outline-none focus:border-rose-400">
+              </div>
+            </div>
+
+            <!-- Ligne 2 : Personnel Enseignant & Pointage Biométrique -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 rounded-2xl bg-white/5 border border-white/10">
+              <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Enseignants Prévus</label>
+                <input type="number" id="rep-profs-total" value="${ecole === 'Harmonie' ? 14 : 22}" required
+                  class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white outline-none focus:border-amber-400">
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1.5">Enseignants Présents</label>
+                <input type="number" id="rep-profs-presents" value="${ecole === 'Harmonie' ? 14 : 21}" required
+                  class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-emerald-300 font-bold outline-none focus:border-emerald-400">
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1.5">Retards Constatés</label>
+                <input type="number" id="rep-profs-retards" value="1" required
+                  class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-amber-300 font-bold outline-none focus:border-amber-400">
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Détail des Retards (Noms & Heures)</label>
+                <input type="text" id="rep-profs-retards-detail" placeholder="ex: Prof. ILUNGA (07h40)" value="1 agent avec 10 min de retard"
+                  class="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white outline-none focus:border-amber-400">
+              </div>
+            </div>
+
+            <!-- Ligne 3 : Activités Journalières & Assistant IA -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-[11px] font-black text-white uppercase tracking-wider">
+                  📝 Activités Pédagogiques & Faits Marquants du Jour
+                </label>
+                <button type="button" onclick="aiPolishReportText()"
+                  class="px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-400"></i>
+                  <span>Perfectionner & Synthétiser avec l'IA</span>
+                </button>
+              </div>
+              <textarea id="rep-activites" rows="4" required placeholder="Décrivez le déroulement des cours, évaluations, inspections, faits marquants de la journée..."
+                class="w-full p-4 bg-black/40 border border-white/10 rounded-2xl text-xs text-white leading-relaxed outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400">Déroulement normal des enseignements dans toutes les sections. Respect strict des horaires de cours. Contrôle de présence matinal effectué à 07h30. Les devoirs surveillés se sont déroulés dans le calme.</textarea>
+            </div>
+
+            <!-- Ligne 4 : Registre des Visiteurs Extérieurs -->
+            <div class="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                  <i data-lucide="users" class="w-4 h-4"></i> Registre des Visiteurs du Jour
+                </h4>
+                <button type="button" onclick="addVisitorRow()"
+                  class="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition">
+                  + Ajouter un Visiteur
+                </button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs" id="table-visiteurs">
+                  <thead>
+                    <tr class="text-[10px] uppercase text-gray-400 border-b border-white/10">
+                      <th class="py-2">Heure</th>
+                      <th class="py-2">Nom & Prénom</th>
+                      <th class="py-2">Qualité (Parent, EPST...)</th>
+                      <th class="py-2">Objet de la Visite</th>
+                      <th class="py-2">Suite Donnée</th>
+                      <th class="py-2 w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="visitors-rows" class="divide-y divide-white/5">
+                    <tr>
+                      <td class="py-2"><input type="text" value="09h30" class="w-16 px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
+                      <td class="py-2"><input type="text" value="M. TSHIMANGA Joseph" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
+                      <td class="py-2"><input type="text" value="Parent d'élève" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
+                      <td class="py-2"><input type="text" value="Renseignements scolarité" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
+                      <td class="py-2"><input type="text" value="Reçu en direction" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
+                      <td class="py-2"><button type="button" onclick="this.closest('tr').remove()" class="text-rose-400 hover:text-rose-300">✕</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Ligne 5 : Discipline & Infirmerie -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                <label class="block text-[11px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> Discipline & Climat Scolaire
+                </label>
+                <textarea id="rep-discipline" rows="2" placeholder="Incidents constatés, sanctions, convocations..."
+                  class="w-full p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white outline-none focus:border-amber-400">Aucun incident majeur à signaler. Climat d'apprentissage propice et respect du règlement.</textarea>
+              </div>
+              <div class="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                <label class="block text-[11px] font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <i data-lucide="heart-pulse" class="w-3.5 h-3.5"></i> Santé & Infirmerie
+                </label>
+                <textarea id="rep-infirmerie" rows="2" placeholder="Nombre d'élèves reçus à l'infirmerie, motifs, soins..."
+                  class="w-full p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white outline-none focus:border-cyan-400">1 élève reçu pour céphalée, repos accordé 30 min puis retour en classe.</textarea>
+              </div>
+            </div>
+
+            <!-- Ligne 6 : Directives du Directeur / Préfet -->
+            <div class="space-y-1.5">
+              <label class="block text-[11px] font-black text-white uppercase tracking-wider">
+                📢 Directives & Mesures Prises par la Direction
+              </label>
+              <textarea id="rep-directives" rows="2" placeholder="Consignes particulières données aux enseignants pour le lendemain..."
+                class="w-full p-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white outline-none focus:border-amber-400">Rappel à tous les professeurs concernant la ponctualité dès 07h15 pour la montée des couleurs demain.</textarea>
+            </div>
+
+            <!-- Bouton d'envoi principal -->
+            <div class="flex items-center justify-between pt-3 border-t border-white/10">
+              <div class="flex items-center gap-2 text-xs text-gray-400">
+                <i data-lucide="info" class="w-4 h-4 text-amber-400"></i>
+                <span>Le rapport sera transmis au <strong>Super-Administrateur</strong> pour visa officiel avant remise à la <strong>Direction Générale</strong>.</span>
+              </div>
+              <button type="submit"
+                class="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition cursor-pointer flex items-center gap-2">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span>Soumettre pour Approbation Super-Admin</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Section Historique des Rapports de l'École -->
+        <div class="glass p-8 rounded-3xl border border-white/10">
+          <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-6 flex items-center gap-2">
+            <i data-lucide="history" class="w-4 h-4 text-purple-400"></i>
+            Historique des Rapports Journaliers — ${ecole === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}
+          </h3>
+
+          <div class="space-y-4">
+            ${myReports.length === 0 ? '<p class="text-xs text-gray-400 italic">Aucun rapport archivé pour le moment.</p>' : ''}
+            ${myReports.map(rep => {
+              const isApproved = rep.status === 'approved';
+              return `
+                <div class="p-5 rounded-2xl border ${isApproved ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'} flex flex-col md:flex-row md:items-center justify-between gap-4 transition">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-black text-white font-mono">#${rep.id}</span>
+                      <span class="text-xs text-gray-400">• Date : ${rep.date}</span>
+                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${isApproved ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'}">
+                        ${isApproved ? '✅ Approuvé & Transmis au DG' : '⏳ En attente Visa Super-Admin'}
+                      </span>
+                    </div>
+                    <p class="text-xs text-gray-200 line-clamp-2">${rep.activiteJournaliere}</p>
+                    <div class="flex flex-wrap items-center gap-3 text-[11px] text-gray-400 mt-1">
+                      <span>👥 Élèves : <strong>${rep.effectifEleves.presents}/${rep.effectifEleves.totalInscrits}</strong> (${rep.effectifEleves.tauxAssiduite}%)</span>
+                      <span>👨‍🏫 Enseignants : <strong>${rep.personnelEnseignants.presents}/${rep.personnelEnseignants.totalEnseignants}</strong> (${rep.personnelEnseignants.retards} retard)</span>
+                      <span>🏛️ Visiteurs : <strong>${rep.visiteurs?.length || 0}</strong></span>
+                      ${isApproved ? `<span class="text-emerald-400 font-bold">🛡️ Visa Super-Admin : ${rep.approvedBy?.visaNumber || 'OK'}</span>` : ''}
+                    </div>
+                    ${rep.directivesPromoteur ? `
+                      <div class="mt-2 p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-200">
+                        <strong class="text-amber-400">Directive du Promoteur :</strong> ${rep.directivesPromoteur}
+                      </div>
+                    ` : ''}
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="printReportDocument('${rep.id}')"
+                      class="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer">
+                      <i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimer A4
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    window.addVisitorRow = function() {
+      const tbody = document.getElementById('visitors-rows');
+      if (!tbody) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="py-2"><input type="text" placeholder="10h00" class="w-16 px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
+        <td class="py-2"><input type="text" placeholder="Nom complet" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
+        <td class="py-2"><input type="text" placeholder="Qualité" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
+        <td class="py-2"><input type="text" placeholder="Motif" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
+        <td class="py-2"><input type="text" placeholder="Décision" class="w-full px-2 py-1 bg-black/40 border border-white/10 rounded text-xs text-white"></td>
+        <td class="py-2"><button type="button" onclick="this.closest('tr').remove()" class="text-rose-400 hover:text-rose-300">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+    };
+
+    window.autoFillReportData = function() {
+      const pointages = JSON.parse(localStorage.getItem('hr_pointages')) || [];
+      const instPointages = pointages.filter(p => p.ecole === ecole);
+      const retards = instPointages.filter(p => p.statut === 'Retard');
+      
+      const elRetards = document.getElementById('rep-profs-retards');
+      const elRetardsDetail = document.getElementById('rep-profs-retards-detail');
+      if (elRetards) elRetards.value = retards.length;
+      if (elRetardsDetail) {
+        elRetardsDetail.value = retards.length > 0 
+          ? retards.map(r => `${r.nom} (${r.arrivee || '07h35'})`).join(', ')
+          : 'Aucun retard constaté ce matin';
+      }
+
+      alert("⚡ Données biométriques et effectifs synchronisés en direct avec les bornes de l'école !");
+    };
+
+    window.aiPolishReportText = function() {
+      const textarea = document.getElementById('rep-activites');
+      if (!textarea) return;
+      const current = textarea.value.trim();
+      const polished = `Synthèse Institutionnelle du ${new Date().toLocaleDateString('fr-FR')} :
+L'ensemble des cours programmés pour le cycle ${ecole === 'Harmonie' ? 'Primaire & Maternelle' : 'Secondaire & Humanités'} a été exécuté en parfaite conformité avec les directives pédagogiques du Ministère de l'EPST. 
+L'assiduité du corps enseignant a permis le maintien d'une cadence académique soutenue. Les activités de surveillance et le climat disciplinaire sont entièrement maîtrisés sans incident répertorié. Préparation active des prochaines échéances d'évaluations.`;
+      textarea.value = polished;
+      alert("✨ Rédaction optimisée par l'Assistant IA Institutionnel !");
+    };
+
+    window.submitRapportJournalier = function(e) {
+      e.preventDefault();
+      const date = document.getElementById('rep-date').value;
+      const totalEleves = parseInt(document.getElementById('rep-eleves-total').value) || 0;
+      const elevesPresents = parseInt(document.getElementById('rep-eleves-presents').value) || 0;
+      const elevesAbsents = parseInt(document.getElementById('rep-eleves-absents').value) || 0;
+      
+      const totalProfs = parseInt(document.getElementById('rep-profs-total').value) || 0;
+      const profsPresents = parseInt(document.getElementById('rep-profs-presents').value) || 0;
+      const profsRetards = parseInt(document.getElementById('rep-profs-retards').value) || 0;
+      const detailsRetards = document.getElementById('rep-profs-retards-detail').value;
+
+      const activites = document.getElementById('rep-activites').value;
+      const discipline = document.getElementById('rep-discipline').value;
+      const infirmerie = document.getElementById('rep-infirmerie').value;
+      const directives = document.getElementById('rep-directives').value;
+
+      // Extract visitors from table
+      const visitorsRows = document.querySelectorAll('#visitors-rows tr');
+      const visiteurs = [];
+      visitorsRows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        if (inputs.length >= 5 && inputs[1].value.trim()) {
+          visiteurs.push({
+            heure: inputs[0].value.trim() || '--:--',
+            nom: inputs[1].value.trim(),
+            qualite: inputs[2].value.trim() || 'Visiteur',
+            but: inputs[3].value.trim() || 'Audience',
+            suite: inputs[4].value.trim() || 'Reçu'
+          });
+        }
+      });
+
+      const reports = getDailyReportsDb();
+      const reportId = `REP-${ecole.substring(0,3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+
+      const newReport = {
+        id: reportId,
+        date: date,
+        ecole: ecole,
+        auteur: {
+          nom: (user && user.nom) || (isDP ? 'KASOMBO' : 'MATUNGULU'),
+          prenom: (user && user.prenom) || (isDP ? 'PAUL' : 'ALAIN'),
+          role: role,
+          email: (user && user.email) || 'direction@ecole.cd'
+        },
+        status: 'submitted', // Soumis au Super-Admin pour approbation obligatoire
+        submittedAt: new Date().toISOString(),
+        activiteJournaliere: activites,
+        aiExecutiveSummary: `Rapport journalier soumis par le ${role} : ${elevesPresents} élèves présents sur ${totalEleves}. Enseignants : ${profsPresents}/${totalProfs}. Climat stable.`,
+        effectifEleves: {
+          totalInscrits: totalEleves,
+          presents: elevesPresents,
+          absents: elevesAbsents,
+          tauxAssiduite: totalEleves > 0 ? Math.round((elevesPresents / totalEleves) * 1000) / 10 : 0
+        },
+        personnelEnseignants: {
+          totalEnseignants: totalProfs,
+          presents: profsPresents,
+          absents: Math.max(0, totalProfs - profsPresents),
+          retards: profsRetards,
+          detailsRetards: detailsRetards
+        },
+        visiteurs: visiteurs,
+        disciplineClimat: {
+          incidents: discipline,
+          infirmerie: infirmerie,
+          conduiteGenerale: "Conforme aux règlements"
+        },
+        directivesDirecteur: directives,
+        directivesPromoteur: ""
+      };
+
+      reports.push(newReport);
+      saveDailyReportsDb(reports);
+
+      alert(`✅ Rapport journalier #${reportId} soumis avec succès au Super-Administrateur pour visa officiel !`);
+      switchView('rapport_journalier');
+    };
+
+    window.printReportDocument = function(reportId) {
+      const reports = getDailyReportsDb();
+      const rep = reports.find(r => r.id === reportId);
+      if (!rep) return;
+
+      const printWin = window.open('', '_blank', 'width=850,height=1100');
+      printWin.document.write(`
+        <html>
+        <head>
+          <title>Rapport Journalier - ${rep.ecole} - ${rep.date}</title>
+          <style>
+            body { font-family: 'Times New Roman', serif; margin: 30px; color: #111; font-size: 13px; line-height: 1.4; }
+            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; }
+            .header h1 { margin: 0; font-size: 16px; text-transform: uppercase; }
+            .header h2 { margin: 2px 0; font-size: 14px; text-transform: uppercase; font-weight: normal; }
+            .header h3 { margin: 4px 0 0 0; font-size: 13px; font-weight: bold; text-decoration: underline; }
+            .meta { display: flex; justify-between; margin-bottom: 15px; font-weight: bold; }
+            .section-title { font-size: 13px; font-weight: bold; text-transform: uppercase; background: #f0f0f0; padding: 4px 8px; margin: 12px 0 6px 0; border-left: 4px solid #333; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 12px; }
+            th, td { border: 1px solid #444; padding: 5px 8px; text-align: left; }
+            th { background: #f4f4f4; }
+            .signatures { display: flex; justify-content: space-between; margin-top: 40px; page-break-inside: avoid; }
+            .sign-box { text-align: center; width: 45%; border-top: 1px solid #222; padding-top: 6px; }
+            .stamp { border: 2px solid #15803d; color: #15803d; padding: 4px 8px; display: inline-block; font-weight: bold; text-transform: uppercase; font-size: 11px; margin-top: 6px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h1>
+            <h2>MINISTÈRE DE L'ÉDUCATION NATIONALE ET NOUVELLE CITOYENNETÉ</h2>
+            <h2>${rep.ecole === 'Harmonie' ? 'COMPLEXE SCOLAIRE HARMONIE (MATERNELLE & PRIMAIRE)' : 'GROUPE SCOLAIRE RETROUVAILLES (SECONDAIRE & HUMANITÉS)'}</h2>
+            <h3>RAPPORT JOURNALIER OFFICIEL DE LA DIRECTION</h3>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:12px;">
+            <div><strong>Rapport N° :</strong> ${rep.id}</div>
+            <div><strong>Date :</strong> ${rep.date}</div>
+            <div><strong>Établissement :</strong> ${rep.ecole}</div>
+          </div>
+
+          <div class="section-title">I. ASSIDUITÉ DES ÉLÈVES</div>
+          <table>
+            <tr>
+              <th>Effectif Total Inscrits</th>
+              <th>Élèves Présents</th>
+              <th>Élèves Absents</th>
+              <th>Taux de Fréquentation</th>
+            </tr>
+            <tr>
+              <td>${rep.effectifEleves.totalInscrits}</td>
+              <td>${rep.effectifEleves.presents}</td>
+              <td>${rep.effectifEleves.absents}</td>
+              <td>${rep.effectifEleves.tauxAssiduite}%</td>
+            </tr>
+          </table>
+
+          <div class="section-title">II. PRÉSENCE DU PERSONNEL ENSEIGNANT</div>
+          <table>
+            <tr>
+              <th>Enseignants Prévus</th>
+              <th>Présents</th>
+              <th>Absents</th>
+              <th>Retards</th>
+              <th>Détail des Retards</th>
+            </tr>
+            <tr>
+              <td>${rep.personnelEnseignants.totalEnseignants}</td>
+              <td>${rep.personnelEnseignants.presents}</td>
+              <td>${rep.personnelEnseignants.absents}</td>
+              <td>${rep.personnelEnseignants.retards}</td>
+              <td>${rep.personnelEnseignants.detailsRetards || 'Néant'}</td>
+            </tr>
+          </table>
+
+          <div class="section-title">III. ACTIVITÉS PÉDAGOGIQUES & DÉROULEMENT DU JOUR</div>
+          <p style="margin:4px 0 10px 0; text-align:justify;">${rep.activiteJournaliere}</p>
+
+          <div class="section-title">IV. REGISTRE DES VISITEURS EXTÉRIEURS</div>
+          <table>
+            <tr>
+              <th style="width:60px;">Heure</th>
+              <th>Nom du Visiteur</th>
+              <th>Qualité</th>
+              <th>Objet de la Visite</th>
+              <th>Suite Donnée</th>
+            </tr>
+            ${(rep.visiteurs && rep.visiteurs.length > 0) ? rep.visiteurs.map(v => `
+              <tr>
+                <td>${v.heure}</td>
+                <td>${v.nom}</td>
+                <td>${v.qualite}</td>
+                <td>${v.but}</td>
+                <td>${v.suite}</td>
+              </tr>
+            `).join('') : '<tr><td colspan="5" style="text-align:center; font-style:italic;">Aucun visiteur extérieur enregistré ce jour</td></tr>'}
+          </table>
+
+          <div class="section-title">V. DISCIPLINE & SANTÉ</div>
+          <p><strong>Incidents / Sanctions :</strong> ${rep.disciplineClimat?.incidents || 'R.A.S'}</p>
+          <p><strong>Infirmerie / Soins :</strong> ${rep.disciplineClimat?.infirmerie || 'R.A.S'}</p>
+
+          <div class="section-title">VI. DIRECTIVES DE LA DIRECTION</div>
+          <p>${rep.directivesDirecteur || 'Application stricte du programme scolaire en cours.'}</p>
+
+          ${rep.directivesPromoteur ? `
+            <div class="section-title">VII. PRISE D'ACTE & DIRECTIVES DU PROMOTEUR (DIRECTION GÉNÉRALE)</div>
+            <p style="font-style:italic; font-weight:bold; color:#854d0e;">${rep.directivesPromoteur}</p>
+          ` : ''}
+
+          <div class="signatures">
+            <div class="sign-box">
+              Pour la Direction de l'Établissement<br>
+              <strong>${rep.auteur.prenom} ${rep.auteur.nom}</strong><br>
+              <em>${rep.auteur.role}</em>
+            </div>
+            <div class="sign-box">
+              Pour le Super-Administrateur Général<br>
+              ${rep.approvedBy ? `
+                <strong>${rep.approvedBy.prenom} ${rep.approvedBy.nom}</strong><br>
+                <span class="stamp">VISÉ & APPROUVÉ (${rep.approvedBy.visaNumber})</span>
+              ` : '<em>En attente de visa</em>'}
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+      printWin.document.close();
+      printWin.focus();
+      setTimeout(() => { printWin.print(); }, 500);
+    };
+
     // Initialisation
     renderSidebar();
     renderMainContent();

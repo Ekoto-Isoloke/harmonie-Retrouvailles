@@ -707,372 +707,528 @@ document.addEventListener('DOMContentLoaded', () => {
     // RENDER: FINANCE (DUAL GATEWAY)
     // ==========================================
     function renderFinance() {
-        const inst = db.institutions[db.ecoleActive];
-        const hasSec = db.ecoleActive === 'Retrouvailles';
+        // Redirection vers le module Rapport Journalier Officiel
+        renderRapportJournalierOfficiel();
+    }
+
+    // Helper: Base de données des Rapports Journaliers
+    function getDailyReportsDb() {
+        if (!localStorage.getItem('hr_daily_reports')) {
+            const defaultReports = [
+                {
+                    id: 'REP-HAR-20260904-01',
+                    date: '2026-09-04',
+                    ecole: 'Harmonie',
+                    auteur: { nom: 'KASOMBO', prenom: 'PAUL', role: 'Directeur (D.P)', email: 'kasombo@retrouvailles.cd' },
+                    status: 'approved',
+                    submittedAt: '2026-09-04T12:30:00.000Z',
+                    approvedBy: { nom: 'EKOTO ISOLOKE', prenom: 'CHADA', role: 'Super-Admin', approvedAt: '2026-09-04T13:15:00.000Z', visaNumber: 'VISA-SA-HAR-0904' },
+                    activiteJournaliere: "Journée d'enseignement régulière dans toutes les classes primaires et maternelles. Déroulement du contrôle mensuel de calcul rapide en 4ème et 5ème primaire. Réunion de coordination pédagogique tenue à 12h45.",
+                    aiExecutiveSummary: "Journée académique sereine au C.S. Harmonie avec 96% de présence élèves et 100% de cours assurés. Deux visites institutionnelles enregistrées et aucun incident disciplinaire.",
+                    effectifEleves: { totalInscrits: 310, presents: 298, absents: 12, tauxAssiduite: 96.1 },
+                    personnelEnseignants: { totalEnseignants: 14, presents: 14, absents: 0, retards: 1, detailsRetards: "Inst. KASONGO Jean (07h36 - +6min)" },
+                    visiteurs: [
+                        { heure: "09h10", nom: "Mme TSHILOMBO Marie", qualite: "Inspectrice Itinérante EPST", but: "Contrôle des dossiers d'inscription 6ème", suite: "Dossiers conformes, visa accordé" },
+                        { heure: "11h00", nom: "M. KABEYA Patrick", qualite: "Parent d'élève (5ème Prim.)", but: "Demande de suivi pédagogique", suite: "Reçu en audience par le D.P" }
+                    ],
+                    disciplineClimat: { incidents: "Aucun incident majeur. Climat serein.", infirmerie: "1 élève soigné pour céphalée légère.", conduiteGenerale: "Excellente discipline d'ensemble" },
+                    directivesDirecteur: "Veiller à l'affichage des résultats d'évaluations avant samedi midi.",
+                    directivesPromoteur: "Très bon travail de suivi. Maintenir la rigueur sur l'assiduité des maîtres de 6ème. — Le Promoteur"
+                },
+                {
+                    id: 'REP-RET-20260904-01',
+                    date: '2026-09-04',
+                    ecole: 'Retrouvailles',
+                    auteur: { nom: 'MATUNGULU', prenom: 'ALAIN', role: 'Préfet', email: 'matungulu@retrouvailles.cd' },
+                    status: 'approved',
+                    submittedAt: '2026-09-04T12:45:00.000Z',
+                    approvedBy: { nom: 'EKOTO ISOLOKE', prenom: 'CHADA', role: 'Super-Admin', approvedAt: '2026-09-04T13:20:00.000Z', visaNumber: 'VISA-SA-RET-0904' },
+                    activiteJournaliere: "Évaluations mi-trimestrielles en Sciences Commerciales et Bio-Chimie. Passage de l'équipe technique de la Sous-Division pour vérification des listes TENASOSP. Les cours de l'après-midi se sont déroulés normalement.",
+                    aiExecutiveSummary: "G.S. Retrouvailles : Tenue des évaluations mi-trimestrielles en toute conformité. 2 retards d'enseignants notés et régularisés. Visite de la Sous-Division satisfaisante.",
+                    effectifEleves: { totalInscrits: 420, presents: 402, absents: 18, tauxAssiduite: 95.7 },
+                    personnelEnseignants: { totalEnseignants: 22, presents: 21, absents: 1, retards: 2, detailsRetards: "Prof. ILUNGA Jacques (07h42), Prof. MBUYI Alain (07h38)" },
+                    visiteurs: [
+                        { heure: "10h15", nom: "Inspecteur Principal LUKUSA", qualite: "Sous-Division Kinshasa Est", but: "Vérification des registres TENASOSP", suite: "Procès-verbal de conformité signé" }
+                    ],
+                    disciplineClimat: { incidents: "1 cas de bavardage répété en 4ème Bio-Chimie (avertissement verbal).", infirmerie: "2 élèves reçus pour fatigue passagère.", conduiteGenerale: "Bonne tenue générale" },
+                    directivesDirecteur: "Clôture impérative de l'encodage des cotes du 1er trimestre ce vendredi soir.",
+                    directivesPromoteur: ""
+                }
+            ];
+            localStorage.setItem('hr_daily_reports', JSON.stringify(defaultReports));
+        }
+        return JSON.parse(localStorage.getItem('hr_daily_reports')) || [];
+    }
+
+    window.selectedEcoleRapport = localStorage.getItem('hr_selected_ecole_rapport') || 'Harmonie';
+
+    window.switchEcoleRapport = function(ecole) {
+        window.selectedEcoleRapport = ecole;
+        localStorage.setItem('hr_selected_ecole_rapport', ecole);
+        renderRapportJournalierOfficiel();
+    };
+
+    window.approuverRapportParSuperAdmin = function(reportId) {
+        const reports = getDailyReportsDb();
+        const rep = reports.find(r => r.id === reportId);
+        if (!rep) return;
+
+        const visaNo = `VISA-SA-${rep.ecole.substring(0,3).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+        rep.status = 'approved';
+        rep.approvedBy = {
+            nom: (user && user.nom) || 'EKOTO ISOLOKE',
+            prenom: (user && user.prenom) || 'CHADA',
+            role: 'Super-Admin',
+            approvedAt: new Date().toISOString(),
+            visaNumber: visaNo
+        };
+
+        localStorage.setItem('hr_daily_reports', JSON.stringify(reports));
+        alert(`✅ Rapport #${reportId} visé et approuvé avec succès !
+
+Numéro de Visa Officiel : ${visaNo}
+Le rapport est désormais immédiatement visible par la Direction Générale.`);
+        renderRapportJournalierOfficiel();
+    };
+
+    window.demanderRevisionRapport = function(reportId) {
+        const motif = prompt("Précisez le motif de révision pour le Directeur / Préfet :");
+        if (!motif) return;
+
+        const reports = getDailyReportsDb();
+        const rep = reports.find(r => r.id === reportId);
+        if (!rep) return;
+
+        rep.status = 'needs_revision';
+        rep.revisionMotif = motif;
+        localStorage.setItem('hr_daily_reports', JSON.stringify(reports));
+
+        alert(`🔄 Demande de correction transmise au ${rep.auteur.role} de ${rep.ecole}.`);
+        renderRapportJournalierOfficiel();
+    };
+
+    window.savePromoteurDirective = function(reportId) {
+        const input = document.getElementById(`directive-promoteur-${reportId}`);
+        if (!input) return;
+        const text = input.value.trim();
+
+        const reports = getDailyReportsDb();
+        const rep = reports.find(r => r.id === reportId);
+        if (!rep) return;
+
+        rep.directivesPromoteur = text;
+        localStorage.setItem('hr_daily_reports', JSON.stringify(reports));
+
+        alert("💾 Directive de la Direction Générale enregistrée et scellée dans le rapport officiel !");
+        renderRapportJournalierOfficiel();
+    };
+
+    function renderRapportJournalierOfficiel() {
+        const reports = getDailyReportsDb();
+        const selectedEco = window.selectedEcoleRapport || 'Harmonie';
+        const isSuperAdminRole = user && user.role === 'Super-Admin';
+
+        // Rapports en attente pour le Super-Admin
+        const pendingReports = reports.filter(r => r.status === 'submitted');
+        
+        // Rapports approuvés pour l'école sélectionnée
+        const approvedForSchool = reports.filter(r => r.ecole === selectedEco && r.status === 'approved')
+                                         .sort((a,b) => b.date.localeCompare(a.date));
+        const latestApproved = approvedForSchool[0];
 
         ui.content.innerHTML = `
-            <div class="mb-8 flex justify-between items-end">
+            <!-- En-tête Prestigieux -->
+            <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Rapport Journalier & Caisse</h2>
-                    <p class="text-xs text-gray-500 font-bold mt-1 uppercase tracking-widest">${db.ecoleActive} - Pôle Financier v3.0</p>
+                    <div class="flex items-center gap-3 mb-1.5">
+                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-gray-950 shadow-lg shadow-amber-500/20 font-black text-xl">
+                            🏛️
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-black text-white uppercase tracking-tight">Rapport Journalier de Direction</h2>
+                            <p class="text-xs text-amber-300 font-bold uppercase tracking-widest">Gouvernance Institutionnelle • Zéro Donnée Financière</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400">Circuit hiérarchique : Établissement ➔ Visa Super-Administrateur ➔ Prise d'Acte Direction Générale</p>
+                </div>
+
+                <!-- Sélecteur d'établissement prestigieux -->
+                <div class="p-1.5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2">
+                    <button type="button" onclick="switchEcoleRapport('Harmonie')"
+                        class="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${selectedEco === 'Harmonie' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 border border-emerald-400/50' : 'text-gray-400 hover:text-white'}">
+                        <span>🏫</span>
+                        <span>C.S. Harmonie (Primaire)</span>
+                    </button>
+                    <button type="button" onclick="switchEcoleRapport('Retrouvailles')"
+                        class="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${selectedEco === 'Retrouvailles' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/25 border border-purple-400/50' : 'text-gray-400 hover:text-white'}">
+                        <span>🎓</span>
+                        <span>G.S. Retrouvailles (Secondaire)</span>
+                    </button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                
-                <!-- PAYMENT TERMINAL -->
-                <div class="xl:col-span-2 glass-panel p-10 rounded-[2.5rem] shadow-2xl relative border border-white/20">
-                    
-                    <!-- DUAL GATEWAY CHOICE -->
-                    <div class="flex bg-white/10 dark:bg-gray-800/80 p-1.5 rounded-2xl mb-10 w-fit shadow-inner">
-                        <button id="tabM" class="px-8 py-3 text-sm font-black rounded-xl transition-all bg-[#112240]/80 dark:bg-gray-700 shadow-md text-brand-600 scale-105">Mobile Money</button>
-                        <button id="tabC" class="px-8 py-3 text-sm font-black rounded-xl transition-all text-gray-500 hover:text-gray-700">Caisse (Présentiel)</button>
+            <!-- SECTION SPÉCIALE SUPER-ADMIN : RAPPORTS EN ATTENTE DE VISA -->
+            ${isSuperAdminRole && pendingReports.length > 0 ? `
+                <div class="glass-panel p-6 rounded-3xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-transparent mb-8 shadow-2xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></span>
+                            <h3 class="text-sm font-black text-amber-300 uppercase tracking-wider">
+                                📥 Rapports Journaliers en Attente de Votre Visa d'Approbation (${pendingReports.length})
+                            </h3>
+                        </div>
+                        <span class="text-xs text-gray-400">Le Promoteur ne verra ces rapports qu'après votre approbation</span>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-12">
-                        <div class="lg:col-span-3 space-y-8">
-                            
-                            <!-- Shared Fields -->
-                            <div class="space-y-4">
-                                <div><label class="premium-label">Nom de l'élève *</label>
-                                    <select id="stdSel" class="premium-select">
-                                        <option value="" disabled selected>Choisir un élève...</option>
-                                        ${inst.pedagogie.eleves.map(e => `<option value="${e.nom}">${e.nom}</option>`).join('')}
-                                    </select>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label class="premium-label">Classe Sollicitée *</label>
-                                        <select id="clsSel" class="premium-select">
-                                            <option value="" disabled selected>Sélectionner...</option>
-                                            ${inst.pedagogie.classes.map(c => `<option value="${c}">${c}</option>`).join('')}
-                                        </select>
+                    <div class="space-y-4">
+                        ${pendingReports.map(rep => `
+                            <div class="p-5 rounded-2xl bg-black/40 border border-amber-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase ${rep.ecole === 'Harmonie' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-purple-500/20 text-purple-300 border border-purple-500/40'}">${rep.ecole}</span>
+                                        <strong class="text-white text-xs">Rapport du ${rep.date}</strong>
+                                        <span class="text-gray-400 text-xs">• Par : ${rep.auteur.prenom} ${rep.auteur.nom} (${rep.auteur.role})</span>
                                     </div>
-                                    <div id="boxSection" class="${hasSec ? '' : 'hidden'}">
-                                        <label class="premium-label">Section (Famille) *</label>
-                                        <select id="secSel" class="premium-select">
-                                            <option value="" selected>Choisir Section...</option>
-                                            ${hasSec ? inst.pedagogie.sections.map(s => `<option value="${s}">${s}</option>`).join('') : ''}
-                                        </select>
+                                    <p class="text-xs text-gray-300">${rep.activiteJournaliere}</p>
+                                    <div class="flex flex-wrap items-center gap-3 text-[11px] text-gray-400 mt-1 font-medium">
+                                        <span>👥 Élèves : <strong>${rep.effectifEleves.presents}/${rep.effectifEleves.totalInscrits}</strong> (${rep.effectifEleves.tauxAssiduite}%)</span>
+                                        <span>👨‍🏫 Enseignants : <strong>${rep.personnelEnseignants.presents}/${rep.personnelEnseignants.totalEnseignants}</strong></span>
+                                        <span>⏱️ Retards : <strong class="text-amber-400">${rep.personnelEnseignants.retards}</strong></span>
+                                        <span>🏛️ Visiteurs : <strong>${rep.visiteurs?.length || 0}</strong></span>
                                     </div>
                                 </div>
-                                <div id="boxOption" class="hidden">
-                                    <label class="premium-label">Option Spécifique *</label>
-                                    <select id="optSel" class="premium-select">
-                                        <option value="" selected>Choisir Option...</option>
-                                        <!-- Dynamic load block -->
-                                    </select>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button type="button" onclick="approuverRapportParSuperAdmin('${rep.id}')"
+                                        class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer">
+                                        <i data-lucide="check-check" class="w-4 h-4"></i> Viser & Approuver pour le DG
+                                    </button>
+                                    <button type="button" onclick="demanderRevisionRapport('${rep.id}')"
+                                        class="px-3 py-2.5 bg-white/10 hover:bg-white/20 text-gray-300 text-xs font-bold rounded-xl transition cursor-pointer">
+                                        🔄 Demander Correction
+                                    </button>
                                 </div>
                             </div>
-
-                            <!-- Motif (Always visible now) -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="col-span-1 md:col-span-2">
-                                    <label class="premium-label">Motif du Paiement *</label>
-                                    <select id="motiveSel" class="premium-select font-bold text-brand-700">
-                                        <option value="Frais Scolaires">Frais Scolaires</option>
-                                        <option value="Frais Connexes">Frais Connexes (Non fixé)</option>
-                                        <option value="Fournitures">Fournitures (Non fixé)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Mobile Money Specific -->
-                            <div id="mFields" class="grid grid-cols-2 gap-4 animate-fade-in">
-                                <div><label class="premium-label">Opérateur</label><select class="premium-select"><option>M-Pesa</option><option>Airtel Money</option><option>Orange Money</option></select></div>
-                                <div><label class="premium-label">Numéro Tél</label><input type="text" placeholder="+243..." class="premium-input"></div>
-                            </div>
-
-                            <!-- Cash Specific -->
-                            <div id="cFields" class="hidden animate-fade-in">
-                                <div class="p-4 bg-[#112240]/50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 rounded-xl text-xs text-gray-500 font-medium">
-                                    Paiement manuel enregistré à la caisse.
-                                </div>
-                            </div>
-
-                            <!-- Amount -->
-                            <div class="space-y-4">
-                                <div><label class="premium-label text-brand-600 font-black">Montant Total à Payer (USD)</label>
-                                    <div class="relative">
-                                        <span class="absolute left-6 top-1/2 -translate-y-1/2 font-black text-gray-400 text-xl">$</span>
-                                        <input id="amtInp" type="number" placeholder="0.00" class="premium-input pl-12 text-3xl font-black text-brand-600">
-                                    </div>
-                                </div>
-                                <button id="valBtn" class="premium-btn w-full py-5 rounded-[1.5rem] font-black text-xl flex items-center justify-center gap-3">VALIDER TRANSACTION</button>
-                            </div>
-                        </div>
-
-                        <!-- Sidebar Summary -->
-                        <div class="lg:col-span-2">
-                            <div class="bg-[#112240]/50 dark:bg-gray-800/50 rounded-[2.5rem] p-10 border dark:border-gray-700 shadow-inner h-full flex flex-col justify-between">
-                                <div>
-                                    <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-10">Résumé du Dossier</h4>
-                                    <div class="space-y-6">
-                                        <div class="flex justify-between border-b border-dashed dark:border-gray-700 pb-2"><span class="text-xs text-gray-400">Total Annuel</span><span id="txtT" class="font-bold">$ 0</span></div>
-                                        <div class="flex justify-between border-b border-dashed dark:border-gray-700 pb-2"><span class="text-xs text-gray-400">Déjà Versé</span><span id="txtP" class="font-bold text-green-500">$ 0</span></div>
-                                    </div>
-                                </div>
-                                <div class="pt-10">
-                                    <span class="text-orange-500 font-black text-[10px] uppercase tracking-widest">Reste à payer</span>
-                                    <div id="txtB" class="text-5xl font-black text-orange-600 tracking-tighter mt-2">$ 0</div>
-                                </div>
-                            </div>
-                        </div>
+                        `).join('')}
                     </div>
                 </div>
+            ` : ''}
 
-                <!-- RIGHT SIDE: Tarifs et Clôture -->
-                <div class="space-y-8">
-                    <!-- Clôture de Caisse Panel -->
-                    <div class="glass-panel p-8 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-gray-700 bg-gradient-to-br from-gray-900 to-gray-800 text-white relative overflow-hidden group hover:shadow-2xl transition-all">
-                        <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-[#112240]/80/10 rounded-full blur-2xl"></div>
-                        <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Opérations du Jour</h3>
-                        <div class="text-3xl font-black tracking-tighter mb-6">$${inst.finance.revenus.toLocaleString()} <span class="text-xs text-brand-400 uppercase tracking-widest font-bold block mt-1">+ Encaissés Aujourd'hui</span></div>
-                        <button onclick="alert('Rapport de clôture hautement sécurisé généré et envoyé à la direction.')" class="w-full py-4 bg-[#112240]/80 text-gray-900 font-black rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
-                            <i data-lucide="lock" class="w-4 h-4"></i> Clôturer la Caisse
+            <!-- AFFICHAGE DU RAPPORT DU JOUR APPROUVÉ POUR L'ÉTABLISSEMENT SÉLECTIONNÉ -->
+            ${latestApproved ? `
+                <div class="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl mb-8 relative overflow-hidden">
+                    <div class="absolute -right-20 -top-20 w-60 h-60 ${selectedEco === 'Harmonie' ? 'bg-emerald-500/10' : 'bg-purple-500/10'} rounded-full blur-3xl pointer-events-none"></div>
+
+                    <!-- Bandeau Officiel de Visa Super-Admin -->
+                    <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-xl">
+                                ✓
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-black uppercase text-emerald-400 tracking-wider">
+                                        Rapport Certifié & Approuvé par le Super-Administrateur
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-black border border-emerald-500/30">
+                                        ${latestApproved.approvedBy?.visaNumber || 'VISA-OFFICIEL'}
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-gray-300 mt-0.5">
+                                    Visé par <strong>${latestApproved.approvedBy?.prenom} ${latestApproved.approvedBy?.nom}</strong> le ${latestApproved.approvedBy ? new Date(latestApproved.approvedBy.approvedAt).toLocaleDateString('fr-FR') : ''} • Émis par le <strong>${latestApproved.auteur.role}</strong>
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="printReportDocumentAdmin('${latestApproved.id}')"
+                            class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition cursor-pointer shrink-0">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Imprimer la Fiche A4
                         </button>
                     </div>
 
-                    <!-- Panel Tarifs -->
-                    <div class="glass-panel p-8 rounded-[2.5rem] border border-gray-100 dark:border-gray-800">
-                        <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-6 flex justify-between">Tarification Officielle <i data-lucide="shield-check" class="w-3 h-3 text-brand-500"></i></h3>
-                        <div class="space-y-3">
-                            ${inst.finance.fraisScolaires.map(f => `
-                                <div class="p-4 bg-[#112240]/50 dark:bg-gray-800/80 rounded-2xl flex justify-between items-center hover:bg-brand-50 transition-all cursor-pointer border border-transparent hover:border-brand-100">
-                                    <span class="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase">${f.classe}</span>
-                                    <span class="text-sm font-black text-brand-600">$${f.montant !== undefined ? f.montant : `${f.montantNonTech} - $${f.montantTech}`}</span>
-                                </div>
-                            `).join('')}
+                    <!-- KPIs Assiduité & Présences (SANS AUCUNE FINANCE) -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Assiduité Élèves</p>
+                            <h4 class="text-2xl font-black text-white mt-1">${latestApproved.effectifEleves.tauxAssiduite}%</h4>
+                            <p class="text-[10px] text-emerald-400 mt-0.5">${latestApproved.effectifEleves.presents} présents / ${latestApproved.effectifEleves.totalInscrits} inscrits</p>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Enseignants Présents</p>
+                            <h4 class="text-2xl font-black text-emerald-400 mt-1">${latestApproved.personnelEnseignants.presents} / ${latestApproved.personnelEnseignants.totalEnseignants}</h4>
+                            <p class="text-[10px] text-gray-400 mt-0.5">${latestApproved.personnelEnseignants.absents} absent(s)</p>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                            <p class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Retards Constatés</p>
+                            <h4 class="text-2xl font-black text-amber-400 mt-1">${latestApproved.personnelEnseignants.retards}</h4>
+                            <p class="text-[10px] text-amber-300 mt-0.5 truncate" title="${latestApproved.personnelEnseignants.detailsRetards}">${latestApproved.personnelEnseignants.detailsRetards || 'Aucun'}</p>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <p class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Visiteurs Reçus</p>
+                            <h4 class="text-2xl font-black text-white mt-1">${latestApproved.visiteurs?.length || 0}</h4>
+                            <p class="text-[10px] text-gray-400 mt-0.5">Personnalités & parents</p>
+                        </div>
+                    </div>
+
+                    <!-- Synthèse Exécutive IA -->
+                    <div class="p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-500/20 mb-6">
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-purple-400"></i>
+                            <h4 class="text-xs font-black uppercase text-purple-300 tracking-wider">Synthèse Exécutive IA pour la Direction Générale</h4>
+                        </div>
+                        <p class="text-xs text-gray-200 leading-relaxed font-medium">${latestApproved.aiExecutiveSummary}</p>
+                    </div>
+
+                    <!-- Activités de la Journée -->
+                    <div class="p-6 rounded-2xl bg-white/5 border border-white/10 mb-6 space-y-2">
+                        <h4 class="text-xs font-black uppercase text-amber-400 tracking-wider flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-4 h-4"></i> Activités & Déroulement de la Journée
+                        </h4>
+                        <p class="text-xs text-gray-200 leading-relaxed whitespace-pre-line">${latestApproved.activiteJournaliere}</p>
+                    </div>
+
+                    <!-- Registre des Visiteurs Extérieurs -->
+                    <div class="p-6 rounded-2xl bg-white/5 border border-white/10 mb-6 space-y-3">
+                        <h4 class="text-xs font-black uppercase text-amber-400 tracking-wider flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4"></i> Registre des Personnalités & Visiteurs du Jour
+                        </h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="text-[10px] uppercase text-gray-400 border-b border-white/10">
+                                        <th class="py-2">Heure</th>
+                                        <th class="py-2">Nom & Prénom</th>
+                                        <th class="py-2">Qualité</th>
+                                        <th class="py-2">Objet de la Visite</th>
+                                        <th class="py-2">Décision / Suite Donnée</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/5 text-gray-300">
+                                    ${(latestApproved.visiteurs && latestApproved.visiteurs.length > 0) ? latestApproved.visiteurs.map(v => `
+                                        <tr>
+                                            <td class="py-2.5 font-mono text-amber-300">${v.heure}</td>
+                                            <td class="py-2.5 font-bold text-white">${v.nom}</td>
+                                            <td class="py-2.5 text-gray-400">${v.qualite}</td>
+                                            <td class="py-2.5">${v.but}</td>
+                                            <td class="py-2.5 text-emerald-400 font-medium">${v.suite}</td>
+                                        </tr>
+                                    `).join('') : '<tr><td colspan="5" class="py-3 text-center text-gray-400 italic">Aucun visiteur répertorié pour cette date.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Discipline & Infirmerie -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                            <h5 class="text-xs font-black uppercase text-amber-400 flex items-center gap-1.5">
+                                <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> Discipline & Climat Scolaire
+                            </h5>
+                            <p class="text-xs text-gray-300 mt-1">${latestApproved.disciplineClimat?.incidents || 'Rien à signaler.'}</p>
+                        </div>
+                        <div class="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                            <h5 class="text-xs font-black uppercase text-cyan-400 flex items-center gap-1.5">
+                                <i data-lucide="heart-pulse" class="w-3.5 h-3.5"></i> Santé & Infirmerie
+                            </h5>
+                            <p class="text-xs text-gray-300 mt-1">${latestApproved.disciplineClimat?.infirmerie || 'Rien à signaler.'}</p>
+                        </div>
+                    </div>
+
+                    <!-- Directives du Directeur / Préfet -->
+                    <div class="p-5 rounded-2xl bg-white/5 border border-white/10 mb-6 space-y-1">
+                        <h5 class="text-xs font-black uppercase text-white tracking-wider flex items-center gap-1.5">
+                            📢 Directives de la Direction Locale
+                        </h5>
+                        <p class="text-xs text-gray-300 mt-1 italic">${latestApproved.directivesDirecteur || 'Application stricte des consignes en vigueur.'}</p>
+                    </div>
+
+                    <!-- ZONE EXÉCUTIVE : DIRECTIVE DE LA DIRECTION GÉNÉRALE (PROMOTEUR) -->
+                    <div class="p-6 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-transparent border-2 border-amber-500/40">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-black uppercase text-amber-300 tracking-wider flex items-center gap-2">
+                                <span>👑</span>
+                                <span>Directive & Prise d'Acte de la Direction Générale (Promoteur)</span>
+                            </label>
+                            <span class="text-[10px] text-amber-400/80 uppercase tracking-widest font-bold">Visible par la Direction de l'École</span>
+                        </div>
+                        <textarea id="directive-promoteur-${latestApproved.id}" rows="2" placeholder="Inscrivez ici vos remarques, instructions ou félicitations pour le Préfet ou le D.P..."
+                            class="w-full p-3 bg-black/40 border border-amber-500/30 rounded-xl text-xs text-white placeholder-gray-500 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 leading-relaxed">${latestApproved.directivesPromoteur || ''}</textarea>
+                        <div class="flex justify-end mt-2">
+                            <button type="button" onclick="savePromoteurDirective('${latestApproved.id}')"
+                                class="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition cursor-pointer">
+                                💾 Enregistrer ma Directive
+                            </button>
                         </div>
                     </div>
                 </div>
+            ` : `
+                <div class="glass-panel p-12 rounded-3xl border border-white/10 text-center space-y-3 mb-8">
+                    <div class="w-16 h-16 rounded-full bg-white/5 text-gray-400 flex items-center justify-center mx-auto text-2xl">📋</div>
+                    <h3 class="text-lg font-bold text-white">Aucun rapport validé pour ${selectedEco === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}</h3>
+                    <p class="text-xs text-gray-400 max-w-md mx-auto">
+                        Le rapport journalier pour cet établissement est en cours de préparation par la Direction ou en attente du visa officiel du Super-Administrateur.
+                    </p>
+                </div>
+            `}
 
-                <!-- HISTORY & PROGRESS BARS -->
-                <div class="xl:col-span-3 glass-panel p-10 rounded-[2.5rem] shadow-xl border border-white/10 mt-4">
-                    <div class="flex justify-between items-end mb-10">
-                        <div>
-                            <h3 class="font-black text-2xl uppercase tracking-tighter">Historique & Tranches</h3>
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Audit visuel des recouvrements</p>
+            <!-- ARCHIVES DES RAPPORTS DE L'ÉCOLE -->
+            <div class="glass-panel p-6 rounded-3xl border border-white/10">
+                <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4 flex items-center gap-2">
+                    <i data-lucide="archive" class="w-4 h-4 text-purple-400"></i>
+                    Archives des Rapports Journaliers — ${selectedEco === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}
+                </h3>
+                <div class="space-y-3">
+                    ${approvedForSchool.map(r => `
+                        <div class="p-4 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between gap-4 hover:bg-white/10 transition">
+                            <div class="space-y-0.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-black text-white font-mono">#${r.id}</span>
+                                    <span class="text-xs text-gray-400">• Date : ${r.date}</span>
+                                    <span class="text-[10px] text-emerald-400 font-bold">Visa : ${r.approvedBy?.visaNumber}</span>
+                                </div>
+                                <p class="text-xs text-gray-300 line-clamp-1">${r.activiteJournaliere}</p>
+                            </div>
+                            <button type="button" onclick="printReportDocumentAdmin('${r.id}')"
+                                class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 cursor-pointer">
+                                <i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimer A4
+                            </button>
                         </div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead class="text-[10px] text-gray-400 uppercase font-black tracking-widest border-b dark:border-gray-700 opacity-60">
-                                <tr><th class="pb-6">TRX ID</th><th class="pb-6">Élève & Motif</th><th class="pb-6 w-1/4">Échéancier (Progression)</th><th class="pb-6">Mode</th><th class="pb-6 text-right">Montant (USD)</th><th class="pb-6 text-center">Reçu</th></tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
-                                ${inst.finance.recentPayments.map(p => {
-            // Calcul dynamique du pourcentage si c'est un minerval
-            let progUI = `<span class="text-[10px] text-gray-400 italic">Libre</span>`;
-            if (p.motif === 'Frais Scolaires') {
-                const stu = inst.pedagogie.eleves.find(e => e.nom === p.student);
-                const fee = inst.finance.fraisScolaires.find(f => f.classe === p.classe);
-                let tot = 0;
-                if (fee) {
-                    if (fee.montant !== undefined) tot = fee.montant;
-                    else {
-                        const isTechHist = (p.section === 'Technique' || (stu && stu.section === 'Technique'));
-                        tot = isTechHist ? fee.montantTech : fee.montantNonTech;
-                    }
-                }
-                if (tot > 0 && stu) {
-                    let pct = Math.min(100, Math.round((stu.paye / tot) * 100));
-                    let color = pct < 40 ? 'bg-red-500' : (pct < 100 ? 'bg-orange-400' : 'bg-brand-500');
-                    progUI = `
-                                                <div class="w-full flex items-center gap-3">
-                                                    <div class="flex-1 bg-white/10 dark:bg-gray-700 h-2 rounded-full overflow-hidden">
-                                                        <div class="${color} h-full rounded-full transition-all duration-1000" style="width: ${pct}%"></div>
-                                                    </div>
-                                                    <span class="text-[9px] font-black uppercase text-gray-500 w-8 text-right">${pct}%</span>
-                                                </div>
-                                            `;
-                }
-            }
-
-            return `
-                                    <tr class="hover:bg-[#112240]/50/50 dark:hover:bg-gray-800/30 transition-colors group">
-                                        <td class="py-5 font-mono text-[11px] text-gray-400">#${p.id}</td>
-                                        <td class="py-5">
-                                            <div class="font-bold text-gray-900 dark:text-white flex items-center gap-2">${p.student}</div>
-                                            <div class="text-[10px] text-gray-400 mt-1 uppercase font-bold flex gap-2 items-center">
-                                                <span class="px-1.5 py-0.5 rounded bg-white/10 dark:bg-gray-700">${p.motif || 'N/A'}</span> • ${p.date}
-                                            </div>
-                                        </td>
-                                        <td class="py-5 pr-8">
-                                            ${progUI}
-                                        </td>
-                                        <td class="py-5">
-                                            <span class="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider shadow-sm border ${p.mode === 'Mobile' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-[#112240]/50 text-gray-700 border-gray-200'}">
-                                                ${p.mode}
-                                            </span>
-                                        </td>
-                                        <td class="py-5 text-right font-black text-brand-600 text-2xl font-display tracking-tighter">+$${p.amount}</td>
-                                        <td class="py-5 text-center">
-                                            <button class="p-2.5 text-gray-400 hover:text-white hover:bg-gray-900 rounded-xl transition-all hover:scale-110 active:scale-95 shadow-sm" title="Imprimer Ticket Thermique" onclick="window.print()">
-                                                <i data-lucide="printer" class="w-4 h-4"></i>
-                                            </button>
-                                        </td>
-                                    </tr>`
-        }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
+                    `).join('')}
                 </div>
             </div>
         `;
-        initFinanceLogic();
+
+        if (window.lucide) lucide.createIcons();
     }
 
-    function initFinanceLogic() {
-        const inst = db.institutions[db.ecoleActive];
-        const tM = document.getElementById('tabM'), tC = document.getElementById('tabC');
-        const bM = document.getElementById('mFields'), bC = document.getElementById('cFields');
-        const sS = document.getElementById('stdSel'), sC = document.getElementById('clsSel');
-        const sSec = document.getElementById('secSel'), sOpt = document.getElementById('optSel');
-        const mSel = document.getElementById('motiveSel');
-        let mode = 'Mobile';
+    window.printReportDocumentAdmin = function(reportId) {
+        const reports = getDailyReportsDb();
+        const rep = reports.find(r => r.id === reportId);
+        if (!rep) return;
 
-        const updateSummary = () => {
-            let classeCible = sC && sC.value ? sC.value : '';
-            let secCible = sSec && sSec.value ? sSec.value : '';
+        const printWin = window.open('', '_blank', 'width=850,height=1100');
+        printWin.document.write(`
+          <html>
+          <head>
+            <title>Rapport Journalier - ${rep.ecole} - ${rep.date}</title>
+            <style>
+              body { font-family: 'Times New Roman', serif; margin: 30px; color: #111; font-size: 13px; line-height: 1.4; }
+              .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; }
+              .header h1 { margin: 0; font-size: 16px; text-transform: uppercase; }
+              .header h2 { margin: 2px 0; font-size: 14px; text-transform: uppercase; font-weight: normal; }
+              .header h3 { margin: 4px 0 0 0; font-size: 13px; font-weight: bold; text-decoration: underline; }
+              .section-title { font-size: 13px; font-weight: bold; text-transform: uppercase; background: #f0f0f0; padding: 4px 8px; margin: 12px 0 6px 0; border-left: 4px solid #333; }
+              table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 12px; }
+              th, td { border: 1px solid #444; padding: 5px 8px; text-align: left; }
+              th { background: #f4f4f4; }
+              .signatures { display: flex; justify-content: space-between; margin-top: 40px; page-break-inside: avoid; }
+              .sign-box { text-align: center; width: 45%; border-top: 1px solid #222; padding-top: 6px; }
+              .stamp { border: 2px solid #15803d; color: #15803d; padding: 4px 8px; display: inline-block; font-weight: bold; text-transform: uppercase; font-size: 11px; margin-top: 6px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</h1>
+              <h2>MINISTÈRE DE L'ÉDUCATION NATIONALE ET NOUVELLE CITOYENNETÉ</h2>
+              <h2>${rep.ecole === 'Harmonie' ? 'COMPLEXE SCOLAIRE HARMONIE (MATERNELLE & PRIMAIRE)' : 'GROUPE SCOLAIRE RETROUVAILLES (SECONDAIRE & HUMANITÉS)'}</h2>
+              <h3>RAPPORT JOURNALIER OFFICIEL DE LA DIRECTION</h3>
+            </div>
 
-            const stu = inst.pedagogie.eleves.find(e => e.nom === sS.value);
-            let paye = stu ? stu.paye : 0;
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:12px;">
+              <div><strong>Rapport N° :</strong> ${rep.id}</div>
+              <div><strong>Date :</strong> ${rep.date}</div>
+              <div><strong>Établissement :</strong> ${rep.ecole}</div>
+            </div>
 
-            let totalAttribue = 0;
-            let displayT = "Non Fixé";
-            let displayB = "Non Fixé";
+            <div class="section-title">I. ASSIDUITÉ DES ÉLÈVES</div>
+            <table>
+              <tr>
+                <th>Effectif Total Inscrits</th>
+                <th>Élèves Présents</th>
+                <th>Élèves Absents</th>
+                <th>Taux de Fréquentation</th>
+              </tr>
+              <tr>
+                <td>${rep.effectifEleves.totalInscrits}</td>
+                <td>${rep.effectifEleves.presents}</td>
+                <td>${rep.effectifEleves.absents}</td>
+                <td>${rep.effectifEleves.tauxAssiduite}%</td>
+              </tr>
+            </table>
 
-            if (mSel && mSel.value === 'Frais Scolaires' && classeCible) {
-                const fee = inst.finance.fraisScolaires.find(f => f.classe === classeCible);
-                if (fee) {
-                    if (fee.montant !== undefined) {
-                        totalAttribue = fee.montant;
-                    } else if (fee.montantTech !== undefined) {
-                        // Strict check for Technical Section from the dropdown manually
-                        const isTech = (secCible === 'Technique');
-                        totalAttribue = isTech ? fee.montantTech : fee.montantNonTech;
-                    }
-                    displayT = `$ ${totalAttribue}`;
-                    displayB = `$ ${Math.max(0, totalAttribue - paye)}`;
-                } else {
-                    displayT = "Vérifiez classe";
-                }
-            } else {
-                totalAttribue = 0; // Means non-fixed amount
-            }
+            <div class="section-title">II. PRÉSENCE DU PERSONNEL ENSEIGNANT</div>
+            <table>
+              <tr>
+                <th>Enseignants Prévus</th>
+                <th>Présents</th>
+                <th>Absents</th>
+                <th>Retards</th>
+                <th>Détail des Retards</th>
+              </tr>
+              <tr>
+                <td>${rep.personnelEnseignants.totalEnseignants}</td>
+                <td>${rep.personnelEnseignants.presents}</td>
+                <td>${rep.personnelEnseignants.absents}</td>
+                <td>${rep.personnelEnseignants.retards}</td>
+                <td>${rep.personnelEnseignants.detailsRetards || 'Néant'}</td>
+              </tr>
+            </table>
 
-            if (document.getElementById('txtT')) document.getElementById('txtT').textContent = displayT;
-            if (document.getElementById('txtP')) document.getElementById('txtP').textContent = (mSel && mSel.value === 'Frais Scolaires') ? `$ ${paye}` : `$ 0`;
-            if (document.getElementById('txtB')) document.getElementById('txtB').textContent = displayB;
+            <div class="section-title">III. ACTIVITÉS PÉDAGOGIQUES & DÉROULEMENT DU JOUR</div>
+            <p style="margin:4px 0 10px 0; text-align:justify;">${rep.activiteJournaliere}</p>
 
-            toggleAcademicFields(classeCible);
-        };
+            <div class="section-title">IV. REGISTRE DES VISITEURS EXTÉRIEURS</div>
+            <table>
+              <tr>
+                <th style="width:60px;">Heure</th>
+                <th>Nom du Visiteur</th>
+                <th>Qualité</th>
+                <th>Objet de la Visite</th>
+                <th>Suite Donnée</th>
+              </tr>
+              ${(rep.visiteurs && rep.visiteurs.length > 0) ? rep.visiteurs.map(v => `
+                <tr>
+                  <td>${v.heure}</td>
+                  <td>${v.nom}</td>
+                  <td>${v.qualite}</td>
+                  <td>${v.but}</td>
+                  <td>${v.suite}</td>
+                </tr>
+              `).join('') : '<tr><td colspan="5" style="text-align:center; font-style:italic;">Aucun visiteur extérieur enregistré ce jour</td></tr>'}
+            </table>
 
-        const onStudentChange = () => {
-            const stu = inst.pedagogie.eleves.find(e => e.nom === sS.value);
-            if (stu) {
-                if (sC) sC.value = stu.classe || '';
-                if (sSec) sSec.value = stu.section || '';
-                if (sOpt) sOpt.value = stu.option || '';
-            }
-            updateSummary();
-        };
+            <div class="section-title">V. DISCIPLINE & SANTÉ</div>
+            <p><strong>Incidents / Sanctions :</strong> ${rep.disciplineClimat?.incidents || 'R.A.S'}</p>
+            <p><strong>Infirmerie / Soins :</strong> ${rep.disciplineClimat?.infirmerie || 'R.A.S'}</p>
 
-        const toggleAcademicFields = (cls) => {
-            const bSec = document.getElementById('boxSection'), bOpt = document.getElementById('boxOption');
-            if (db.ecoleActive === 'Retrouvailles' && cls && cls.includes('Humanités')) {
-                if (bSec) bSec.classList.remove('hidden');
-                if (bOpt) bOpt.classList.remove('hidden');
+            <div class="section-title">VI. DIRECTIVES DE LA DIRECTION</div>
+            <p>${rep.directivesDirecteur || 'Application stricte du programme scolaire en cours.'}</p>
 
-                // Dynamic options
-                if (sSec && sOpt) {
-                    let val = sSec.value;
-                    let opts = val === 'Technique' ? inst.pedagogie.optionsTech : (val === 'Non Technique' ? inst.pedagogie.optionsNonTech : []);
-                    let current = sOpt.value;
-                    sOpt.innerHTML = '<option value="" selected>Choisir Option...</option>' + opts.map(o => `<option value="${o}">${o}</option>`).join('');
-                    if (opts.includes(current)) sOpt.value = current;
-                }
-            } else {
-                if (bSec) bSec.classList.add('hidden');
-                if (bOpt) bOpt.classList.add('hidden');
-            }
-        };
+            ${rep.directivesPromoteur ? `
+              <div class="section-title">VII. PRISE D'ACTE & DIRECTIVES DU PROMOTEUR (DIRECTION GÉNÉRALE)</div>
+              <p style="font-style:italic; font-weight:bold; color:#854d0e;">${rep.directivesPromoteur}</p>
+            ` : ''}
 
-        if (sS) sS.onchange = onStudentChange;
-        if (sC) sC.onchange = (e) => { toggleAcademicFields(e.target.value); updateSummary(); };
-        if (sSec) sSec.onchange = (e) => { toggleAcademicFields(sC ? sC.value : ''); updateSummary(); };
-        if (mSel) mSel.onchange = updateSummary;
+            <div class="signatures">
+              <div class="sign-box">
+                Pour la Direction de l'Établissement<br>
+                <strong>${rep.auteur.prenom} ${rep.auteur.nom}</strong><br>
+                <em>${rep.auteur.role}</em>
+              </div>
+              <div class="sign-box">
+                Pour le Super-Administrateur Général<br>
+                ${rep.approvedBy ? `
+                  <strong>${rep.approvedBy.prenom} ${rep.approvedBy.nom}</strong><br>
+                  <span class="stamp">VISÉ & APPROUVÉ (${rep.approvedBy.visaNumber})</span>
+                ` : '<em>En attente de visa</em>'}
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+        printWin.document.close();
+        printWin.focus();
+        setTimeout(() => { printWin.print(); }, 500);
+    };
 
-        if (tM && tC) {
-            tM.onclick = () => { mode = 'Mobile'; bM.classList.remove('hidden'); bC.classList.add('hidden'); tM.className = 'active-tab-momo'; tC.className = 'inactive-tab'; };
-            tC.onclick = () => { mode = 'Caisse'; bC.classList.remove('hidden'); bM.classList.add('hidden'); tC.className = 'active-tab-caisse'; tM.className = 'inactive-tab'; };
-        }
-
-        const vBtn = document.getElementById('valBtn');
-        if (vBtn) {
-            vBtn.onclick = () => {
-                const name = sS.value, amt = parseFloat(document.getElementById('amtInp').value), cls = sC.value;
-                if (!name || isNaN(amt) || !cls) return alert('Détails de paiement requis (Élève, Classe, Montant) !');
-
-                const stu = inst.pedagogie.eleves.find(e => e.nom === name);
-                vBtn.disabled = true; vBtn.innerHTML = '<i data-lucide="loader" class="animate-spin w-5 h-5"></i>';
-                lucide.createIcons();
-
-                setTimeout(() => {
-                    const motifText = mSel ? mSel.value : 'Frais Scolaires';
-                    const tx = { id: Math.floor(Math.random() * 9000 + 1000), student: name, amount: amt, mode, date: new Date().toLocaleDateString(), classe: cls, section: sSec?.value, option: sOpt?.value, motif: motifText };
-                    inst.finance.recentPayments.unshift(tx);
-                    inst.finance.revenus += amt;
-
-                    if (motifText === 'Frais Scolaires') {
-                        stu.paye += amt; // Add to existing payments if minerval
-                    }
-
-                    saveDb();
-
-                    // compute remains for receipt
-                    let resteText = "Non applicable";
-                    if (motifText === 'Frais Scolaires') {
-                        const fee = inst.finance.fraisScolaires.find(f => f.classe === cls);
-                        let tot = 0;
-                        if (fee) {
-                            if (fee.montant !== undefined) tot = fee.montant;
-                            else {
-                                const isTech = (tx.section === 'Technique');
-                                tot = isTech ? fee.montantTech : fee.montantNonTech;
-                            }
-                        }
-                        resteText = `$${Math.max(0, tot - stu.paye)}`;
-                    }
-
-                    renderView();
-                    showReceipt({ ...tx, reste: resteText });
-                }, 1500);
-            };
-        }
-    }
-
-    function showReceipt(d) {
-        const modal = document.getElementById('receipt-modal');
-        if (!modal) return;
-        modal.classList.remove('hidden');
-
-        let elDate = document.getElementById('r-date');
-        let elId = document.getElementById('r-id');
-
-        if (elDate) elDate.textContent = d.date;
-        if (elId) elId.textContent = `#TXN-${d.id}`;
-
-        // Handle qr code logic
-        const qr = document.getElementById('r-qrcode');
-        if (qr && window.QRCode) { qr.innerHTML = ''; new QRCode(qr, { text: `OK:${d.student}-${d.amount}`, width: 80, height: 80 }); }
-    }
-
-    // Modal close
-    const clsRec = document.getElementById('close-receipt');
-    if (clsRec) clsRec.onclick = () => document.getElementById('receipt-modal').classList.add('hidden');
-    const prtRec = document.getElementById('print-receipt');
-    if (prtRec) prtRec.onclick = () => window.print();
 
     // ==========================================
     // HELPERS
