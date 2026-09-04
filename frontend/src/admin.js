@@ -835,36 +835,92 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
         // Rapports en attente pour le Super-Admin
         const pendingReports = reports.filter(r => r.status === 'submitted');
         
-        // Derniers rapports approuvés pour l'aperçu du portail
+        // Derniers rapports approuvés pour l'aperçu du pont
         const harRep = reports.filter(r => r.ecole === 'Harmonie' && r.status === 'approved').sort((a,b) => b.date.localeCompare(a.date))[0];
         const retRep = reports.filter(r => r.ecole === 'Retrouvailles' && r.status === 'approved').sort((a,b) => b.date.localeCompare(a.date))[0];
 
-        // SI AUCUN ÉTABLISSEMENT N'EST ENCORE SÉLECTIONNÉ : AFFICHER LE PORTAIL DE CHOIX
+        // ══════════════════════════════════════════════════════════════
+        // ÉTAPE 1 : LE PONT ADMINISTRATIF CENTRAL (PASSERELLE DE RELAIS)
+        // ══════════════════════════════════════════════════════════════
         if (!selectedEco) {
             ui.content.innerHTML = `
-                <!-- En-tête Prestigieux du Portail -->
-                <div class="mb-10 text-center max-w-3xl mx-auto">
-                    <div class="inline-flex p-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 mb-3 shadow-lg shadow-amber-500/20 text-3xl font-black">
-                        🏛️
+                <!-- En-tête Prestigieux du Pont Administratif -->
+                <div class="mb-8 text-center max-w-4xl mx-auto">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-black uppercase tracking-widest mb-3 shadow-lg shadow-amber-500/10">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                        <span>Sas Hiérarchique de Transmission EPST</span>
                     </div>
-                    <h2 class="text-3xl font-black text-white uppercase tracking-tight">Rapports Journaliers Officiels</h2>
-                    <p class="text-xs text-amber-300 font-bold uppercase tracking-widest mt-1">Supervision Exécutive • Zéro Donnée Financière</p>
-                    <p class="text-xs text-gray-400 mt-2">
-                        Veuillez sélectionner la <strong>Direction d'établissement</strong> dont vous souhaitez consulter le rapport d'activité certifié et visé par le Super-Administrateur :
+                    <h2 class="text-3xl md:text-4xl font-black text-white uppercase tracking-tight">
+                        Le Pont Administratif Central
+                    </h2>
+                    <p class="text-xs text-amber-300/90 font-bold uppercase tracking-widest mt-1">
+                        Passerelle de Contrôle & de Transmission : Écoles ➔ Super-Administrateur (Le Pont) ➔ Direction Générale
+                    </p>
+                    <p class="text-xs text-gray-400 mt-2 max-w-2xl mx-auto leading-relaxed">
+                        L'administrateur fait office de <strong>Pont officiel de contrôle et de visa</strong>. Les directions d'écoles transmettent leur rapport quotidien au Super-Admin, qui l'audite, appose son visa légal et l'achemine vers la Direction Générale.
                     </p>
                 </div>
 
-                <!-- SECTION SUPER-ADMIN : RAPPORTS EN ATTENTE DE VISA -->
+                <!-- DIAGRAMME VISUEL DU PONT CENTRAL -->
+                <div class="glass-panel p-6 rounded-3xl border border-white/10 max-w-4xl mx-auto mb-10 relative overflow-hidden bg-gradient-to-b from-white/5 to-transparent">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center text-center">
+                        
+                        <!-- PÔLE 1 : LES DEUX ÉCOLES (ÉMETTEURS) -->
+                        <div class="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                1. Émetteurs (Terrain)
+                            </span>
+                            <h4 class="text-sm font-black text-white uppercase">Directions d'Écoles</h4>
+                            <div class="space-y-1 text-[11px] text-gray-300 text-left pt-1">
+                                <p class="flex items-center justify-between"><span>🏫 Harmonie :</span> <strong class="text-emerald-400">Dir. KASOMBO (D.P)</strong></p>
+                                <p class="flex items-center justify-between"><span>🎓 Retrouvailles :</span> <strong class="text-purple-400">Préfet MATUNGULU</strong></p>
+                            </div>
+                            <div class="pt-1 text-[10px] text-gray-400 italic">Rédigent & soumettent le rapport</div>
+                        </div>
+
+                        <!-- PÔLE 2 : LE PONT (SUPER-ADMINISTRATEUR) -->
+                        <div class="p-5 rounded-2xl bg-gradient-to-b from-amber-500/20 to-amber-600/10 border-2 border-amber-500/50 shadow-xl shadow-amber-500/10 space-y-2 relative">
+                            <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-amber-500 text-gray-950 text-[9px] font-black uppercase tracking-wider shadow">
+                                🌉 LE PONT CENTRAL
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center mx-auto text-lg font-black mt-1">
+                                🛡️
+                            </div>
+                            <h4 class="text-xs font-black text-amber-300 uppercase">Super-Administrateur</h4>
+                            <p class="text-[10px] text-gray-300 leading-tight">
+                                <strong>CHADA EKOTO ISOLOKE</strong><br>
+                                Audit de conformité, Visa électronique et Acheminement légal vers le DG.
+                            </p>
+                            <span class="inline-block px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                Sceau d'Approbation Actif
+                            </span>
+                        </div>
+
+                        <!-- PÔLE 3 : DESTINATAIRE FINAL (DIRECTION GÉNÉRALE) -->
+                        <div class="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                3. Prise d'Acte Suprême
+                            </span>
+                            <h4 class="text-sm font-black text-white uppercase">Direction Générale</h4>
+                            <p class="text-xs font-bold text-amber-300 mt-1">Promoteur & Famille</p>
+                            <p class="text-[10px] text-gray-400">
+                                Réception des rapports visés, émission des directives et impression officielle A4.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION AUDIT SUPER-ADMIN SUR LE PONT (SI RAPPORTS EN TRANSIT) -->
                 ${isSuperAdminRole && pendingReports.length > 0 ? `
-                    <div class="glass-panel p-6 rounded-3xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-yellow-500/5 to-transparent mb-10 shadow-2xl">
+                    <div class="glass-panel p-6 rounded-3xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-yellow-500/5 to-transparent mb-10 shadow-2xl max-w-5xl mx-auto">
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center gap-2.5">
                                 <span class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></span>
                                 <h3 class="text-sm font-black text-amber-300 uppercase tracking-wider">
-                                    📥 Rapports Journaliers en Attente de Votre Visa d'Approbation (${pendingReports.length})
+                                    📥 Rapports Déposés sur le Pont par les Écoles — En Attente de Votre Visa (${pendingReports.length})
                                 </h3>
                             </div>
-                            <span class="text-xs text-gray-400">Le Promoteur ne verra ces rapports qu'après votre validation</span>
+                            <span class="text-xs text-gray-400 font-bold">Action requise pour transmission au DG</span>
                         </div>
 
                         <div class="space-y-4">
@@ -874,14 +930,14 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                                         <div class="flex items-center gap-2">
                                             <span class="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase ${rep.ecole === 'Harmonie' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-purple-500/20 text-purple-300 border border-purple-500/40'}">${rep.ecole}</span>
                                             <strong class="text-white text-xs">Rapport du ${rep.date}</strong>
-                                            <span class="text-gray-400 text-xs">• Par : ${rep.auteur.prenom} ${rep.auteur.nom} (${rep.auteur.role})</span>
+                                            <span class="text-gray-400 text-xs">• Reçu de : ${rep.auteur.prenom} ${rep.auteur.nom} (${rep.auteur.role})</span>
                                         </div>
                                         <p class="text-xs text-gray-300">${rep.activiteJournaliere}</p>
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0">
                                         <button type="button" onclick="approuverRapportParSuperAdmin('${rep.id}')"
                                             class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer">
-                                            <i data-lucide="check-check" class="w-4 h-4"></i> Viser & Approuver pour le DG
+                                            <i data-lucide="check-check" class="w-4 h-4"></i> Viser & Transmettre au DG
                                         </button>
                                         <button type="button" onclick="demanderRevisionRapport('${rep.id}')"
                                             class="px-3 py-2.5 bg-white/10 hover:bg-white/20 text-gray-300 text-xs font-bold rounded-xl transition cursor-pointer">
@@ -894,88 +950,108 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                     </div>
                 ` : ''}
 
-                <!-- LES 2 GRANDES CARTES VIP DE SÉLECTION -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-10">
-                    
-                    <!-- CARTE C.S. HARMONIE -->
-                    <div onclick="switchEcoleRapport('Harmonie')"
-                        class="group glass-panel p-8 rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/10 via-emerald-500/5 to-transparent hover:border-emerald-400 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between">
-                        <div class="absolute -right-10 -top-10 w-44 h-44 bg-emerald-500/15 rounded-full blur-3xl group-hover:scale-125 transition"></div>
-
-                        <div>
-                            <div class="flex items-center justify-between mb-5">
-                                <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl font-black border border-emerald-500/30 shadow-lg shadow-emerald-500/20">
-                                    🏫
-                                </div>
-                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                                    Rapport Validé Disponible
-                                </span>
-                            </div>
-
-                            <h3 class="text-2xl font-black text-white group-hover:text-emerald-300 transition uppercase tracking-tight">C.S. Harmonie</h3>
-                            <p class="text-xs text-emerald-400 font-bold uppercase tracking-wider mt-0.5">Direction du Primaire & Maternelle</p>
-                            
-                            <div class="mt-4 p-3 rounded-xl bg-white/5 border border-white/5">
-                                <p class="text-xs text-gray-300">
-                                    Direction Locale : <strong class="text-white">Directeur (D.P) KASOMBO Paul</strong>
-                                </p>
-                                <p class="text-[11px] text-gray-400 mt-1">
-                                    Visa Super-Admin : <strong class="text-emerald-400">${harRep?.approvedBy?.visaNumber || 'VISA-SA-HAR-0904'}</strong>
-                                </p>
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-2 mt-4 p-3 rounded-xl bg-black/30 border border-white/5 text-center">
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Élèves</p><p class="text-sm font-black text-white">${harRep?.effectifEleves?.presents || 298}</p></div>
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Enseignants</p><p class="text-sm font-black text-emerald-400">${harRep?.personnelEnseignants?.presents || 14}</p></div>
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Visiteurs</p><p class="text-sm font-black text-amber-400">${harRep?.visiteurs?.length || 2}</p></div>
-                            </div>
-                        </div>
-
-                        <div class="mt-8 pt-4 border-t border-white/10 flex items-center justify-between">
-                            <span class="text-xs font-black uppercase tracking-wider text-emerald-300 group-hover:underline">Consulter le Rapport Journalier</span>
-                            <span class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-black group-hover:translate-x-1 transition">➔</span>
-                        </div>
+                <!-- LES DEUX CANAUX INSTITUTIONNELS RELIÉS AU PONT -->
+                <div class="max-w-5xl mx-auto">
+                    <div class="flex items-center justify-between mb-4 px-2">
+                        <h3 class="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                            <span>🏛️</span>
+                            <span>Choisissez l'Établissement à Inspecter via le Pont :</span>
+                        </h3>
+                        <span class="text-[11px] text-amber-300/80 font-bold">2 Lignes Institutionnelles Disponibles</span>
                     </div>
 
-                    <!-- CARTE G.S. RETROUVAILLES -->
-                    <div onclick="switchEcoleRapport('Retrouvailles')"
-                        class="group glass-panel p-8 rounded-3xl border border-purple-500/30 bg-gradient-to-b from-purple-500/10 via-purple-500/5 to-transparent hover:border-purple-400 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between">
-                        <div class="absolute -right-10 -top-10 w-44 h-44 bg-purple-500/15 rounded-full blur-3xl group-hover:scale-125 transition"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        
+                        <!-- CANAL 1 : C.S. HARMONIE (PRIMAIRE) -->
+                        <div onclick="switchEcoleRapport('Harmonie')"
+                            class="group glass-panel p-8 rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/10 via-emerald-500/5 to-transparent hover:border-emerald-400 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between">
+                            <div class="absolute -right-10 -top-10 w-44 h-44 bg-emerald-500/15 rounded-full blur-3xl group-hover:scale-125 transition"></div>
 
-                        <div>
-                            <div class="flex items-center justify-between mb-5">
-                                <div class="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-3xl font-black border border-purple-500/30 shadow-lg shadow-purple-500/20">
-                                    🎓
+                            <div>
+                                <div class="flex items-center justify-between mb-5">
+                                    <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl font-black border border-emerald-500/30 shadow-lg shadow-emerald-500/20">
+                                        🏫
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
+                                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                            Transmis par le Pont
+                                        </span>
+                                        <p class="text-[9px] text-gray-400 mt-1 font-mono">Visa : ${harRep?.approvedBy?.visaNumber || 'VISA-SA-HAR-0904'}</p>
+                                    </div>
                                 </div>
-                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1.5">
-                                    <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-                                    Rapport Validé Disponible
+
+                                <h3 class="text-2xl font-black text-white group-hover:text-emerald-300 transition uppercase tracking-tight">C.S. Harmonie</h3>
+                                <p class="text-xs text-emerald-400 font-bold uppercase tracking-wider mt-0.5">Direction du Primaire & Maternelle</p>
+                                
+                                <div class="mt-4 p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
+                                    <p class="text-xs text-gray-300">
+                                        Émetteur : <strong class="text-white">Directeur (D.P) KASOMBO Paul</strong>
+                                    </p>
+                                    <p class="text-[11px] text-gray-400">
+                                        Passerelle : <strong class="text-emerald-400">Validé et Acheminé par le Super-Administrateur</strong>
+                                    </p>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 mt-4 p-3 rounded-xl bg-black/30 border border-white/5 text-center">
+                                    <div><p class="text-[9px] text-gray-400 uppercase font-bold">Élèves</p><p class="text-sm font-black text-white">${harRep?.effectifEleves?.presents || 298}</p></div>
+                                    <div><p class="text-[9px] text-gray-400 uppercase font-bold">Enseignants</p><p class="text-sm font-black text-emerald-400">${harRep?.personnelEnseignants?.presents || 14}</p></div>
+                                    <div><p class="text-[9px] text-gray-400 uppercase font-bold">Visiteurs</p><p class="text-sm font-black text-amber-400">${harRep?.visiteurs?.length || 2}</p></div>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 pt-4 border-t border-white/10 flex items-center justify-between">
+                                <span class="text-xs font-black uppercase tracking-wider text-emerald-300 group-hover:underline">
+                                    🌉 Franchir le Pont ➔ Ouvrir le Rapport Harmonie
                                 </span>
-                            </div>
-
-                            <h3 class="text-2xl font-black text-white group-hover:text-purple-300 transition uppercase tracking-tight">G.S. Retrouvailles</h3>
-                            <p class="text-xs text-purple-400 font-bold uppercase tracking-wider mt-0.5">Direction du Secondaire & Humanités</p>
-
-                            <div class="mt-4 p-3 rounded-xl bg-white/5 border border-white/5">
-                                <p class="text-xs text-gray-300">
-                                    Direction Locale : <strong class="text-white">Préfet des Études MATUNGULU Alain</strong>
-                                </p>
-                                <p class="text-[11px] text-gray-400 mt-1">
-                                    Visa Super-Admin : <strong class="text-purple-400">${retRep?.approvedBy?.visaNumber || 'VISA-SA-RET-0904'}</strong>
-                                </p>
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-2 mt-4 p-3 rounded-xl bg-black/30 border border-white/5 text-center">
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Élèves</p><p class="text-sm font-black text-white">${retRep?.effectifEleves?.presents || 402}</p></div>
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Enseignants</p><p class="text-sm font-black text-purple-400">${retRep?.personnelEnseignants?.presents || 21}</p></div>
-                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Visiteurs</p><p class="text-sm font-black text-amber-400">${retRep?.visiteurs?.length || 1}</p></div>
+                                <span class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-black group-hover:translate-x-1 transition">➔</span>
                             </div>
                         </div>
 
-                        <div class="mt-8 pt-4 border-t border-white/10 flex items-center justify-between">
-                            <span class="text-xs font-black uppercase tracking-wider text-purple-300 group-hover:underline">Consulter le Rapport Journalier</span>
-                            <span class="w-8 h-8 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-black group-hover:translate-x-1 transition">➔</span>
+                        <!-- CANAL 2 : G.S. RETROUVAILLES (SECONDAIRE) -->
+                        <div onclick="switchEcoleRapport('Retrouvailles')"
+                            class="group glass-panel p-8 rounded-3xl border border-purple-500/30 bg-gradient-to-b from-purple-500/10 via-purple-500/5 to-transparent hover:border-purple-400 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between">
+                            <div class="absolute -right-10 -top-10 w-44 h-44 bg-purple-500/15 rounded-full blur-3xl group-hover:scale-125 transition"></div>
+
+                            <div>
+                                <div class="flex items-center justify-between mb-5">
+                                    <div class="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-3xl font-black border border-purple-500/30 shadow-lg shadow-purple-500/20">
+                                        🎓
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1.5">
+                                            <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+                                            Transmis par le Pont
+                                        </span>
+                                        <p class="text-[9px] text-gray-400 mt-1 font-mono">Visa : ${retRep?.approvedBy?.visaNumber || 'VISA-SA-RET-0904'}</p>
+                                    </div>
+                                </div>
+
+                                <h3 class="text-2xl font-black text-white group-hover:text-purple-300 transition uppercase tracking-tight">G.S. Retrouvailles</h3>
+                                <p class="text-xs text-purple-400 font-bold uppercase tracking-wider mt-0.5">Direction du Secondaire & Humanités</p>
+
+                                <div class="mt-4 p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
+                                    <p class="text-xs text-gray-300">
+                                        Émetteur : <strong class="text-white">Préfet des Études MATUNGULU Alain</strong>
+                                    </p>
+                                    <p class="text-[11px] text-gray-400">
+                                        Passerelle : <strong class="text-purple-400">Validé et Acheminé par le Super-Administrateur</strong>
+                                    </p>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 mt-4 p-3 rounded-xl bg-black/30 border border-white/5 text-center">
+                                    <div><p class="text-[9px] text-gray-400 uppercase font-bold">Élèves</p><p class="text-sm font-black text-white">${retRep?.effectifEleves?.presents || 402}</p></div>
+                                    <div><p class="text-[9px] text-gray-400 uppercase font-bold">Enseignants</p><p class="text-sm font-black text-purple-400">${retRep?.personnelEnseignants?.presents || 21}</p></div>
+                                    <div><p class="text-[9px] text-gray-400 uppercase font-bold">Visiteurs</p><p class="text-sm font-black text-amber-400">${retRep?.visiteurs?.length || 1}</p></div>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 pt-4 border-t border-white/10 flex items-center justify-between">
+                                <span class="text-xs font-black uppercase tracking-wider text-purple-300 group-hover:underline">
+                                    🌉 Franchir le Pont ➔ Ouvrir le Rapport Retrouvailles
+                                </span>
+                                <span class="w-8 h-8 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-black group-hover:translate-x-1 transition">➔</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -984,19 +1060,21 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
             return;
         }
 
-        // SI UN ÉTABLISSEMENT EST SÉLECTIONNÉ : AFFICHER LE RAPPORT DE CET ÉTABLISSEMENT
+        // ══════════════════════════════════════════════════════════════
+        // ÉTAPE 2 : RAPPORT OFFICIEL DE L'ÉCOLE CHOISIE (POST-PONT)
+        // ══════════════════════════════════════════════════════════════
         const approvedForSchool = reports.filter(r => r.ecole === selectedEco && r.status === 'approved')
                                          .sort((a,b) => b.date.localeCompare(a.date));
         const latestApproved = approvedForSchool[0];
 
         ui.content.innerHTML = `
-            <!-- Barre de Navigation Supérieure avec Bouton Retour au Choix -->
+            <!-- Barre Supérieure avec Retour au Pont Central -->
             <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div class="flex items-center gap-4">
                     <button type="button" onclick="resetEcoleRapportChoice()"
-                        class="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white font-black text-xs uppercase tracking-wider rounded-xl transition flex items-center gap-2 cursor-pointer shadow-md">
-                        <span>←</span>
-                        <span>Changer d'Établissement</span>
+                        class="px-4 py-2.5 bg-gradient-to-r from-amber-500/20 to-yellow-600/20 hover:from-amber-500/30 hover:to-yellow-600/30 border border-amber-500/40 text-amber-300 font-black text-xs uppercase tracking-wider rounded-xl transition flex items-center gap-2 cursor-pointer shadow-md">
+                        <span>🌉 ←</span>
+                        <span>Revenir au Pont Central</span>
                     </button>
                     <div>
                         <div class="flex items-center gap-2">
@@ -1005,7 +1083,7 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                                 Rapport Journalier — ${selectedEco === 'Harmonie' ? 'C.S. Harmonie (Primaire)' : 'G.S. Retrouvailles (Secondaire)'}
                             </h2>
                         </div>
-                        <p class="text-xs text-amber-300/90 font-bold uppercase tracking-widest mt-0.5">Supervision Exécutive • Zéro Donnée Financière</p>
+                        <p class="text-xs text-emerald-400 font-bold uppercase tracking-widest mt-0.5">Acheminé par le Pont Super-Administrateur ➔ Direction Générale</p>
                     </div>
                 </div>
 
@@ -1042,14 +1120,14 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                                     <div class="flex items-center gap-2">
                                         <span class="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase ${rep.ecole === 'Harmonie' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-purple-500/20 text-purple-300 border border-purple-500/40'}">${rep.ecole}</span>
                                         <strong class="text-white text-xs">Rapport du ${rep.date}</strong>
-                                        <span class="text-gray-400 text-xs">• Par : ${rep.auteur.prenom} ${rep.auteur.nom} (${rep.auteur.role})</span>
+                                        <span class="text-gray-400 text-xs">• Reçu de : ${rep.auteur.prenom} ${rep.auteur.nom} (${rep.auteur.role})</span>
                                     </div>
                                     <p class="text-xs text-gray-300">${rep.activiteJournaliere}</p>
                                 </div>
                                 <div class="flex items-center gap-2 shrink-0">
                                     <button type="button" onclick="approuverRapportParSuperAdmin('${rep.id}')"
                                         class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer">
-                                        <i data-lucide="check-check" class="w-4 h-4"></i> Viser & Approuver pour le DG
+                                        <i data-lucide="check-check" class="w-4 h-4"></i> Viser & Transmettre au DG
                                     </button>
                                     <button type="button" onclick="demanderRevisionRapport('${rep.id}')"
                                         class="px-3 py-2.5 bg-white/10 hover:bg-white/20 text-gray-300 text-xs font-bold rounded-xl transition cursor-pointer">
@@ -1076,14 +1154,14 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                             <div>
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs font-black uppercase text-emerald-400 tracking-wider">
-                                        Rapport Certifié & Approuvé par le Super-Administrateur
+                                        Rapport Contrôlé & Approuvé sur le Pont par le Super-Administrateur
                                     </span>
                                     <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-black border border-emerald-500/30">
                                         ${latestApproved.approvedBy?.visaNumber || 'VISA-OFFICIEL'}
                                     </span>
                                 </div>
                                 <p class="text-[11px] text-gray-300 mt-0.5">
-                                    Visé par <strong>${latestApproved.approvedBy?.prenom} ${latestApproved.approvedBy?.nom}</strong> le ${latestApproved.approvedBy ? new Date(latestApproved.approvedBy.approvedAt).toLocaleDateString('fr-FR') : ''} • Émis par le <strong>${latestApproved.auteur.role}</strong>
+                                    Acheminé par <strong>${latestApproved.approvedBy?.prenom} ${latestApproved.approvedBy?.nom}</strong> le ${latestApproved.approvedBy ? new Date(latestApproved.approvedBy.approvedAt).toLocaleDateString('fr-FR') : ''} • Émis par le <strong>${latestApproved.auteur.role}</strong>
                                 </p>
                             </div>
                         </div>
@@ -1211,9 +1289,9 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
             ` : `
                 <div class="glass-panel p-12 rounded-3xl border border-white/10 text-center space-y-3 mb-8">
                     <div class="w-16 h-16 rounded-full bg-white/5 text-gray-400 flex items-center justify-center mx-auto text-2xl">📋</div>
-                    <h3 class="text-lg font-bold text-white">Aucun rapport validé pour ${selectedEco === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}</h3>
+                    <h3 class="text-lg font-bold text-white">Aucun rapport validé sur le pont pour ${selectedEco === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}</h3>
                     <p class="text-xs text-gray-400 max-w-md mx-auto">
-                        Le rapport journalier pour cet établissement est en cours de préparation par la Direction ou en attente du visa officiel du Super-Administrateur.
+                        Le rapport journalier pour cet établissement est en cours de préparation par la Direction ou en attente du visa officiel du Super-Administrateur sur le pont central.
                     </p>
                 </div>
             `}
@@ -1222,7 +1300,7 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
             <div class="glass-panel p-6 rounded-3xl border border-white/10">
                 <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4 flex items-center gap-2">
                     <i data-lucide="archive" class="w-4 h-4 text-purple-400"></i>
-                    Archives des Rapports Journaliers — ${selectedEco === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}
+                    Archives des Rapports Journaliers Acheminés — ${selectedEco === 'Harmonie' ? 'C.S. Harmonie' : 'G.S. Retrouvailles'}
                 </h3>
                 <div class="space-y-3">
                     ${approvedForSchool.map(r => `
@@ -1231,7 +1309,7 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs font-black text-white font-mono">#${r.id}</span>
                                     <span class="text-xs text-gray-400">• Date : ${r.date}</span>
-                                    <span class="text-[10px] text-emerald-400 font-bold">Visa : ${r.approvedBy?.visaNumber}</span>
+                                    <span class="text-[10px] text-emerald-400 font-bold">Visa Super-Admin : ${r.approvedBy?.visaNumber}</span>
                                 </div>
                                 <p class="text-xs text-gray-300 line-clamp-1">${r.activiteJournaliere}</p>
                             </div>
