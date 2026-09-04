@@ -760,11 +760,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return JSON.parse(localStorage.getItem('hr_daily_reports')) || [];
     }
 
-    window.selectedEcoleRapport = localStorage.getItem('hr_selected_ecole_rapport') || 'Harmonie';
+    window.selectedEcoleRapport = null;
 
     window.switchEcoleRapport = function(ecole) {
         window.selectedEcoleRapport = ecole;
-        localStorage.setItem('hr_selected_ecole_rapport', ecole);
+        renderRapportJournalierOfficiel();
+    };
+
+    window.resetEcoleRapportChoice = function() {
+        window.selectedEcoleRapport = null;
         renderRapportJournalierOfficiel();
     };
 
@@ -825,44 +829,195 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
 
     function renderRapportJournalierOfficiel() {
         const reports = getDailyReportsDb();
-        const selectedEco = window.selectedEcoleRapport || 'Harmonie';
+        const selectedEco = window.selectedEcoleRapport;
         const isSuperAdminRole = user && user.role === 'Super-Admin';
 
         // Rapports en attente pour le Super-Admin
         const pendingReports = reports.filter(r => r.status === 'submitted');
         
-        // Rapports approuvés pour l'école sélectionnée
+        // Derniers rapports approuvés pour l'aperçu du portail
+        const harRep = reports.filter(r => r.ecole === 'Harmonie' && r.status === 'approved').sort((a,b) => b.date.localeCompare(a.date))[0];
+        const retRep = reports.filter(r => r.ecole === 'Retrouvailles' && r.status === 'approved').sort((a,b) => b.date.localeCompare(a.date))[0];
+
+        // SI AUCUN ÉTABLISSEMENT N'EST ENCORE SÉLECTIONNÉ : AFFICHER LE PORTAIL DE CHOIX
+        if (!selectedEco) {
+            ui.content.innerHTML = `
+                <!-- En-tête Prestigieux du Portail -->
+                <div class="mb-10 text-center max-w-3xl mx-auto">
+                    <div class="inline-flex p-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 mb-3 shadow-lg shadow-amber-500/20 text-3xl font-black">
+                        🏛️
+                    </div>
+                    <h2 class="text-3xl font-black text-white uppercase tracking-tight">Rapports Journaliers Officiels</h2>
+                    <p class="text-xs text-amber-300 font-bold uppercase tracking-widest mt-1">Supervision Exécutive • Zéro Donnée Financière</p>
+                    <p class="text-xs text-gray-400 mt-2">
+                        Veuillez sélectionner la <strong>Direction d'établissement</strong> dont vous souhaitez consulter le rapport d'activité certifié et visé par le Super-Administrateur :
+                    </p>
+                </div>
+
+                <!-- SECTION SUPER-ADMIN : RAPPORTS EN ATTENTE DE VISA -->
+                ${isSuperAdminRole && pendingReports.length > 0 ? `
+                    <div class="glass-panel p-6 rounded-3xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-yellow-500/5 to-transparent mb-10 shadow-2xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></span>
+                                <h3 class="text-sm font-black text-amber-300 uppercase tracking-wider">
+                                    📥 Rapports Journaliers en Attente de Votre Visa d'Approbation (${pendingReports.length})
+                                </h3>
+                            </div>
+                            <span class="text-xs text-gray-400">Le Promoteur ne verra ces rapports qu'après votre validation</span>
+                        </div>
+
+                        <div class="space-y-4">
+                            ${pendingReports.map(rep => `
+                                <div class="p-5 rounded-2xl bg-black/40 border border-amber-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase ${rep.ecole === 'Harmonie' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-purple-500/20 text-purple-300 border border-purple-500/40'}">${rep.ecole}</span>
+                                            <strong class="text-white text-xs">Rapport du ${rep.date}</strong>
+                                            <span class="text-gray-400 text-xs">• Par : ${rep.auteur.prenom} ${rep.auteur.nom} (${rep.auteur.role})</span>
+                                        </div>
+                                        <p class="text-xs text-gray-300">${rep.activiteJournaliere}</p>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <button type="button" onclick="approuverRapportParSuperAdmin('${rep.id}')"
+                                            class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer">
+                                            <i data-lucide="check-check" class="w-4 h-4"></i> Viser & Approuver pour le DG
+                                        </button>
+                                        <button type="button" onclick="demanderRevisionRapport('${rep.id}')"
+                                            class="px-3 py-2.5 bg-white/10 hover:bg-white/20 text-gray-300 text-xs font-bold rounded-xl transition cursor-pointer">
+                                            🔄 Demander Correction
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- LES 2 GRANDES CARTES VIP DE SÉLECTION -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-10">
+                    
+                    <!-- CARTE C.S. HARMONIE -->
+                    <div onclick="switchEcoleRapport('Harmonie')"
+                        class="group glass-panel p-8 rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/10 via-emerald-500/5 to-transparent hover:border-emerald-400 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between">
+                        <div class="absolute -right-10 -top-10 w-44 h-44 bg-emerald-500/15 rounded-full blur-3xl group-hover:scale-125 transition"></div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-5">
+                                <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl font-black border border-emerald-500/30 shadow-lg shadow-emerald-500/20">
+                                    🏫
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    Rapport Validé Disponible
+                                </span>
+                            </div>
+
+                            <h3 class="text-2xl font-black text-white group-hover:text-emerald-300 transition uppercase tracking-tight">C.S. Harmonie</h3>
+                            <p class="text-xs text-emerald-400 font-bold uppercase tracking-wider mt-0.5">Direction du Primaire & Maternelle</p>
+                            
+                            <div class="mt-4 p-3 rounded-xl bg-white/5 border border-white/5">
+                                <p class="text-xs text-gray-300">
+                                    Direction Locale : <strong class="text-white">Directeur (D.P) KASOMBO Paul</strong>
+                                </p>
+                                <p class="text-[11px] text-gray-400 mt-1">
+                                    Visa Super-Admin : <strong class="text-emerald-400">${harRep?.approvedBy?.visaNumber || 'VISA-SA-HAR-0904'}</strong>
+                                </p>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2 mt-4 p-3 rounded-xl bg-black/30 border border-white/5 text-center">
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Élèves</p><p class="text-sm font-black text-white">${harRep?.effectifEleves?.presents || 298}</p></div>
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Enseignants</p><p class="text-sm font-black text-emerald-400">${harRep?.personnelEnseignants?.presents || 14}</p></div>
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Visiteurs</p><p class="text-sm font-black text-amber-400">${harRep?.visiteurs?.length || 2}</p></div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 pt-4 border-t border-white/10 flex items-center justify-between">
+                            <span class="text-xs font-black uppercase tracking-wider text-emerald-300 group-hover:underline">Consulter le Rapport Journalier</span>
+                            <span class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-black group-hover:translate-x-1 transition">➔</span>
+                        </div>
+                    </div>
+
+                    <!-- CARTE G.S. RETROUVAILLES -->
+                    <div onclick="switchEcoleRapport('Retrouvailles')"
+                        class="group glass-panel p-8 rounded-3xl border border-purple-500/30 bg-gradient-to-b from-purple-500/10 via-purple-500/5 to-transparent hover:border-purple-400 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between">
+                        <div class="absolute -right-10 -top-10 w-44 h-44 bg-purple-500/15 rounded-full blur-3xl group-hover:scale-125 transition"></div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-5">
+                                <div class="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-3xl font-black border border-purple-500/30 shadow-lg shadow-purple-500/20">
+                                    🎓
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+                                    Rapport Validé Disponible
+                                </span>
+                            </div>
+
+                            <h3 class="text-2xl font-black text-white group-hover:text-purple-300 transition uppercase tracking-tight">G.S. Retrouvailles</h3>
+                            <p class="text-xs text-purple-400 font-bold uppercase tracking-wider mt-0.5">Direction du Secondaire & Humanités</p>
+
+                            <div class="mt-4 p-3 rounded-xl bg-white/5 border border-white/5">
+                                <p class="text-xs text-gray-300">
+                                    Direction Locale : <strong class="text-white">Préfet des Études MATUNGULU Alain</strong>
+                                </p>
+                                <p class="text-[11px] text-gray-400 mt-1">
+                                    Visa Super-Admin : <strong class="text-purple-400">${retRep?.approvedBy?.visaNumber || 'VISA-SA-RET-0904'}</strong>
+                                </p>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2 mt-4 p-3 rounded-xl bg-black/30 border border-white/5 text-center">
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Élèves</p><p class="text-sm font-black text-white">${retRep?.effectifEleves?.presents || 402}</p></div>
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Enseignants</p><p class="text-sm font-black text-purple-400">${retRep?.personnelEnseignants?.presents || 21}</p></div>
+                                <div><p class="text-[9px] text-gray-400 uppercase font-bold">Visiteurs</p><p class="text-sm font-black text-amber-400">${retRep?.visiteurs?.length || 1}</p></div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 pt-4 border-t border-white/10 flex items-center justify-between">
+                            <span class="text-xs font-black uppercase tracking-wider text-purple-300 group-hover:underline">Consulter le Rapport Journalier</span>
+                            <span class="w-8 h-8 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-black group-hover:translate-x-1 transition">➔</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        // SI UN ÉTABLISSEMENT EST SÉLECTIONNÉ : AFFICHER LE RAPPORT DE CET ÉTABLISSEMENT
         const approvedForSchool = reports.filter(r => r.ecole === selectedEco && r.status === 'approved')
                                          .sort((a,b) => b.date.localeCompare(a.date));
         const latestApproved = approvedForSchool[0];
 
         ui.content.innerHTML = `
-            <!-- En-tête Prestigieux -->
+            <!-- Barre de Navigation Supérieure avec Bouton Retour au Choix -->
             <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <div class="flex items-center gap-3 mb-1.5">
-                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-gray-950 shadow-lg shadow-amber-500/20 font-black text-xl">
-                            🏛️
+                <div class="flex items-center gap-4">
+                    <button type="button" onclick="resetEcoleRapportChoice()"
+                        class="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white font-black text-xs uppercase tracking-wider rounded-xl transition flex items-center gap-2 cursor-pointer shadow-md">
+                        <span>←</span>
+                        <span>Changer d'Établissement</span>
+                    </button>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">${selectedEco === 'Harmonie' ? '🏫' : '🎓'}</span>
+                            <h2 class="text-2xl font-black text-white uppercase tracking-tight">
+                                Rapport Journalier — ${selectedEco === 'Harmonie' ? 'C.S. Harmonie (Primaire)' : 'G.S. Retrouvailles (Secondaire)'}
+                            </h2>
                         </div>
-                        <div>
-                            <h2 class="text-3xl font-black text-white uppercase tracking-tight">Rapport Journalier de Direction</h2>
-                            <p class="text-xs text-amber-300 font-bold uppercase tracking-widest">Gouvernance Institutionnelle • Zéro Donnée Financière</p>
-                        </div>
+                        <p class="text-xs text-amber-300/90 font-bold uppercase tracking-widest mt-0.5">Supervision Exécutive • Zéro Donnée Financière</p>
                     </div>
-                    <p class="text-xs text-gray-400">Circuit hiérarchique : Établissement ➔ Visa Super-Administrateur ➔ Prise d'Acte Direction Générale</p>
                 </div>
 
-                <!-- Sélecteur d'établissement prestigieux -->
+                <!-- Basculeur Rapide d'Établissement -->
                 <div class="p-1.5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2">
                     <button type="button" onclick="switchEcoleRapport('Harmonie')"
-                        class="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${selectedEco === 'Harmonie' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 border border-emerald-400/50' : 'text-gray-400 hover:text-white'}">
-                        <span>🏫</span>
-                        <span>C.S. Harmonie (Primaire)</span>
+                        class="px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${selectedEco === 'Harmonie' ? 'bg-emerald-500 text-gray-950 font-black shadow-lg' : 'text-gray-400 hover:text-white'}">
+                        <span>🏫 Harmonie</span>
                     </button>
                     <button type="button" onclick="switchEcoleRapport('Retrouvailles')"
-                        class="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${selectedEco === 'Retrouvailles' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/25 border border-purple-400/50' : 'text-gray-400 hover:text-white'}">
-                        <span>🎓</span>
-                        <span>G.S. Retrouvailles (Secondaire)</span>
+                        class="px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${selectedEco === 'Retrouvailles' ? 'bg-purple-600 text-white font-black shadow-lg' : 'text-gray-400 hover:text-white'}">
+                        <span>🎓 Retrouvailles</span>
                     </button>
                 </div>
             </div>
@@ -890,12 +1045,6 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
                                         <span class="text-gray-400 text-xs">• Par : ${rep.auteur.prenom} ${rep.auteur.nom} (${rep.auteur.role})</span>
                                     </div>
                                     <p class="text-xs text-gray-300">${rep.activiteJournaliere}</p>
-                                    <div class="flex flex-wrap items-center gap-3 text-[11px] text-gray-400 mt-1 font-medium">
-                                        <span>👥 Élèves : <strong>${rep.effectifEleves.presents}/${rep.effectifEleves.totalInscrits}</strong> (${rep.effectifEleves.tauxAssiduite}%)</span>
-                                        <span>👨‍🏫 Enseignants : <strong>${rep.personnelEnseignants.presents}/${rep.personnelEnseignants.totalEnseignants}</strong></span>
-                                        <span>⏱️ Retards : <strong class="text-amber-400">${rep.personnelEnseignants.retards}</strong></span>
-                                        <span>🏛️ Visiteurs : <strong>${rep.visiteurs?.length || 0}</strong></span>
-                                    </div>
                                 </div>
                                 <div class="flex items-center gap-2 shrink-0">
                                     <button type="button" onclick="approuverRapportParSuperAdmin('${rep.id}')"
@@ -1098,6 +1247,7 @@ Le rapport est désormais immédiatement visible par la Direction Générale.`);
 
         if (window.lucide) lucide.createIcons();
     }
+
 
     window.printReportDocumentAdmin = function(reportId) {
         const reports = getDailyReportsDb();
