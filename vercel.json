@@ -5,6 +5,10 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/etudiants",
+      "destination": "/api/etudiants.js"
+    },
+    {
       "source": "/api/rapports",
       "destination": "/api/rapports.js"
     },

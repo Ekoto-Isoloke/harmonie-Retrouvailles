@@ -59,14 +59,7 @@ const MOCK_DB = {
     { id: 9, ecole_id: 2, nom: '3ème Humanités Sc.', niveau: '9' },
     { id: 10, ecole_id: 2, nom: '4ème Humanités Sc.', niveau: '10' }
   ],
-  eleves: [
-    { id: 1, ecole_id: 1, classe_id: 6, nom: 'MUKENDI', prenom: 'Sarah' },
-    { id: 2, ecole_id: 1, classe_id: 5, nom: 'TSHIMANGA', prenom: 'Paul' },
-    { id: 3, ecole_id: 1, classe_id: 6, nom: 'ILUNGA', prenom: 'Grace' },
-    { id: 4, ecole_id: 2, classe_id: 9, nom: 'MUKENDI', prenom: 'David' },
-    { id: 5, ecole_id: 2, classe_id: 7, nom: 'KASONGO', prenom: 'Rachel' },
-    { id: 6, ecole_id: 2, classe_id: 10, nom: 'MWAMBA', prenom: 'Joseph' }
-  ],
+  eleves: [], // Zéro élève fictif : en attente des inscriptions
   frais: [
     { id: 1, ecole_id: 1, classe_id: 6, nom_frais: 'Minerval – 1er Trimestre', montant: 150, devise: 'USD' },
     { id: 2, ecole_id: 1, classe_id: 6, nom_frais: 'Frais d\'internat', montant: 200, devise: 'USD' },

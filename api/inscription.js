@@ -44,9 +44,15 @@ module.exports = async (req, res) => {
         const rawPassword = telParent || 'parent123';
         const role = 'Parent';
         
+        // Assurer la présence des colonnes password et mot_de_passe
+        try {
+          await sql`ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS password VARCHAR(255)`;
+          await sql`ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS mot_de_passe VARCHAR(255)`;
+        } catch (e) {}
+
         const newParents = await sql`
-          INSERT INTO utilisateurs (nom, email, mot_de_passe, role, ecole, telephone)
-          VALUES (${nomParent}, ${emailParent}, ${rawPassword}, ${role}, ${data.ecole}, ${telParent})
+          INSERT INTO utilisateurs (nom, email, password, mot_de_passe, role, ecole, telephone, statut)
+          VALUES (${nomParent}, ${emailParent}, ${rawPassword}, ${rawPassword}, ${role}, ${data.ecole}, ${telParent}, 'Actif')
           RETURNING id
         `;
         parentId = newParents[0].id;

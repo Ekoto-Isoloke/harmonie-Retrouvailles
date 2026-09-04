@@ -144,14 +144,8 @@
     const initials = ((user.prenom || '')[0] || '') + ((user.nom || '')[0] || '');
     document.getElementById('teacher-avatar').textContent = initials.toUpperCase() || '?';
 
-    const mockClasses = ['3ème Humanités — Math-Physique', '2ème Humanités — Chimie-Bio', '1ère Primaire'];
-    const mockEleves = [
-      { nom: 'MUKENDI KABUYA', statut: 'present' },
-      { nom: 'BAYA PAUL JR', statut: 'absent' },
-      { nom: 'TSHILANDA ALICE', statut: 'present' },
-      { nom: 'KABONGO MERVEILLE', statut: 'retard' },
-      { nom: 'LEKI MARC', statut: 'present' },
-    ];
+    const mockClasses = (user && user.classes && user.classes.length > 0) ? user.classes : ['Classe Affectée'];
+    const mockEleves = []; // Zéro élève fictif : en attente des inscriptions officielles
 
     function setActiveLink(viewName) {
       document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
@@ -267,15 +261,16 @@
               <tr><th class="pb-4 text-left">Élève</th><th class="pb-4 text-center">Présent</th><th class="pb-4 text-center">Absent</th><th class="pb-4 text-center">Retard</th><th class="pb-4 text-left">Note</th></tr>
             </thead>
             <tbody class="divide-y divide-white/5">
-              ${mockEleves.map(e => `
-                <tr class="hover:bg-[#112240]/80/3 transition">
-                  <td class="py-4 font-bold">${e.nom}</td>
-                  <td class="py-4 text-center"><input type="radio" name="statut-${e.nom}" value="present" ${e.statut==='present'?'checked':''} class="accent-green-500 w-4 h-4"></td>
-                  <td class="py-4 text-center"><input type="radio" name="statut-${e.nom}" value="absent" ${e.statut==='absent'?'checked':''} class="accent-red-500 w-4 h-4"></td>
-                  <td class="py-4 text-center"><input type="radio" name="statut-${e.nom}" value="retard" ${e.statut==='retard'?'checked':''} class="accent-amber-500 w-4 h-4"></td>
-                  <td class="py-4"><input type="text" placeholder="Observation..." class="text-xs px-3 py-1.5 bg-[#112240]/80/5 border border-white/10 rounded-lg text-white outline-none focus:ring-1 focus:ring-amber-500 w-48"></td>
-                </tr>
-              `).join('')}
+              ${mockEleves.length > 0 ? mockEleves.map(e => `
+                <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                  <span class="font-bold text-sm">${e.nom}</span>
+                  <div class="flex gap-2">
+                    <button class="px-3 py-1 rounded-lg text-xs font-bold ${e.statut==='present'?'bg-green-500 text-black':'bg-white/10 text-gray-400'}">P</button>
+                    <button class="px-3 py-1 rounded-lg text-xs font-bold ${e.statut==='retard'?'bg-amber-500 text-black':'bg-white/10 text-gray-400'}">R</button>
+                    <button class="px-3 py-1 rounded-lg text-xs font-bold ${e.statut==='absent'?'bg-red-500 text-white':'bg-white/10 text-gray-400'}">A</button>
+                  </div>
+                </div>
+              `).join('') : '<p class="text-xs text-gray-400 italic p-4 text-center">Aucun élève inscrit dans cette classe pour le moment. En attente des inscriptions officielles.</p>'}
             </tbody>
           </table>
         </div>`;

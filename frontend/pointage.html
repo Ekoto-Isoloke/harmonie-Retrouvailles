@@ -503,6 +503,19 @@
     const list = JSON.parse(localStorage.getItem('hr_pointages')) || [];
     list.push(record);
     localStorage.setItem('hr_pointages', JSON.stringify(list));
+
+    // Synchronisation en temps réel avec Neon BD
+    const endpoint = isDepart ? '/api/rh/pointage/depart' : '/api/rh/pointage/arrivee';
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        utilisateur_id: user.id || null,
+        nom: `${user.prenom} ${user.nom}`,
+        role: user.role,
+        ecole: user.ecole || 'Retrouvailles'
+      })
+    }).catch(err => console.warn('Pointage Neon BD différé:', err));
   }
 
   // ═══════════════════════════════════════════════════════════

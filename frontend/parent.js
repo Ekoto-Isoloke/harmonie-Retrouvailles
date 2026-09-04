@@ -19,62 +19,54 @@ if (sidebarIdElement) {
     sidebarIdElement.textContent = `ID: PAR-${user.id}`;
 }
 
-// --- Simulation de la vue unifiée "Parents" avec données hors-ligne ---
-
-const enfantsMockData = [
-  {
-    id: 1,
-    nom: 'MUKENDI',
-    prenom: 'Sarah',
-    ecole: 'Harmonie',
-    classe: '6ème Primaire',
-    color: 'primary',
-    active: true
-  },
-  {
-    id: 2,
-    nom: 'MUKENDI',
-    prenom: 'David',
-    ecole: 'Retrouvailles',
-    classe: '3ème Humanités Scientifiques',
-    color: 'secondary',
-    active: false
-  }
-];
-
 // Rendu des enfants dans l'entête
 const enfantsContainer = document.getElementById('enfants-container');
 
-function renderEnfants() {
-  enfantsContainer.innerHTML = '';
-  enfantsMockData.forEach(enfant => {
-    const card = document.createElement('div');
-    const bgClass = enfant.active ? `bg-${enfant.color}-500 text-white shadow-lg shadow-${enfant.color}-500/30` : 'bg-[#112240]/80 text-slate-700 border border-slate-200 hover:bg-[#112240]/50';
-    const textClass = enfant.active ? 'text-white/80' : 'text-slate-500';
-    
-    card.className = `min-w-[240px] p-4 rounded-2xl cursor-pointer transition-all duration-300 transform ${enfant.active ? '-translate-y-1' : ''} ${bgClass}`;
-    card.innerHTML = `
-      <div class="flex justify-between items-start mb-2">
-        <h3 class="font-bold">${enfant.prenom}</h3>
-        <span class="text-xs font-bold px-2 py-1 bg-black/10 rounded-full">${enfant.ecole}</span>
-      </div>
-      <p class="text-sm ${textClass}">${enfant.classe}</p>
-    `;
-    
-    card.addEventListener('click', () => {
-      enfantsMockData.forEach(e => e.active = false);
-      enfant.active = true;
-      renderEnfants();
-      // Ici, on déclencherait une requête fetch ou une lecture IndexedDB pour charger les datas de cet enfant
-    });
+async function loadEnfants() {
+  enfantsContainer.innerHTML = '<div class="text-xs text-gray-400 p-4">Chargement des données de vos enfants...</div>';
 
-    enfantsContainer.appendChild(card);
-  });
+  try {
+    const res = await fetch(`/api/parent/enfants?parent_id=${user.id}`);
+    if (!res.ok) throw new Error('Erreur');
+    const data = await res.json();
+    const enfants = data.enfants || [];
+
+    if (enfants.length === 0) {
+      enfantsContainer.innerHTML = `
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10 text-xs text-gray-300">
+          🌱 Aucun enfant encore associé à ce compte parent. Vos enfants apparaîtront automatiquement ici dès la validation de leur inscription.
+        </div>
+      `;
+      return;
+    }
+
+    enfantsContainer.innerHTML = '';
+    enfants.forEach((enfant, idx) => {
+      const card = document.createElement('div');
+      const isFirst = idx === 0;
+      const bgClass = isFirst ? 'bg-amber-500 text-gray-950 font-bold shadow-lg shadow-amber-500/20' : 'bg-[#112240]/80 text-white border border-white/10 hover:bg-[#112240]/50';
+      
+      card.className = `min-w-[240px] p-4 rounded-2xl cursor-pointer transition-all duration-300 ${bgClass}`;
+      card.innerHTML = `
+        <div class="flex justify-between items-start mb-2">
+          <h3 class="font-black text-sm uppercase">${enfant.prenom} ${enfant.nom}</h3>
+          <span class="text-[10px] font-bold px-2 py-0.5 bg-black/20 rounded-full">${enfant.ecole === 'harmonie' ? 'Harmonie' : 'Retrouvailles'}</span>
+        </div>
+        <p class="text-xs opacity-80 font-mono">${enfant.classe} • ${enfant.matricule || ''}</p>
+      `;
+      
+      enfantsContainer.appendChild(card);
+    });
+  } catch(e) {
+    enfantsContainer.innerHTML = `
+      <div class="p-4 rounded-2xl bg-white/5 border border-white/10 text-xs text-gray-400">
+        Portail Famille actif • En attente des inscriptions officielles
+      </div>
+    `;
+  }
 }
 
-// Initialisation
-renderEnfants();
-
+loadEnfants();
 
 // --- Logique de navigation par onglets ---
 const tabs = ['resultats', 'finances', 'actus'];
@@ -83,28 +75,28 @@ tabs.forEach(tab => {
   const btn = document.getElementById(`tab-${tab}`);
   const content = document.getElementById(`content-${tab}`);
   
-  btn.addEventListener('click', () => {
-    // Reset tout
-    tabs.forEach(t => {
-      const b = document.getElementById(`tab-${t}`);
-      const c = document.getElementById(`content-${t}`);
-      
-      b.className = 'tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-[#112240]/50 font-medium transition-colors';
-      c.classList.add('hidden');
-      c.classList.remove('block');
-    });
+  if (btn && content) {
+    btn.addEventListener('click', () => {
+      tabs.forEach(t => {
+        const b = document.getElementById(`tab-${t}`);
+        const c = document.getElementById(`content-${t}`);
+        if (b) b.className = 'tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-white/5 font-medium transition-colors';
+        if (c) {
+          c.classList.add('hidden');
+          c.classList.remove('block');
+        }
+      });
 
-    // Activer l'onglet cliqué
-    btn.className = 'tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-50 text-primary-600 font-medium transition-colors';
-    content.classList.remove('hidden');
-    content.classList.add('block');
-  });
+      btn.className = 'tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/20 text-amber-300 font-bold transition-colors';
+      content.classList.remove('hidden');
+      content.classList.add('block');
+    });
+  }
 });
 
 // ===== Déconnexion =====
-// the button doesn't have an href in the parent HTML, but let's bind it
 const logoutBtn = document.querySelector('aside .border-t button');
-if (logoutBtn && logoutBtn.textContent.includes('Déconnexion')) {
+if (logoutBtn) {
   logoutBtn.addEventListener('click', (e) => {
     e.preventDefault();
     localStorage.removeItem('hr_token');
