@@ -193,6 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashboardNav = document.querySelector('a[data-target="dashboard"] span');
         if (dashboardNav) dashboardNav.textContent = 'Cockpit Exécutif';
 
+        const financeNav = document.querySelector('a[data-target="finance"] span');
+        if (financeNav) financeNav.textContent = 'Rapport Journalier';
+
         // Suppression pure et simple des modules non désirés pour la Direction Générale
         const modulesToRemove = ['gestion-comptes', 'communication', 'dossier360', 'coffrefort', 'classe-virtuelle'];
         modulesToRemove.forEach(target => {
@@ -331,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="px-6 pb-5 flex gap-2">
                         <a href="/prefet-dashboard.html?view=harmonie" class="flex-1 py-2.5 bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser</a>
-                        <a href="/compta-dashboard.html" class="py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold rounded-xl text-center transition">💰 Finance</a>
+                        <a href="/compta-dashboard.html" class="py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold rounded-xl text-center transition">📊 Rapport Journalier</a>
                     </div>
                 </div>
                 <div class="glass-panel rounded-3xl border border-purple-500/30 bg-gradient-to-b from-purple-500/5 to-transparent overflow-hidden">
@@ -353,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="px-6 pb-5 flex gap-2">
                         <a href="/prefet-dashboard.html?view=retrouvailles" class="flex-1 py-2.5 bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser</a>
-                        <a href="/compta-dashboard.html" class="py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold rounded-xl text-center transition">💰 Finance</a>
+                        <a href="/compta-dashboard.html" class="py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold rounded-xl text-center transition">📊 Rapport Journalier</a>
                     </div>
                 </div>
             </div>
@@ -370,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="text-2xl">🎓</span><span class="text-[10px] font-black text-gray-300 group-hover:text-purple-300 uppercase tracking-wider text-center">Direction Retrouvailles</span>
                     </a>
                     <a href="/compta-dashboard.html" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-yellow-500/15 border border-white/10 hover:border-yellow-500/40 rounded-2xl transition group">
-                        <span class="text-2xl">💰</span><span class="text-[10px] font-black text-gray-300 group-hover:text-yellow-300 uppercase tracking-wider text-center">Caisse & Trésorerie</span>
+                        <span class="text-2xl">💰</span><span class="text-[10px] font-black text-gray-300 group-hover:text-yellow-300 uppercase tracking-wider text-center">Rapport Journalier</span>
                     </a>
                     <a href="/teacher-dashboard.html" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-blue-500/15 border border-white/10 hover:border-blue-500/40 rounded-2xl transition group">
                         <span class="text-2xl">👨‍🏫</span><span class="text-[10px] font-black text-gray-300 group-hover:text-blue-300 uppercase tracking-wider text-center">Corps Enseignant</span>
@@ -710,7 +713,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.content.innerHTML = `
             <div class="mb-8 flex justify-between items-end">
                 <div>
-                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Finance & Gestion de Caisse</h2>
+                    <h2 class="text-3xl font-black dark:text-white uppercase tracking-tighter">Rapport Journalier & Caisse</h2>
                     <p class="text-xs text-gray-500 font-bold mt-1 uppercase tracking-widest">${db.ecoleActive} - Pôle Financier v3.0</p>
                 </div>
             </div>
