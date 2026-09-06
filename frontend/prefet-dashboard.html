@@ -199,7 +199,11 @@
     };
 
     // Configuration par défaut selon le rôle
-    const currentNav = navConfigs[role] || (isDP ? dpNav : navConfigs['Préfet']);
+    let effectiveRole = role;
+    if (role === 'Direction Générale' || role === 'Super-Admin' || role === 'Direction') {
+      effectiveRole = ecole === 'Harmonie' ? 'D.P' : 'Préfet';
+    }
+    const currentNav = navConfigs[effectiveRole] || (isDP ? dpNav : navConfigs['Préfet']);
     let currentView = 'accueil';
 
     // Rendu du menu de gauche
@@ -250,7 +254,7 @@
       `;
 
       // Dispatch selon le rôle et la vue
-      if (role === 'Préfet') {
+      if (effectiveRole === 'Préfet') {
         if (currentView === 'accueil') html += viewPrefetAccueil();
         else if (currentView === 'charge_horaire') html += viewPrefetChargeHoraire();
         else if (currentView === 'exetat') html += viewPrefetExetat();
@@ -258,7 +262,7 @@
         else if (currentView === 'rapports_de_dd') html += viewPrefetRapports();
         else if (currentView === 'correspondances') html += viewPrefetCorrespondances();
         else if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
-      } else if (isDP) {
+      } else if (isDP || effectiveRole === 'D.P') {
         if (currentView === 'accueil') html += viewDPAccueil();
         else if (currentView === 'charge_horaire') html += viewDPChargeHoraire();
         else if (currentView === 'enafep') html += viewDPENAFEP();
@@ -266,21 +270,21 @@
         else if (currentView === 'rapports_sur_ecole') html += viewDPRapports();
         else if (currentView === 'correspondances') html += viewDPCorrespondances();
         else if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
-      } else if (role === 'D.E') {
+      } else if (effectiveRole === 'D.E') {
         if (currentView === 'accueil') html += viewDEAccueil();
         else if (currentView === 'affectations') html += viewDEAffectations();
         else if (currentView === 'horaires') html += viewDEHoraires();
         else if (currentView === 'previsions') html += viewDEPrevisions();
         else if (currentView === 'inspections') html += viewDEInspections();
         else if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
-      } else if (role === 'D.D') {
+      } else if (effectiveRole === 'D.D') {
         if (currentView === 'accueil') html += viewDDAccueil();
         else if (currentView === 'incidents') html += viewDDIncidents();
         else if (currentView === 'billets') html += viewDDBillets();
         else if (currentView === 'convocations') html += viewDDConvocations();
         else if (currentView === 'rondes') html += viewDDRondes();
         else if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
-      } else if (role === 'Sur École') {
+      } else if (effectiveRole === 'Sur École') {
         if (currentView === 'accueil') html += viewSurEcoleAccueil();
         else if (currentView === 'affectations_primaire') html += viewSurEcoleAffectations();
         else if (currentView === 'presence_matinale') html += viewSurEcolePresence();
