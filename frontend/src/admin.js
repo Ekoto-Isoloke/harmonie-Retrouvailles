@@ -290,7 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="px-6 pb-5 flex gap-2">
                         <a href="/prefet-dashboard.html?view=harmonie" class="flex-1 py-2.5 bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser</a>
-                        <a href="/compta-dashboard.html" class="py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold rounded-xl text-center transition">📊 Rapport Journalier</a>
                     </div>
                 </div>
                 <div class="glass-panel rounded-3xl border border-purple-500/30 bg-gradient-to-b from-purple-500/5 to-transparent overflow-hidden">
@@ -309,7 +308,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="px-6 pb-5 flex gap-2">
                         <a href="/prefet-dashboard.html?view=retrouvailles" class="flex-1 py-2.5 bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser</a>
-                        <a href="/compta-dashboard.html" class="py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold rounded-xl text-center transition">📊 Rapport Journalier</a>
                     </div>
                 </div>
             </div>
@@ -318,15 +316,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3 class="font-black text-sm uppercase tracking-widest text-amber-300 mb-4 flex items-center gap-2">
                     <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Accès Rapide — Immersion Directe
                 </h3>
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <a href="/prefet-dashboard.html?view=harmonie" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 rounded-2xl transition group">
                         <span class="text-2xl">🏫</span><span class="text-[10px] font-black text-gray-300 group-hover:text-emerald-300 uppercase tracking-wider text-center">Direction Harmonie</span>
                     </a>
                     <a href="/prefet-dashboard.html?view=retrouvailles" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-purple-500/15 border border-white/10 hover:border-purple-500/40 rounded-2xl transition group">
                         <span class="text-2xl">🎓</span><span class="text-[10px] font-black text-gray-300 group-hover:text-purple-300 uppercase tracking-wider text-center">Direction Retrouvailles</span>
-                    </a>
-                    <a href="/compta-dashboard.html" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-yellow-500/15 border border-white/10 hover:border-yellow-500/40 rounded-2xl transition group">
-                        <span class="text-2xl">💰</span><span class="text-[10px] font-black text-gray-300 group-hover:text-yellow-300 uppercase tracking-wider text-center">Caisse & Trésorerie</span>
                     </a>
                     <button type="button" onclick="openSupervisionEnseignantsModal(event)" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-blue-500/15 border border-white/10 hover:border-blue-500/40 rounded-2xl transition group cursor-pointer">
                         <span class="text-2xl">👨‍🏫</span><span class="text-[10px] font-black text-gray-300 group-hover:text-blue-300 uppercase tracking-wider text-center">Corps Enseignant</span>
