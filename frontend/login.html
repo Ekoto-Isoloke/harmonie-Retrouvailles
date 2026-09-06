@@ -947,15 +947,6 @@
 
       initDB(); // Assure la présence des comptes universels dans le store local
 
-      // Raccourcis intelligents
-      if (email.toLowerCase() === 'chada' || email.toLowerCase() === 'chadrack') {
-        email = 'chadrackisoloke@gmail.com';
-        if (!password) password = 'password';
-      }
-      if (email.toLowerCase() === 'admin') {
-        email = 'admin@retrouvailes.cd';
-        if (!password) password = 'admin';
-      }
 
       let foundUser = null;
       let token = null;
@@ -981,35 +972,12 @@
         console.warn('API cloud non disponible, mode de secours activé:', error);
       }
 
-      // Fallback de secours local sécurisé
+      // Fallback de secours local (mode hors-ligne uniquement)
       if (!foundUser) {
         const lowerEmail = email.toLowerCase();
         let db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
-
-        if (lowerEmail === 'chadrackisoloke@gmail.com' && (password === 'password' || password === 'chada123' || password === 'admin')) {
-          foundUser = {
-            id: 99,
-            email: 'chadrackisoloke@gmail.com',
-            role: currentPortal === 'admin' ? 'Super-Admin' : 'Préfet',
-            nom: 'EKOTO ISOLOKE',
-            prenom: 'CHADA',
-            phone: '+243827613009',
-            ecole: 'Retrouvailles'
-          };
-        } else if ((lowerEmail.startsWith('harmonie') || lowerEmail.includes('retrouvailes') || lowerEmail === 'admin@retrouvailes.cd') &&
-                   (password === 'admin' || password === 'password' || password.includes('retrouvaille'))) {
-          foundUser = {
-            id: 1,
-            email: email,
-            role: 'Super-Admin',
-            nom: 'Direction',
-            prenom: 'Générale',
-            ecole: 'Harmonie-Retrouvailles'
-          };
-        } else {
-          let dbUser = db.find(u => u.email.toLowerCase() === lowerEmail && u.password === password);
-          if (dbUser) foundUser = dbUser;
-        }
+        let dbUser = db.find(u => u.email.toLowerCase() === lowerEmail && u.password === password);
+        if (dbUser) foundUser = dbUser;
       }
 
       if (!foundUser) {

@@ -108,12 +108,12 @@
               <form id="form-step-1-login" class="space-y-4">
                 <div>
                   <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest mb-1.5">Téléphone ou Email Responsable *</label>
-                  <input type="text" id="login-id" value="+243810000000" class="w-full px-4 py-3 bg-[#112240]/60 border border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-white text-sm" placeholder="+243..." required>
+                  <input type="text" id="login-id" class="w-full px-4 py-3 bg-[#112240]/60 border border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-white text-sm" placeholder="+243 81 000 0000" required>
                 </div>
 
                 <div>
                   <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest mb-1.5">Votre Mot de passe *</label>
-                  <input type="password" id="pwd-login" value="password" class="w-full px-4 py-3 bg-[#112240]/60 border border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-white text-sm" placeholder="••••••••" required>
+                  <input type="password" id="pwd-login" class="w-full px-4 py-3 bg-[#112240]/60 border border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-white text-sm" placeholder="••••••••" required>
                 </div>
 
                 <p id="login-error" class="text-red-400 text-xs font-semibold hide">Identifiants incorrects.</p>
@@ -160,20 +160,15 @@
                 <label class="block text-xs font-bold text-gray-300 uppercase tracking-widest mb-1.5">Nom et Postnom de l'Élève *</label>
                 <div class="relative">
                   <i data-lucide="search" class="absolute left-4 top-3.5 w-4 h-4 text-gray-400"></i>
-                  <input type="text" id="search-child-name" class="w-full pl-11 pr-4 py-3 bg-[#112240]/60 border border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-white text-sm" placeholder="Ex: MUKENDI KABUYA" required>
+                  <input type="text" id="search-child-name" class="w-full pl-11 pr-4 py-3 bg-[#112240]/60 border border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-white text-sm" placeholder="Ex: NOM POSTNOM de l'élève" required>
                 </div>
-                <p class="text-[11px] text-gray-400 mt-1">Exemples enregistrés : <strong>MUKENDI David</strong> ou <strong>MUKENDI Sarah</strong></p>
+                <p class="text-[11px] text-gray-400 mt-1">Saisissez le nom tel qu'il figure sur la fiche d'inscription.</p>
               </div>
 
               <div class="p-4 bg-[#112240]/80/5 border border-white/10 rounded-xl space-y-2 text-xs">
-                <p class="font-bold text-gray-300">Vos élèves pré-identifiés sur la fiche :</p>
+                <p class="font-bold text-gray-300">Vos élèves rattachés :</p>
                 <div id="children-chips" class="flex flex-wrap gap-2">
-                  <span onclick="autofillChild('MUKENDI KABUYA David')" class="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg cursor-pointer hover:bg-amber-500/30 transition">
-                    MUKENDI David (3è Hum.)
-                  </span>
-                  <span onclick="autofillChild('MUKENDI KABUYA Sarah')" class="px-3 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-lg cursor-pointer hover:bg-purple-500/30 transition">
-                    MUKENDI Sarah (6è Prim.)
-                  </span>
+                  <span class="text-gray-500 text-xs italic">Chargement depuis la base de données...</span>
                 </div>
               </div>
               
@@ -201,28 +196,16 @@
         if (window.lucide) lucide.createIcons();
       });
 
-      // Mock database of Registered Parent -> Student Linkages
-      const registeredParentDatabase = [
-        {
-          parentPhone: "+243810000000",
-          parentEmail: "kabuya@gmail.com",
-          parentName: "Mme. KABUYA",
-          allowedStudents: [
-            { id: 101, name: "MUKENDI KABUYA David", class: "3ème Humanité (Scientifique)", school: "G.S. Retrouvailles", teacher: "Mr. TSHIBANGU", matricule: "HR-2026-0451" },
-            { id: 102, name: "MUKENDI KABUYA Sarah", class: "6ème Primaire", school: "C.S. Harmonie", teacher: "Mme. ILUNGA", matricule: "HR-2026-0812" }
-          ]
-        }
-      ];
+      // ===== Variables de session =====
+      let currentParentData = null; // Données venant de Neon BD après login
+      let currentParentEnfants = []; // Enfants récupérés depuis Neon BD
 
-      // Current active session
-      let currentParentSession = registeredParentDatabase[0];
-
-      // Element References
+      // ===== Éléments =====
       const step1 = document.getElementById('step1-indicator');
       const step2 = document.getElementById('step2-indicator');
       const container1 = document.getElementById('step-1-container');
       const container2 = document.getElementById('step-2-container');
-      
+
       const viewCreation = document.getElementById('view-creation');
       const viewLogin = document.getElementById('view-login');
       const btnSwitchToLogin = document.getElementById('btn-switch-to-login');
@@ -231,12 +214,13 @@
       const pwd = document.getElementById('pwd');
       const pwdConfirm = document.getElementById('pwd-confirm');
       const pwdError = document.getElementById('pwd-error');
-      
+
       const btnNextCreate = document.getElementById('btn-next-create');
       const btnNextLogin = document.getElementById('btn-next-login');
       const btnBack = document.getElementById('btn-back');
       const btnSubmit = document.getElementById('btn-submit');
       const searchChildInput = document.getElementById('search-child-name');
+      const childrenChips = document.getElementById('children-chips');
 
       const securityDeniedBox = document.getElementById('security-denied-box');
       const securityDeniedText = document.getElementById('security-denied-text');
@@ -256,44 +240,135 @@
         step1.classList.remove('bg-amber-500');
         step1.classList.add('bg-emerald-500');
         step1.innerHTML = '✓';
-        
+
         step2.classList.remove('bg-[#112240]/80/10', 'text-gray-400');
         step2.classList.add('bg-amber-500', 'text-white');
         document.getElementById('step2-text').classList.replace('text-gray-400', 'text-white');
 
         container1.classList.add('hide');
         container2.classList.remove('hide');
+
+        // Charger les enfants depuis Neon BD
+        loadEnfantsNeon();
       }
 
-      btnNextCreate.addEventListener('click', () => {
+      // ===== Chargement des enfants depuis Neon BD =====
+      async function loadEnfantsNeon() {
+        childrenChips.innerHTML = '<span class="text-gray-500 text-xs italic">Chargement depuis la base de données...</span>';
+        if (!currentParentData || !currentParentData.id) {
+          childrenChips.innerHTML = '<span class="text-gray-400 text-xs italic">Connectez-vous pour voir vos enfants.</span>';
+          return;
+        }
+        try {
+          const res = await fetch(`/api/parent/enfants?parent_id=${currentParentData.id}`);
+          if (!res.ok) throw new Error('Erreur API');
+          const data = await res.json();
+          currentParentEnfants = data.enfants || [];
+          if (currentParentEnfants.length === 0) {
+            childrenChips.innerHTML = '<span class="text-gray-400 text-xs italic">Aucun enfant rattaché. Veuillez contacter l\'administration.</span>';
+          } else {
+            const colors = ['amber', 'blue', 'purple', 'green'];
+            childrenChips.innerHTML = '';
+            currentParentEnfants.forEach((e, i) => {
+              const c = colors[i % colors.length];
+              const span = document.createElement('span');
+              span.className = `px-3 py-1 bg-${c}-500/20 text-${c}-300 border border-${c}-500/40 rounded-lg cursor-pointer hover:bg-${c}-500/30 transition`;
+              span.textContent = `${e.prenom} ${e.nom} (${e.classe})`;
+              span.onclick = () => { searchChildInput.value = `${e.nom} ${e.prenom}`; };
+              childrenChips.appendChild(span);
+            });
+          }
+        } catch (err) {
+          childrenChips.innerHTML = '<span class="text-red-400 text-xs">Erreur de chargement. Vérifiez votre connexion.</span>';
+        }
+      }
+
+      // ===== Bouton Étape 1 — Activation (création de compte) =====
+      btnNextCreate.addEventListener('click', async () => {
         const phone = document.getElementById('parent-phone').value.trim();
-        if(phone.length >= 6 && pwd.value && pwd.value === pwdConfirm.value) {
+        const email = document.getElementById('parent-email').value.trim();
+        if (phone.length >= 6 && pwd.value && pwd.value === pwdConfirm.value) {
           pwdError.classList.add('hide');
+
+          // Tentative de connexion avec le téléphone et le nouveau mot de passe
+          // (le compte a été créé automatiquement lors de l'inscription de l'enfant)
+          const loginId = email || phone;
+          const loginSuccess = await doLogin(loginId, pwd.value);
+          if (!loginSuccess) {
+            // Si le login échoue avec le nouveau mot de passe, essayer avec le tel (mot de passe initial)
+            const fallback = await doLogin(loginId, phone);
+            if (!fallback) {
+              pwdError.textContent = 'Identifiants introuvables. Vérifiez votre téléphone ou contactez l\'administration.';
+              pwdError.classList.remove('hide');
+              return;
+            }
+          }
           goToStep2();
         } else {
+          pwdError.textContent = 'Les mots de passe ne correspondent pas ou le téléphone est incomplet.';
           pwdError.classList.remove('hide');
         }
       });
 
-      btnNextLogin.addEventListener('click', () => {
+      // ===== Bouton Étape 1 — Connexion directe =====
+      btnNextLogin.addEventListener('click', async () => {
+        const loginId = document.getElementById('login-id').value.trim();
+        const loginPwd = document.getElementById('pwd-login').value;
+        const loginError = document.getElementById('login-error');
+        loginError.classList.add('hide');
+
+        if (!loginId || !loginPwd) {
+          loginError.textContent = 'Veuillez renseigner votre identifiant et mot de passe.';
+          loginError.classList.remove('hide');
+          return;
+        }
+
+        const success = await doLogin(loginId, loginPwd);
+        if (!success) {
+          loginError.textContent = 'Identifiants incorrects. Vérifiez votre téléphone/email et mot de passe.';
+          loginError.classList.remove('hide');
+          return;
+        }
         goToStep2();
       });
+
+      // ===== Fonction de login Neon BD =====
+      async function doLogin(loginId, password) {
+        try {
+          // Essayer d'abord par email
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: loginId, password })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            // Vérifier que c'est bien un compte Parent
+            if (data.user && data.user.role === 'Parent') {
+              currentParentData = { ...data.user, token: data.token };
+              return true;
+            } else if (data.user) {
+              // Si le rôle est autre chose, bloquer
+              return false;
+            }
+          }
+        } catch (e) {
+          console.warn('API non disponible:', e);
+        }
+        return false;
+      }
 
       btnBack.addEventListener('click', () => {
         container2.classList.add('hide');
         container1.classList.remove('hide');
-        
+
         step1.className = "w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-sm font-bold";
         step1.innerHTML = "1";
         step2.className = "w-8 h-8 rounded-full bg-[#112240]/80/10 text-gray-400 flex items-center justify-center text-sm font-bold";
         document.getElementById('step2-text').className = "text-sm font-medium text-gray-400";
       });
 
-      function autofillChild(name) {
-        searchChildInput.value = name;
-        securityDeniedBox.classList.add('hide');
-      }
-
+      // ===== Vérification de filiation et ouverture de session =====
       btnSubmit.addEventListener('click', () => {
         const searchName = searchChildInput.value.trim().toLowerCase();
         securityDeniedBox.classList.add('hide');
@@ -304,38 +379,37 @@
           return;
         }
 
-        // Strict Check: Match searched name with allowed students for this parent
-        const match = currentParentSession.allowedStudents.find(student => 
-          student.name.toLowerCase().includes(searchName) || searchName.includes(student.name.toLowerCase().split(' ')[0])
+        // Recherche dans les enfants récupérés depuis Neon BD
+        const match = currentParentEnfants.find(e =>
+          `${e.nom} ${e.postnom || ''} ${e.prenom}`.toLowerCase().includes(searchName) ||
+          searchName.includes(e.nom.toLowerCase())
         );
 
         if (match) {
-          // Success: Linked student confirmed!
           securitySuccessBox.classList.remove('hide');
           btnSubmit.disabled = true;
           btnSubmit.innerHTML = "Vérification Filiation réussie...";
 
-          // Save active secure session to localStorage
           const parentUser = {
-            id: 991,
-            nom: "KABUYA",
-            prenom: "Mme",
-            role: "parent",
-            phone: currentParentSession.parentPhone,
-            allowedStudents: currentParentSession.allowedStudents,
+            id: currentParentData.id,
+            nom: currentParentData.nom,
+            prenom: currentParentData.prenom,
+            role: 'parent',
+            email: currentParentData.email,
+            allowedStudents: currentParentEnfants,
             activeStudent: match
           };
           localStorage.setItem('hr_user', JSON.stringify(parentUser));
-          localStorage.setItem('hr_token', 'valid_secure_parent_token_2026');
+          localStorage.setItem('hr_token', currentParentData.token || 'token_auth_parent_2026');
 
           setTimeout(() => {
             window.location.href = '/parent-dashboard.html';
           }, 1200);
 
         } else {
-          // Security Alert: Block access!
           securityDeniedBox.classList.remove('hide');
-          securityDeniedText.textContent = `Accès Refusé : Aucun élève nommé "${searchChildInput.value}" n'est rattaché à votre numéro de téléphone responsable (${currentParentSession.parentPhone}). Un parent ne peut pas consulter les dossiers d'autres élèves.`;
+          const parentPhone = currentParentData ? (currentParentData.phone || currentParentData.email || 'votre compte') : 'votre compte';
+          securityDeniedText.textContent = `Accès Refusé : Aucun élève nommé "${searchChildInput.value}" n'est rattaché à ${parentPhone}. Un parent ne peut consulter que les dossiers de ses propres enfants.`;
         }
       });
     </script>
