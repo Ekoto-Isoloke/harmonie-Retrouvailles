@@ -326,11 +326,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="text-2xl">🎓</span><span class="text-[10px] font-black text-gray-300 group-hover:text-purple-300 uppercase tracking-wider text-center">Direction Retrouvailles</span>
                     </a>
                     <a href="/compta-dashboard.html" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-yellow-500/15 border border-white/10 hover:border-yellow-500/40 rounded-2xl transition group">
-                        <span class="text-2xl">💰</span><span class="text-[10px] font-black text-gray-300 group-hover:text-yellow-300 uppercase tracking-wider text-center">Rapport Journalier</span>
+                        <span class="text-2xl">💰</span><span class="text-[10px] font-black text-gray-300 group-hover:text-yellow-300 uppercase tracking-wider text-center">Caisse & Trésorerie</span>
                     </a>
-                    <a href="/teacher-dashboard.html" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-blue-500/15 border border-white/10 hover:border-blue-500/40 rounded-2xl transition group">
+                    <button type="button" onclick="openSupervisionEnseignantsModal(event)" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-blue-500/15 border border-white/10 hover:border-blue-500/40 rounded-2xl transition group cursor-pointer">
                         <span class="text-2xl">👨‍🏫</span><span class="text-[10px] font-black text-gray-300 group-hover:text-blue-300 uppercase tracking-wider text-center">Corps Enseignant</span>
-                    </a>
+                    </button>
                     <a href="/pointage.html" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-cyan-500/15 border border-white/10 hover:border-cyan-500/40 rounded-2xl transition group">
                         <span class="text-2xl">⏱️</span><span class="text-[10px] font-black text-gray-300 group-hover:text-cyan-300 uppercase tracking-wider text-center">Borne Biométrique</span>
                     </a>
@@ -3485,7 +3485,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const todayPointages = rawPointages.filter(p => {
             const pDate = p.date ? p.date.split('T')[0] : (p.arrivee ? todayIso : '');
-            return pDate === todayIso;
         });
 
         function checkLate(timeStr) {
@@ -4081,3 +4080,553 @@ document.addEventListener('DOMContentLoaded', () => {
             menu.classList.add('hidden');
         }
     });
+
+// ==========================================
+// MODULE HAUTE GAMME : SUPERVISION CORPS ENSEIGNANT
+// ==========================================
+
+(function() {
+
+    // --- Helpers : récupérer les enseignants ---
+    function getAllEnseignants() {
+        const roleEns = ['Enseignant', 'Professeur', 'Instituteur', 'Institutrice', 'Enseignante'];
+        let all = [];
+
+        // Source 1 : hr_users_db_v2
+        try {
+            const raw = JSON.parse(localStorage.getItem('hr_users_db_v2') || '[]');
+            raw.forEach(u => {
+                if (roleEns.includes(u.role)) {
+                    all.push({
+                        id: u.email || u.login || (u.prenom + '_' + u.nom),
+                        nom: (u.nom || '').toUpperCase(),
+                        prenom: u.prenom || '',
+                        email: u.email || u.login || '',
+                        telephone: u.telephone || '',
+                        role: u.role || 'Enseignant',
+                        statut: u.statut || 'Actif',
+                        ecole: u.ecole || '',
+                        diplome: u.diplome || u.niveauEtudes || '',
+                        source: 'users_db'
+                    });
+                }
+            });
+        } catch(e) {}
+
+        // Source 2 : admin_db rh.comptes (toutes écoles)
+        try {
+            const adminDb = JSON.parse(localStorage.getItem('admin_db') || '{}');
+            const comptes = (adminDb.rh && adminDb.rh.comptes) ? adminDb.rh.comptes : [];
+            comptes.forEach(c => {
+                if (roleEns.includes(c.role)) {
+                    const exists = all.find(a => a.email === (c.email || c.login));
+                    if (!exists) {
+                        all.push({
+                            id: c.id || c.email || c.login,
+                            nom: (c.nom || '').toUpperCase(),
+                            prenom: c.prenom || '',
+                            email: c.email || c.login || '',
+                            telephone: c.telephone || '',
+                            role: c.role || 'Enseignant',
+                            statut: c.statut || 'Actif',
+                            ecole: c.ecole || '',
+                            diplome: c.diplome || '',
+                            source: 'admin_db'
+                        });
+                    }
+                }
+            });
+        } catch(e) {}
+
+        // Source 3 : hr_affectations_db — ajouter enseignants qui ont des affectations mais pas de compte
+        try {
+            const aff = JSON.parse(localStorage.getItem('hr_affectations_db') || '[]');
+            aff.forEach(a => {
+                const exists = all.find(e => e.email === a.teacherEmail || e.nom + ' ' + e.prenom === a.teacherName);
+                if (!exists && a.teacherName) {
+                    const parts = a.teacherName.trim().split(' ');
+                    all.push({
+                        id: a.teacherEmail || a.teacherName,
+                        nom: (parts[0] || '').toUpperCase(),
+                        prenom: parts.slice(1).join(' ') || '',
+                        email: a.teacherEmail || '',
+                        telephone: '',
+                        role: 'Enseignant',
+                        statut: 'Actif',
+                        ecole: a.ecole || '',
+                        diplome: '',
+                        source: 'affectations'
+                    });
+                }
+            });
+        } catch(e) {}
+
+        // Dédoublonnage par email
+        const seen = new Set();
+        return all.filter(e => {
+            const key = e.email || (e.nom + e.prenom);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+
+    function getAffectationsPour(enseignant) {
+        try {
+            const aff = JSON.parse(localStorage.getItem('hr_affectations_db') || '[]');
+            return aff.filter(a =>
+                a.teacherEmail === enseignant.email ||
+                a.teacherName === (enseignant.nom + ' ' + enseignant.prenom) ||
+                a.teacherName === (enseignant.prenom + ' ' + enseignant.nom)
+            );
+        } catch(e) { return []; }
+    }
+
+    function getInspectionsPour(enseignant) {
+        try {
+            const ins = JSON.parse(localStorage.getItem('hr_inspections_db') || '[]');
+            return ins.filter(i =>
+                i.teacherEmail === enseignant.email ||
+                i.teacherName === (enseignant.nom + ' ' + enseignant.prenom)
+            );
+        } catch(e) { return []; }
+    }
+
+    // --- Etat interne ---
+    let currentView = 'accueil'; // 'accueil' | 'annuaire' | 'fiche'
+    let allEnseignants = [];
+
+    // ==========================================
+    // OPEN / CLOSE
+    // ==========================================
+    window.openSupervisionEnseignantsModal = function(e) {
+        if (e) { e.stopPropagation(); e.preventDefault(); }
+        const dropdown = document.getElementById('dropdown-direction-generale');
+        if (dropdown) dropdown.classList.add('hidden');
+
+        const modal = document.getElementById('modal-supervision-enseignants');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        // Charger les données
+        allEnseignants = getAllEnseignants();
+
+        // Reset
+        currentView = 'accueil';
+        clearEnseignantSearch();
+        const toggleIcon = document.getElementById('btn-toggle-icon');
+        const toggleText = document.getElementById('btn-toggle-text');
+        if (toggleIcon) toggleIcon.textContent = '📋';
+        if (toggleText) toggleText.textContent = 'Liste de tous les enseignants';
+
+        // Populer les chips de suggestions
+        _renderSuggestions(allEnseignants);
+
+        // Afficher l'écran d'accueil
+        _renderAccueil();
+
+        if (window.lucide) lucide.createIcons();
+    };
+
+    window.closeSupervisionEnseignantsModal = function() {
+        const modal = document.getElementById('modal-supervision-enseignants');
+        if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        clearEnseignantSearch();
+    };
+
+    window.toggleEnseignantsView = function() {
+        const toggleIcon = document.getElementById('btn-toggle-icon');
+        const toggleText = document.getElementById('btn-toggle-text');
+        if (currentView !== 'annuaire') {
+            currentView = 'annuaire';
+            if (toggleIcon) toggleIcon.textContent = '🔍';
+            if (toggleText) toggleText.textContent = 'Recherche individuelle';
+            clearEnseignantSearch();
+            renderAnnuaireEnseignants();
+        } else {
+            currentView = 'accueil';
+            if (toggleIcon) toggleIcon.textContent = '📋';
+            if (toggleText) toggleText.textContent = 'Liste de tous les enseignants';
+            clearEnseignantSearch();
+            _renderAccueil();
+        }
+    };
+
+    // ==========================================
+    // RECHERCHE
+    // ==========================================
+    window.onSearchEnseignantInput = function(val) {
+        const clearBtn = document.getElementById('btn-clear-enseignant-search');
+        if (clearBtn) clearBtn.classList.toggle('hidden', !val.trim());
+        if (!val.trim()) {
+            if (currentView === 'annuaire') renderAnnuaireEnseignants();
+            else _renderAccueil();
+            return;
+        }
+        const q = val.toLowerCase().trim();
+        const matches = allEnseignants.filter(e =>
+            (e.nom + ' ' + e.prenom).toLowerCase().includes(q) ||
+            (e.prenom + ' ' + e.nom).toLowerCase().includes(q) ||
+            (e.email && e.email.toLowerCase().includes(q))
+        );
+        if (matches.length === 1) {
+            renderFicheEnseignant(matches[0]);
+        } else if (matches.length > 1) {
+            _renderResultsList(matches);
+        } else {
+            _renderNotFound(val);
+        }
+    };
+
+    window.clearEnseignantSearch = function() {
+        const inp = document.getElementById('search-enseignant-input');
+        if (inp) inp.value = '';
+        const clearBtn = document.getElementById('btn-clear-enseignant-search');
+        if (clearBtn) clearBtn.classList.add('hidden');
+        if (currentView === 'annuaire') renderAnnuaireEnseignants();
+        else _renderAccueil();
+    };
+
+    window.searchEnseignantByChip = function(nom) {
+        const inp = document.getElementById('search-enseignant-input');
+        if (inp) { inp.value = nom; inp.dispatchEvent(new Event('input')); }
+        window.onSearchEnseignantInput(nom);
+    };
+
+    // ==========================================
+    // SUGGESTIONS CHIPS
+    // ==========================================
+    function _renderSuggestions(enseignants) {
+        const container = document.getElementById('search-suggestions-container');
+        if (!container) return;
+        const chips = enseignants.slice(0, 8).map(e =>
+            `<button type="button" onclick="searchEnseignantByChip('${e.nom}')"
+                class="px-3 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition">
+                ${e.nom}${e.prenom ? ' ' + e.prenom.charAt(0) + '.' : ''}
+            </button>`
+        ).join('');
+        container.innerHTML = `<span class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mr-1">Suggestions rapides :</span>
+        ${chips || '<span class="text-xs text-gray-500 italic">Aucun enseignant enregistré</span>'}`;
+    }
+
+    // ==========================================
+    // VUE ACCUEIL
+    // ==========================================
+    function _renderAccueil() {
+        const body = document.getElementById('enseignants-modal-content');
+        if (!body) return;
+        const total = allEnseignants.length;
+        const actifs = allEnseignants.filter(e => e.statut === 'Actif' || !e.statut).length;
+
+        // Stats par école
+        const harmonie = allEnseignants.filter(e => (e.ecole || '').toLowerCase().includes('harmonie')).length;
+        const retrouvailles = allEnseignants.filter(e => (e.ecole || '').toLowerCase().includes('retrouvaille')).length;
+
+        if (total === 0) {
+            body.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-16 gap-4 text-center">
+                <div class="w-20 h-20 rounded-3xl bg-amber-500/10 flex items-center justify-center text-5xl">👨‍🏫</div>
+                <div>
+                    <p class="text-white font-bold text-lg">Aucun enseignant enregistré</p>
+                    <p class="text-gray-400 text-sm mt-1">Utilisez le module RH pour créer des comptes enseignants.</p>
+                </div>
+                <button onclick="toggleEnseignantsView()"
+                    class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-gray-950 font-black rounded-xl text-sm transition">
+                    Voir l'annuaire complet
+                </button>
+            </div>`;
+            return;
+        }
+
+        body.innerHTML = `
+        <!-- KPI Row -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            ${_kpiCard('👨‍🏫', 'Personnel Total', total, 'amber')}
+            ${_kpiCard('✅', 'Enseignants Actifs', actifs, 'emerald')}
+            ${_kpiCard('🏫', 'CS Harmonie', harmonie || '—', 'blue')}
+            ${_kpiCard('🎓', 'GS Retrouvailles', retrouvailles || '—', 'purple')}
+        </div>
+
+        <!-- Accès rapides -->
+        <div class="mt-2">
+            <h4 class="text-xs text-gray-400 uppercase tracking-widest font-bold mb-3">Accès rapide — Enseignants récents</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                ${allEnseignants.slice(0, 6).map(e => _miniCard(e)).join('')}
+            </div>
+        </div>
+
+        <!-- CTA Annuaire complet -->
+        <div class="mt-2 flex justify-center">
+            <button onclick="toggleEnseignantsView()"
+                class="px-8 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-gray-950 font-black rounded-2xl text-sm shadow-lg shadow-amber-500/20 transition flex items-center gap-2">
+                📋 Voir l'annuaire complet (${total} enseignants)
+            </button>
+        </div>`;
+    }
+
+    function _kpiCard(icon, label, val, color) {
+        const colors = {
+            amber: 'from-amber-500/20 to-amber-500/5 border-amber-500/30 text-amber-400',
+            emerald: 'from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 text-emerald-400',
+            blue: 'from-blue-500/20 to-blue-500/5 border-blue-500/30 text-blue-400',
+            purple: 'from-purple-500/20 to-purple-500/5 border-purple-500/30 text-purple-400',
+        };
+        return `<div class="bg-gradient-to-br ${colors[color]} border rounded-2xl p-4 flex flex-col gap-1">
+            <span class="text-2xl">${icon}</span>
+            <span class="text-2xl font-black text-white">${val}</span>
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">${label}</span>
+        </div>`;
+    }
+
+    function _miniCard(e) {
+        return `<button type="button" onclick="searchEnseignantByChip('${e.nom}')"
+            class="flex items-center gap-3 p-3 rounded-2xl bg-white/5 hover:bg-amber-500/10 border border-white/10 hover:border-amber-500/30 transition text-left w-full group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/30 to-yellow-600/20 flex items-center justify-center text-lg font-black text-amber-400 shrink-0 group-hover:from-amber-500/50 transition">
+                ${(e.prenom || e.nom || '?').charAt(0).toUpperCase()}
+            </div>
+            <div class="min-w-0">
+                <p class="text-sm font-bold text-white truncate">${e.nom} ${e.prenom}</p>
+                <p class="text-xs text-gray-400 truncate">${e.role}${e.ecole ? ' · ' + e.ecole : ''}</p>
+            </div>
+            <span class="ml-auto text-gray-600 group-hover:text-amber-400 text-lg transition">›</span>
+        </button>`;
+    }
+
+    // ==========================================
+    // VUE ANNUAIRE
+    // ==========================================
+    window.renderAnnuaireEnseignants = function() {
+        currentView = 'annuaire';
+        const body = document.getElementById('enseignants-modal-content');
+        if (!body) return;
+        if (allEnseignants.length === 0) { _renderAccueil(); return; }
+
+        body.innerHTML = `
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="text-sm font-black text-white uppercase tracking-widest">Annuaire Complet</h4>
+            <span class="text-xs text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">${allEnseignants.length} enseignant${allEnseignants.length > 1 ? 's' : ''}</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            ${allEnseignants.map(e => _annuaireCard(e)).join('')}
+        </div>`;
+    };
+
+    function _annuaireCard(e) {
+        const aff = getAffectationsPour(e);
+        const heures = aff.reduce((s, a) => s + (parseFloat(a.weeklyHours) || 0), 0);
+        const cours = [...new Set(aff.map(a => a.course).filter(Boolean))];
+        const statutColor = (e.statut === 'Inactif' || e.statut === 'Suspendu') ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+
+        return `<button type="button" onclick='_openFicheFromAnnuaire(${JSON.stringify(e.id)})'
+            class="flex flex-col gap-3 p-4 rounded-2xl bg-white/5 hover:bg-[#112240] border border-white/10 hover:border-amber-500/30 transition text-left w-full group">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center font-black text-gray-950 text-xl shrink-0">
+                    ${(e.prenom || e.nom || '?').charAt(0).toUpperCase()}
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-black text-white truncate">${e.nom} ${e.prenom}</p>
+                    <p class="text-xs text-amber-400 font-semibold">${e.role}</p>
+                </div>
+                <span class="text-gray-500 group-hover:text-amber-400 text-xl transition">›</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 text-[10px]">
+                <span class="px-2 py-0.5 rounded-full border ${statutColor} font-bold">${e.statut || 'Actif'}</span>
+                ${e.ecole ? `<span class="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-semibold">${e.ecole}</span>` : ''}
+                ${heures ? `<span class="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 font-semibold">${heures}h/sem</span>` : ''}
+                ${cours.length ? `<span class="px-2 py-0.5 rounded-full bg-gray-700/60 border border-white/10 text-gray-300 font-semibold">${cours.slice(0, 2).join(', ')}${cours.length > 2 ? '…' : ''}</span>` : ''}
+            </div>
+        </button>`;
+    }
+
+    window._openFicheFromAnnuaire = function(id) {
+        const e = allEnseignants.find(x => x.id == id || x.id === id);
+        if (e) renderFicheEnseignant(e);
+    };
+
+    // ==========================================
+    // LISTE RÉSULTATS (multi-match)
+    // ==========================================
+    function _renderResultsList(matches) {
+        const body = document.getElementById('enseignants-modal-content');
+        if (!body) return;
+        body.innerHTML = `
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="text-sm font-black text-white uppercase tracking-widest">${matches.length} résultat${matches.length > 1 ? 's' : ''} trouvé${matches.length > 1 ? 's' : ''}</h4>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            ${matches.map(e => _annuaireCard(e)).join('')}
+        </div>`;
+    }
+
+    function _renderNotFound(query) {
+        const body = document.getElementById('enseignants-modal-content');
+        if (!body) return;
+        body.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-14 gap-4 text-center">
+            <div class="text-5xl">🔍</div>
+            <div>
+                <p class="text-white font-bold">Aucun résultat pour <span class="text-amber-400">"${query}"</span></p>
+                <p class="text-gray-400 text-sm mt-1">Vérifiez l'orthographe ou utilisez une suggestion ci-dessus.</p>
+            </div>
+        </div>`;
+    }
+
+    // ==========================================
+    // FICHE DÉTAILLÉE HAUTE GAMME
+    // ==========================================
+    window.renderFicheEnseignant = function(e) {
+        currentView = 'fiche';
+        const body = document.getElementById('enseignants-modal-content');
+        if (!body) return;
+
+        const aff = getAffectationsPour(e);
+        const ins = getInspectionsPour(e);
+        const heuresTotal = aff.reduce((s, a) => s + (parseFloat(a.weeklyHours) || 0), 0);
+        const cours = [...new Set(aff.map(a => a.course).filter(Boolean))];
+        const classes = [...new Set(aff.map(a => a.classe).filter(Boolean))];
+        const statutColor = (e.statut === 'Inactif' || e.statut === 'Suspendu')
+            ? 'from-red-500/20 to-red-500/5 border-red-500/30 text-red-400'
+            : 'from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 text-emerald-400';
+
+        body.innerHTML = `
+        <!-- Retour -->
+        <button type="button" onclick="clearEnseignantSearch()"
+            class="flex items-center gap-2 text-xs text-gray-400 hover:text-amber-400 font-bold uppercase tracking-wider transition mb-4">
+            ← Retour
+        </button>
+
+        <!-- Hero Card -->
+        <div class="relative bg-gradient-to-br from-[#112240] to-[#0A192F] border border-amber-500/30 rounded-3xl overflow-hidden shadow-2xl">
+            <!-- Gradient déco -->
+            <div class="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
+            <div class="absolute top-0 right-0 w-64 h-64 rounded-full bg-amber-500/5 blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
+
+            <div class="relative p-6 sm:p-8 flex flex-col sm:flex-row gap-6 items-start sm:items-center">
+                <!-- Avatar -->
+                <div class="relative shrink-0">
+                    <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center font-black text-gray-950 text-4xl shadow-xl shadow-amber-500/30">
+                        ${(e.prenom || e.nom || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <span class="absolute -bottom-2 -right-2 text-2xl">${e.role === 'Institutrice' || e.role === 'Enseignante' ? '👩‍🏫' : '👨‍🏫'}</span>
+                </div>
+
+                <!-- Identité -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-0.5 rounded-full">${e.role}</span>
+                        <span class="text-[10px] font-bold px-3 py-0.5 rounded-full border bg-gradient-to-r ${statutColor}">${e.statut || 'Actif'}</span>
+                        ${e.ecole ? `<span class="text-[10px] font-semibold px-3 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400">${e.ecole}</span>` : ''}
+                    </div>
+                    <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight">${e.nom}</h2>
+                    <p class="text-xl text-amber-300 font-semibold">${e.prenom}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grille Infos Contact + Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+
+            <!-- Coordonnées -->
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <h4 class="text-xs font-black uppercase tracking-widest text-amber-400 mb-4 flex items-center gap-2">
+                    <span>📋</span> Identité & Contact
+                </h4>
+                <div class="space-y-3">
+                    ${_infoRow('📧', 'Email / Login', e.email || '—')}
+                    ${_infoRow('📱', 'Téléphone', e.telephone || '—')}
+                    ${_infoRow('🎓', 'Diplôme / Niveau', e.diplome || 'Non renseigné')}
+                    ${_infoRow('🏫', 'École', e.ecole || 'Non renseigné')}
+                </div>
+            </div>
+
+            <!-- Stats Charge -->
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <h4 class="text-xs font-black uppercase tracking-widest text-purple-400 mb-4 flex items-center gap-2">
+                    <span>⏱️</span> Charge Horaire
+                </h4>
+                <div class="space-y-3">
+                    ${_infoRow('📚', 'Cours dispensés', cours.length ? cours.join(', ') : 'Non renseigné')}
+                    ${_infoRow('🏛️', 'Classes', classes.length ? classes.join(', ') : 'Non renseigné')}
+                    ${_infoRow('⏰', 'Heures / semaine', heuresTotal ? heuresTotal + 'h' : 'Non renseigné')}
+                    ${_infoRow('📋', 'Nb affectations', aff.length || '0')}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableau Affectations Détaillé -->
+        ${aff.length > 0 ? `
+        <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+            <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+                <h4 class="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2">
+                    <span>🗓️</span> Planning des Cours
+                </h4>
+                <span class="text-xs text-gray-400 font-semibold">${aff.length} affectation${aff.length > 1 ? 's' : ''}</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-white/5">
+                            <th class="text-left py-3 px-4 text-[11px] font-black uppercase tracking-wider text-gray-400">Cours</th>
+                            <th class="text-left py-3 px-4 text-[11px] font-black uppercase tracking-wider text-gray-400">Classe</th>
+                            <th class="text-left py-3 px-4 text-[11px] font-black uppercase tracking-wider text-gray-400">Jour</th>
+                            <th class="text-left py-3 px-4 text-[11px] font-black uppercase tracking-wider text-gray-400">Horaire</th>
+                            <th class="text-right py-3 px-4 text-[11px] font-black uppercase tracking-wider text-gray-400">H/sem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${aff.map((a, i) => `
+                        <tr class="${i % 2 === 0 ? 'bg-white/3' : ''} hover:bg-amber-500/5 transition">
+                            <td class="py-3 px-4 font-semibold text-white">${a.course || '—'}</td>
+                            <td class="py-3 px-4 text-blue-300">${a.classe || '—'}</td>
+                            <td class="py-3 px-4 text-gray-300">${a.day || '—'}</td>
+                            <td class="py-3 px-4 text-gray-300">${a.timeSlot || '—'}</td>
+                            <td class="py-3 px-4 text-right font-bold text-purple-300">${a.weeklyHours || '—'}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                    <tfoot>
+                        <tr class="border-t border-white/10">
+                            <td colspan="4" class="py-3 px-4 text-right text-xs font-black uppercase tracking-wider text-gray-400">Total hebdomadaire</td>
+                            <td class="py-3 px-4 text-right font-black text-amber-400">${heuresTotal}h</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>` : `
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
+            <p class="text-gray-400 text-sm">Aucune affectation enregistrée pour cet enseignant.</p>
+        </div>`}
+
+        <!-- Inspections -->
+        ${ins.length > 0 ? `
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <h4 class="text-xs font-black uppercase tracking-widest text-emerald-400 mb-4 flex items-center gap-2">
+                <span>🔎</span> Historique Inspections (${ins.length})
+            </h4>
+            <div class="space-y-2">
+                ${ins.slice(0, 5).map(i => `
+                <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                    <div>
+                        <p class="text-sm font-semibold text-white">${i.subject || i.classe || '—'}</p>
+                        <p class="text-xs text-gray-400">${i.date || i.createdAt || '—'}</p>
+                    </div>
+                    <span class="text-xs font-bold px-3 py-1 rounded-full ${i.result === 'Satisfaisant' || i.result === 'Très bien' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}">${i.result || i.appreciation || 'Inspecté'}</span>
+                </div>`).join('')}
+            </div>
+        </div>` : ''}`;
+
+        if (window.lucide) lucide.createIcons();
+    };
+
+    function _infoRow(icon, label, val) {
+        return `<div class="flex items-start gap-3">
+            <span class="text-lg shrink-0 mt-0.5">${icon}</span>
+            <div class="min-w-0">
+                <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">${label}</p>
+                <p class="text-sm text-white font-semibold break-all">${val}</p>
+            </div>
+        </div>`;
+    }
+
+})(); // fin du module
+

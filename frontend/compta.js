@@ -14,7 +14,7 @@ const user = JSON.parse(userStr);
 // Sécurité Anti-Zombie : Vérifier que le compte existe dans la base active
 const activeDb = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
 const dummyEmails = ['kasombo@retrouvailles.cd', 'matungulu@retrouvailles.cd', 'enseignant@retrouvailles.cd', 'compta@retrouvailles.cd', 'parent@retrouvailles.cd'];
-const isSuperAdminUser = user.email && (user.email.toLowerCase() === 'chadrackisoloke@gmail.com' || user.email.toLowerCase() === 'admin@retrouvailes.cd');
+const isSuperAdminUser = user.role === 'Direction Générale' || user.role === 'Super-Admin' || user.role === 'Direction' || (user.email && (user.email.toLowerCase() === 'chadrackisoloke@gmail.com' || user.email.toLowerCase() === 'admin@retrouvailes.cd' || user.email.toLowerCase().includes('promoteur')));
 const isDummy = user.email && dummyEmails.includes(user.email.toLowerCase());
 const existsInDb = activeDb.some(u => u.email && u.email.toLowerCase() === (user.email || '').toLowerCase());
 
@@ -39,7 +39,11 @@ if (!allowedRoles.includes(user.role)) {
 const asideName = document.querySelector('aside .p-6 p.font-bold');
 if (asideName) asideName.textContent = `${user.nom} ${user.prenom}`;
 const asideRole = document.querySelector('aside .p-6 p.text-xs');
-if (asideRole) asideRole.textContent = `Comptable – C.S. Harmonie / G.S. Retrouvailles`;
+if (asideRole) asideRole.textContent = user.role === 'Direction Générale' ? 'Direction Générale — Supervision' : `Comptable – C.S. Harmonie / G.S. Retrouvailles`;
+if (user.role === 'Direction Générale' || user.role === 'Super-Admin') {
+  const b = document.getElementById('dg-executive-banner');
+  if (b) b.classList.remove('hidden');
+}
 
 // ===== Données mock (simulent la base de données) =====
 const MOCK_DB = {

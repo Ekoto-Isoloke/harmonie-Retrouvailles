@@ -338,13 +338,13 @@
                                     <div class="text-[10px] text-gray-400">Recouvrement & Comptabilité</div>
                                 </div>
                             </a>
-                            <a href="/teacher-dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold transition group">
+                            <button type="button" onclick="openSupervisionEnseignantsModal(event)" class="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold transition group cursor-pointer">
                                 <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">👨‍🏫</div>
                                 <div>
                                     <div class="text-gray-200 group-hover:text-blue-400 font-bold">Corps Enseignant</div>
-                                    <div class="text-[10px] text-gray-400">Pédagogie & Classes Virtuelles</div>
+                                    <div class="text-[10px] text-gray-400">Pédagogie, Fichier & Horaires</div>
                                 </div>
-                            </a>
+                            </button>
                             <a href="/pointage.html" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold transition group">
                                 <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">⏱️</div>
                                 <div>
@@ -539,6 +539,61 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL HAUTE GAMME : SUPERVISION EXÉCUTIVE DU CORPS ENSEIGNANT -->
+    <!-- ======================================================== -->
+    <div id="modal-supervision-enseignants" class="hidden fixed inset-0 z-50 bg-[#030914]/85 backdrop-blur-2xl flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div class="relative w-full max-w-5xl bg-[#0A192F] border border-amber-500/30 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.85)] overflow-hidden my-auto flex flex-col max-h-[92vh]">
+            
+            <!-- Modal Header Prestige -->
+            <div class="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-amber-500/10 via-blue-500/5 to-purple-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-gray-950 font-black text-xl shadow-lg shadow-amber-500/20 shrink-0">
+                        👨‍🏫
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-full">Direction Générale • Fichier Central</span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden sm:inline">Harmonie & Retrouvailles</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-black text-white uppercase tracking-tight mt-0.5">Supervision du Corps Enseignant</h3>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 self-end sm:self-center">
+                    <button type="button" id="btn-toggle-view-enseignants" onclick="toggleEnseignantsView()" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold text-xs flex items-center gap-2 transition shadow">
+                        <span id="btn-toggle-icon">📋</span>
+                        <span id="btn-toggle-text">Liste de tous les enseignants</span>
+                    </button>
+                    <button type="button" onclick="closeSupervisionEnseignantsModal()" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 border border-white/10 flex items-center justify-center transition">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Sub-Header: Search Bar & Suggestions -->
+            <div class="p-5 border-b border-white/10 bg-[#0B1528] shrink-0">
+                <div class="relative w-full">
+                    <div class="absolute left-4 top-3.5 text-amber-400 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <input type="text" id="search-enseignant-input" oninput="onSearchEnseignantInput(this.value)" placeholder="Tapez le nom ou postnom de l'enseignant (Ex: ILUNGA, TSHIBANGU, KASOMBO, MUKENDI...)..." class="w-full pl-12 pr-10 py-3.5 bg-[#112240]/80 border border-amber-500/30 rounded-2xl text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition shadow-inner">
+                    <button type="button" id="btn-clear-enseignant-search" onclick="clearEnseignantSearch()" class="hidden absolute right-3.5 top-3 text-gray-400 hover:text-white p-1">✕</button>
+                </div>
+                <!-- Suggestions instantanées -->
+                <div id="search-suggestions-container" class="mt-3 flex flex-wrap items-center gap-2">
+                    <span class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mr-1">Suggestions rapides :</span>
+                    <!-- Chips injectés par JS -->
+                </div>
+            </div>
+
+            <!-- Modal Body Scrollable -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-6" id="enseignants-modal-content">
+                <!-- Vue Dossier Unique OU Vue Annuaire Injectée par JS -->
+            </div>
+
         </div>
     </div>
 

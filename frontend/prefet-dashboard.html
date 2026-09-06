@@ -76,7 +76,7 @@
 
     // Vérifier si le compte existe toujours dans la base active (si supprimé par le Super-Admin → Déconnexion forcée)
     const activeDb = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
-    const isSuperAdminUser = user.email && (user.email.toLowerCase() === 'chadrackisoloke@gmail.com' || user.email.toLowerCase() === 'admin@retrouvailes.cd');
+    const isSuperAdminUser = user.role === 'Direction Générale' || user.role === 'Super-Admin' || user.role === 'Direction' || (user.email && (user.email.toLowerCase() === 'chadrackisoloke@gmail.com' || user.email.toLowerCase() === 'admin@retrouvailes.cd' || user.email.toLowerCase().includes('promoteur')));
     if (!isSuperAdminUser && !activeDb.some(u => u.email && u.email.toLowerCase() === (user.email || '').toLowerCase())) {
       localStorage.removeItem('hr_user');
       localStorage.removeItem('hr_token');
@@ -85,10 +85,14 @@
       throw new Error('User deleted from DB');
     }
 
-    // Normalisation du rôle et de l'école
+    // Normalisation du rôle et de l'école (avec support du paramètre view pour la Direction Générale)
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewParam = urlParams.get('view');
     const role = user.role;
     const isDP = ['Directeur (D.P)', 'D.P', 'Directeur'].includes(role);
-    const ecole = isDP ? 'Harmonie' : (user.ecole || 'Retrouvailles');
+    let ecole = isDP ? 'Harmonie' : (user.ecole || 'Retrouvailles');
+    if (viewParam === 'harmonie') ecole = 'Harmonie';
+    else if (viewParam === 'retrouvailles') ecole = 'Retrouvailles';
     const isRetrouvailles = ecole === 'Retrouvailles';
 
     // Mise à jour de l'identité

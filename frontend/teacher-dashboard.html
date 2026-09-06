@@ -113,7 +113,7 @@
     // Vérification de sécurité : le compte existe-t-il toujours dans la base active ?
     const activeDb = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
     const dummyEmails = ['kasombo@retrouvailles.cd', 'matungulu@retrouvailles.cd', 'enseignant@retrouvailles.cd', 'compta@retrouvailles.cd', 'parent@retrouvailles.cd'];
-    const isSuperAdminUser = user.email && (user.email.toLowerCase() === 'chadrackisoloke@gmail.com' || user.email.toLowerCase() === 'admin@retrouvailes.cd');
+    const isSuperAdminUser = user.role === 'Direction Générale' || user.role === 'Super-Admin' || user.role === 'Direction' || (user.email && (user.email.toLowerCase() === 'chadrackisoloke@gmail.com' || user.email.toLowerCase() === 'admin@retrouvailes.cd' || user.email.toLowerCase().includes('promoteur')));
     const isDummy = user.email && dummyEmails.includes(user.email.toLowerCase());
     const existsInDb = activeDb.some(u => u.email && u.email.toLowerCase() === (user.email || '').toLowerCase());
 
