@@ -34,15 +34,19 @@
     },
     {
       "source": "/api/rh/pointages",
-      "destination": "/api/rh/pointages.js"
+      "destination": "/api/rh/pointage.js"
     },
     {
       "source": "/api/rh/pointage/arrivee",
-      "destination": "/api/rh/pointage/arrivee.js"
+      "destination": "/api/rh/pointage.js?action=arrivee"
     },
     {
       "source": "/api/rh/pointage/depart",
-      "destination": "/api/rh/pointage/depart.js"
+      "destination": "/api/rh/pointage.js?action=depart"
+    },
+    {
+      "source": "/api/rh/pointage",
+      "destination": "/api/rh/pointage.js"
     },
     {
       "source": "/api/visio",
