@@ -222,12 +222,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const allPtR    = db.rh.pointages.filter(p => p.ecole === 'Retrouvailles');
         const pctH      = allPtH.length > 0 ? Math.round((allPtH.filter(p => p.statut === 'Présent').length / allPtH.length) * 100) : 0;
         const pctR      = allPtR.length > 0 ? Math.round((allPtR.filter(p => p.statut === 'Présent').length / allPtR.length) * 100) : 0;
-        const soldeH    = harmonie.finance.revenus  - harmonie.finance.depenses;
-        const soldeR    = retro.finance.revenus     - retro.finance.depenses;
-        const totalRev  = harmonie.finance.revenus  + retro.finance.revenus;
-        const totalDep  = harmonie.finance.depenses + retro.finance.depenses;
-        const totalSold = soldeH + soldeR;
+        const pctTotal  = (allPtH.length + allPtR.length) > 0
+            ? Math.round(((allPtH.filter(p => p.statut === 'Présent').length + allPtR.filter(p => p.statut === 'Présent').length) / (allPtH.length + allPtR.length)) * 100)
+            : 0;
         const totalElev = harmonie.pedagogie.eleves.length + retro.pedagogie.eleves.length;
+        const totalClasses = harmonie.pedagogie.classes.length + retro.pedagogie.classes.length;
+        const totalComptes = db.rh.comptes.length;
         const today     = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
 
         ui.content.innerHTML = `
@@ -251,25 +251,25 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div class="glass-panel p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 flex flex-col gap-2">
-                    <div class="flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-emerald-400"></i><span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Recettes Totales</span></div>
-                    <h3 class="text-2xl font-black text-white">$${totalRev.toLocaleString()}</h3>
-                    <span class="text-[10px] text-gray-400">Harmonie + Retrouvailles</span>
-                </div>
-                <div class="glass-panel p-5 rounded-2xl border border-rose-500/20 bg-rose-500/5 flex flex-col gap-2">
-                    <div class="flex items-center gap-2"><i data-lucide="trending-down" class="w-5 h-5 text-rose-400"></i><span class="text-[10px] font-black text-rose-400 uppercase tracking-widest">Dépenses Totales</span></div>
-                    <h3 class="text-2xl font-black text-white">$${totalDep.toLocaleString()}</h3>
-                    <span class="text-[10px] text-gray-400">Consolidé groupe</span>
-                </div>
-                <div class="glass-panel p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5 flex flex-col gap-2">
-                    <div class="flex items-center gap-2"><i data-lucide="wallet" class="w-5 h-5 text-amber-400"></i><span class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Solde Net Groupe</span></div>
-                    <h3 class="text-2xl font-black ${totalSold >= 0 ? 'text-emerald-400' : 'text-rose-400'}">$${totalSold.toLocaleString()}</h3>
-                    <span class="text-[10px] text-gray-400">${totalSold >= 0 ? 'Excédent' : 'Déficit'} budgétaire</span>
-                </div>
-                <div class="glass-panel p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5 flex flex-col gap-2">
+                <div class="glass-panel p-5 rounded-2xl border border-blue-500/30 bg-blue-500/5 flex flex-col gap-2">
                     <div class="flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i><span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Total Élèves</span></div>
                     <h3 class="text-2xl font-black text-white">${totalElev}</h3>
                     <span class="text-[10px] text-gray-400">Inscrits dans le groupe</span>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-cyan-500/30 bg-cyan-500/5 flex flex-col gap-2">
+                    <div class="flex items-center gap-2"><i data-lucide="user-check" class="w-5 h-5 text-cyan-400"></i><span class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Présence Groupe</span></div>
+                    <h3 class="text-2xl font-black ${pctTotal >= 75 ? 'text-emerald-400' : pctTotal >= 50 ? 'text-amber-400' : 'text-rose-400'}">${pctTotal}%</h3>
+                    <span class="text-[10px] text-gray-400">Taux moyen consolidé</span>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-purple-500/20 bg-purple-500/5 flex flex-col gap-2">
+                    <div class="flex items-center gap-2"><i data-lucide="layout-grid" class="w-5 h-5 text-purple-400"></i><span class="text-[10px] font-black text-purple-400 uppercase tracking-widest">Classes Actives</span></div>
+                    <h3 class="text-2xl font-black text-white">${totalClasses}</h3>
+                    <span class="text-[10px] text-gray-400">Harmonie + Retrouvailles</span>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex flex-col gap-2">
+                    <div class="flex items-center gap-2"><i data-lucide="briefcase" class="w-5 h-5 text-amber-400"></i><span class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Personnel</span></div>
+                    <h3 class="text-2xl font-black text-white">${totalComptes}</h3>
+                    <span class="text-[10px] text-gray-400">Comptes actifs groupe</span>
                 </div>
             </div>
 
@@ -284,10 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="p-6 grid grid-cols-3 gap-4">
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recettes</p><p class="text-lg font-black text-emerald-400">$${harmonie.finance.revenus.toLocaleString()}</p></div>
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dépenses</p><p class="text-lg font-black text-rose-400">$${harmonie.finance.depenses.toLocaleString()}</p></div>
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Solde</p><p class="text-lg font-black ${soldeH >= 0 ? 'text-amber-400' : 'text-rose-400'}">$${soldeH.toLocaleString()}</p></div>
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Présence</p><p class="text-lg font-black text-cyan-400">${pctH}%</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Présence</p><p class="text-lg font-black ${pctH >= 75 ? 'text-emerald-400' : pctH >= 50 ? 'text-amber-400' : 'text-rose-400'}">${pctH}%</p></div>
                         <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Élèves</p><p class="text-lg font-black text-blue-400">${harmonie.pedagogie.eleves.length}</p></div>
                         <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Classes</p><p class="text-lg font-black text-purple-400">${harmonie.pedagogie.classes.length}</p></div>
                     </div>
@@ -306,10 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="p-6 grid grid-cols-3 gap-4">
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recettes</p><p class="text-lg font-black text-emerald-400">$${retro.finance.revenus.toLocaleString()}</p></div>
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dépenses</p><p class="text-lg font-black text-rose-400">$${retro.finance.depenses.toLocaleString()}</p></div>
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Solde</p><p class="text-lg font-black ${soldeR >= 0 ? 'text-amber-400' : 'text-rose-400'}">$${soldeR.toLocaleString()}</p></div>
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Présence</p><p class="text-lg font-black text-cyan-400">${pctR}%</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Présence</p><p class="text-lg font-black ${pctR >= 75 ? 'text-emerald-400' : pctR >= 50 ? 'text-amber-400' : 'text-rose-400'}">${pctR}%</p></div>
                         <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Élèves</p><p class="text-lg font-black text-blue-400">${retro.pedagogie.eleves.length}</p></div>
                         <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Classes</p><p class="text-lg font-black text-purple-400">${retro.pedagogie.classes.length}</p></div>
                     </div>
