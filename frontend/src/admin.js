@@ -179,12 +179,15 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'dossier360': renderDossier360(); break;
             case 'gestion-comptes': renderGestionComptes(); break;
             case 'classe-virtuelle': renderClasseVirtuelle(); break;
+            case 'bibliotheque': renderBibliotheque(); break;
+            default: renderDashboard();
         }
         if (window.lucide) lucide.createIcons();
     };
 
     ui.nav.forEach(item => {
-        item.onclick = () => {
+        item.onclick = (e) => {
+            e.preventDefault();
             ui.nav.forEach(n => n.classList.remove('active'));
             item.classList.add('active');
             currentView = item.dataset.target;
@@ -4623,5 +4626,167 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     }
 
-})(); // fin du module
+    // ==========================================
+    // RENDER: BIBLIOTHÈQUE VIRTUELLE
+    // ==========================================
+    window.renderBibliotheque = function() {
+        if (!ui.content) return;
+        
+        // Initialize mock DB if empty
+        if (!localStorage.getItem('hr_bibliotheque_db')) {
+            localStorage.setItem('hr_bibliotheque_db', JSON.stringify([
+                { id: 'doc_1', titre: 'Manuel de Mathématiques - 4ème', auteur: 'Ministère EPST', categorie: 'Manuels Scolaires', matiere: 'Mathématiques', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Tout le monde', date: new Date().toISOString() },
+                { id: 'doc_2', titre: 'Guide Pédagogique Enseignant', auteur: 'Direction', categorie: 'Guides', matiere: 'Pédagogie', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Enseignants uniquement', date: new Date().toISOString() }
+            ]));
+        }
+        const docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
 
+        let html = `
+            <div class="mb-6 flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+                        <i data-lucide="library" class="w-8 h-8 text-indigo-400"></i>
+                        Bibliothèque Virtuelle
+                    </h2>
+                    <p class="text-gray-400 text-sm mt-1">Gérez le catalogue des ouvrages accessibles en mode lecture sécurisée.</p>
+                </div>
+                <button id="btn-add-doc" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-500/20">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Ajouter un document
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center"><i data-lucide="book" class="w-5 h-5 text-indigo-400"></i></div>
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">Total Ouvrages</h3>
+                    </div>
+                    <p class="text-3xl font-black text-white">${docs.length}</p>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden">
+                <h3 class="font-black text-lg mb-6 flex items-center gap-2 text-white">
+                    <i data-lucide="list" class="w-5 h-5 text-indigo-400"></i> Catalogue Actuel
+                </h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead>
+                            <tr class="text-gray-400 border-b border-white/10 uppercase tracking-wider text-[10px]">
+                                <th class="pb-3 font-semibold">Titre & Auteur</th>
+                                <th class="pb-3 font-semibold">Catégorie</th>
+                                <th class="pb-3 font-semibold">Accès</th>
+                                <th class="pb-3 font-semibold text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            ${docs.map(d => `
+                            <tr class="hover:bg-white/5 transition group">
+                                <td class="py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-10 bg-indigo-500/10 rounded flex items-center justify-center border border-indigo-500/20">
+                                            <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-white text-sm">${d.titre}</p>
+                                            <p class="text-[10px] text-gray-400">${d.auteur}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4"><span class="px-2 py-1 bg-white/5 rounded text-xs font-medium text-gray-300">${d.categorie}</span></td>
+                                <td class="py-4"><span class="text-xs font-semibold text-emerald-400">${d.permissions}</span></td>
+                                <td class="py-4 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button onclick="window.open('/lecteur.html?id=${d.id}', '_blank')" class="p-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition" title="Aperçu Sécurisé">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </button>
+                                        <button onclick="deleteDoc('${d.id}')" class="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition" title="Supprimer">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>`).join('')}
+                            ${docs.length === 0 ? `<tr><td colspan="4" class="py-8 text-center text-gray-500 font-medium">Aucun document dans la bibliothèque.</td></tr>` : ''}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        ui.content.innerHTML = html;
+        if (window.lucide) lucide.createIcons();
+
+        // Setup Cloudinary Widget (Mock for now)
+        const btnAdd = document.getElementById('btn-add-doc');
+        if (btnAdd) {
+            btnAdd.onclick = () => {
+                if (typeof cloudinary === 'undefined') {
+                    alert("Le script Cloudinary n'est pas chargé. Ajout d'un document de test manuellement.");
+                    addTestDocument();
+                    return;
+                }
+                
+                // Real implementation would look like this:
+                /*
+                let myWidget = cloudinary.createUploadWidget({
+                    cloudName: 'demo', 
+                    uploadPreset: 'docs_preset',
+                    clientAllowedFormats: ['pdf'],
+                    maxFiles: 1
+                }, (error, result) => { 
+                    if (!error && result && result.event === "success") { 
+                        // Save result.info.secure_url to db
+                    }
+                });
+                myWidget.open();
+                */
+                
+                // For demonstration, we'll prompt the user for title and just add a sample PDF
+                const titre = prompt("Titre du nouveau document (PDF de démonstration sera lié) :");
+                if (titre) {
+                    const newDoc = {
+                        id: 'doc_' + Date.now(),
+                        titre: titre,
+                        auteur: 'Admin',
+                        categorie: 'Général',
+                        matiere: 'Divers',
+                        url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                        permissions: 'Tout le monde',
+                        date: new Date().toISOString()
+                    };
+                    const currentDocs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+                    currentDocs.push(newDoc);
+                    localStorage.setItem('hr_bibliotheque_db', JSON.stringify(currentDocs));
+                    renderBibliotheque();
+                }
+            };
+        }
+    };
+    
+    window.deleteDoc = function(id) {
+        if(confirm("Confirmez-vous la suppression de ce document du catalogue ?")) {
+            let docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+            docs = docs.filter(d => d.id !== id);
+            localStorage.setItem('hr_bibliotheque_db', JSON.stringify(docs));
+            renderBibliotheque();
+        }
+    };
+    
+    function addTestDocument() {
+        const docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+        docs.push({
+            id: 'doc_' + Date.now(),
+            titre: 'Nouveau Fichier Test',
+            auteur: 'Super-Admin',
+            categorie: 'Test',
+            matiere: 'N/A',
+            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            permissions: 'Tout le monde',
+            date: new Date().toISOString()
+        });
+        localStorage.setItem('hr_bibliotheque_db', JSON.stringify(docs));
+        renderBibliotheque();
+    }
+
+})(); // fin du module

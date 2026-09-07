@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Liseuse Sécurisée | Harmonie-Retrouvailles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  
+  <!-- PDF.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>
+    // Set worker path for PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+  </script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0f172a; overflow: hidden; margin: 0; padding: 0; user-select: none; }
+    .glass { background: rgba(17, 34, 64, 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+    
+    /* PDF Viewer Container */
+    #pdf-viewer-container {
+      height: calc(100vh - 60px);
+      overflow-y: auto;
+      background: #1e293b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 0;
+    }
+
+    .pdf-page-canvas {
+      margin-bottom: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      border-radius: 4px;
+      max-width: 100%;
+    }
+
+    /* Prevent selection and context menu */
+    .no-select {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+  </style>
+</head>
+<body class="text-white no-select" oncontextmenu="return false;">
+
+  <!-- Toolbar -->
+  <div class="h-[60px] glass flex items-center justify-between px-4 sticky top-0 z-50">
+    <div class="flex items-center gap-4">
+      <button onclick="window.close()" class="p-2 hover:bg-white/10 rounded-lg transition" title="Fermer">
+        <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+      </button>
+      <div class="flex items-center gap-3 border-l border-white/10 pl-4">
+        <div class="w-8 h-8 rounded bg-blue-500/20 flex items-center justify-center text-blue-400">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h1 id="doc-title" class="font-bold text-sm tracking-wide">Chargement du document...</h1>
+          <p id="doc-meta" class="text-[10px] text-gray-400 uppercase tracking-widest">Bibliothèque Virtuelle</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-1">
+      <button onclick="zoomOut()" class="p-1.5 hover:bg-white/10 rounded transition" title="Dézoomer">
+        <i data-lucide="zoom-out" class="w-4 h-4 text-gray-300"></i>
+      </button>
+      <span id="zoom-level" class="text-xs font-bold text-gray-300 w-12 text-center">100%</span>
+      <button onclick="zoomIn()" class="p-1.5 hover:bg-white/10 rounded transition" title="Zoomer">
+        <i data-lucide="zoom-in" class="w-4 h-4 text-gray-300"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loading-state" class="fixed inset-0 top-[60px] flex flex-col items-center justify-center bg-[#1e293b] z-40">
+    <i data-lucide="loader-2" class="w-8 h-8 text-blue-400 animate-spin mb-4"></i>
+    <p class="text-sm font-bold text-gray-300 animate-pulse">Décryptage et chargement de la liseuse...</p>
+    <p class="text-xs text-gray-500 mt-2">Mode sécurisé anti-téléchargement activé</p>
+  </div>
+
+  <!-- Error State -->
+  <div id="error-state" class="fixed inset-0 top-[60px] flex flex-col items-center justify-center bg-[#1e293b] z-40 hidden">
+    <div class="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
+      <i data-lucide="alert-triangle" class="w-8 h-8 text-red-400"></i>
+    </div>
+    <h2 class="text-xl font-black text-white mb-2">Impossible de charger le document</h2>
+    <p id="error-msg" class="text-sm text-gray-400 text-center max-w-md">Le document est introuvable ou vous n'avez pas les droits de lecture.</p>
+    <button onclick="window.close()" class="mt-6 px-6 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-xl font-bold transition">Fermer la fenêtre</button>
+  </div>
+
+  <!-- Viewer -->
+  <div id="pdf-viewer-container">
+    <!-- Canvases will be injected here -->
+  </div>
+
+  <!-- Anti-copy protections -->
+  <script>
+    document.addEventListener('keydown', (e) => {
+      // Prevent Ctrl+P, Ctrl+S
+      if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'P' || e.key === 'S')) {
+        e.preventDefault();
+        alert("Action non autorisée en mode lecture sécurisée.");
+      }
+    });
+    document.addEventListener('contextmenu', e => e.preventDefault());
+  </script>
+
+  <script>
+    lucide.createIcons();
+    
+    // Auth check
+    const userStr = localStorage.getItem('hr_user');
+    if (!userStr) {
+      showError("Session invalide. Veuillez vous connecter.");
+    }
+    const currentUser = JSON.parse(userStr);
+
+    let pdfDoc = null;
+    let currentScale = 1.2;
+    const container = document.getElementById('pdf-viewer-container');
+    const loadingState = document.getElementById('loading-state');
+    const zoomLevelText = document.getElementById('zoom-level');
+    
+    // Get doc info
+    const urlParams = new URLSearchParams(window.location.search);
+    const docId = urlParams.get('id');
+    
+    async function initViewer() {
+      try {
+        const db = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+        const doc = db.find(d => d.id === docId);
+        
+        if (!doc) {
+          throw new Error("Document introuvable dans la bibliothèque.");
+        }
+        
+        // Update UI
+        document.getElementById('doc-title').textContent = doc.titre;
+        document.getElementById('doc-meta').textContent = doc.matiere + ' • ' + doc.categorie;
+        
+        // Fetch PDF
+        const loadingTask = pdfjsLib.getDocument(doc.url);
+        pdfDoc = await loadingTask.promise;
+        
+        loadingState.classList.add('hidden');
+        renderAllPages();
+        
+      } catch (err) {
+        console.error(err);
+        showError(err.message || "Erreur lors du chargement du fichier PDF.");
+      }
+    }
+    
+    async function renderAllPages() {
+      container.innerHTML = ''; // Clear container
+      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+        await renderPage(pageNum);
+      }
+    }
+    
+    async function renderPage(pageNum) {
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: currentScale });
+      
+      const canvas = document.createElement('canvas');
+      canvas.className = 'pdf-page-canvas';
+      const ctx = canvas.getContext('2d');
+      
+      // Fix for high DPI screens
+      const outputScale = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(viewport.width * outputScale);
+      canvas.height = Math.floor(viewport.height * outputScale);
+      canvas.style.width = Math.floor(viewport.width) + "px";
+      canvas.style.height =  Math.floor(viewport.height) + "px";
+      
+      const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+      
+      const renderContext = {
+        canvasContext: ctx,
+        transform: transform,
+        viewport: viewport
+      };
+      
+      container.appendChild(canvas);
+      await page.render(renderContext).promise;
+    }
+    
+    function zoomIn() {
+      if (currentScale < 3.0) {
+        currentScale += 0.2;
+        updateZoomText();
+        renderAllPages();
+      }
+    }
+    
+    function zoomOut() {
+      if (currentScale > 0.6) {
+        currentScale -= 0.2;
+        updateZoomText();
+        renderAllPages();
+      }
+    }
+    
+    function updateZoomText() {
+      zoomLevelText.textContent = Math.round((currentScale / 1.2) * 100) + '%';
+    }
+    
+    function showError(msg) {
+      loadingState.classList.add('hidden');
+      document.getElementById('error-state').classList.remove('hidden');
+      document.getElementById('error-msg').textContent = msg;
+    }
+    
+    // Initialize
+    if (docId) {
+      initViewer();
+    } else {
+      showError("Aucun identifiant de document fourni.");
+    }
+  </script>
+</body>
+</html>
