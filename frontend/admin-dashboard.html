@@ -619,7 +619,7 @@
                 var container = document.getElementById('main-content');
                 if (!container) return;
 
-                // Si le module admin.js a déjà chargé sa version, on préfère l'utiliser
+                // Si le module admin.js a déjà chargé sa version complète, on l'utilise directement
                 if (window._adminBiblioView) {
                     window._adminBiblioView();
                     return;
@@ -629,13 +629,13 @@
                     return;
                 }
 
-                // Fallback: rendu direct inline
+                // Fallback direct
                 var docs = [];
                 try {
                     if (!localStorage.getItem('hr_bibliotheque_db')) {
                         localStorage.setItem('hr_bibliotheque_db', JSON.stringify([
                             { id: 'doc_1', titre: 'Manuel de Mathématiques - 4ème', auteur: 'Ministère EPST', categorie: 'Manuels Scolaires', matiere: 'Mathématiques', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Tout le monde', date: new Date().toISOString() },
-                            { id: 'doc_2', titre: 'Guide Pédagogique Enseignant', auteur: 'Direction', categorie: 'Guides', matiere: 'Pédagogie', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Enseignants uniquement', date: new Date().toISOString() }
+                            { id: 'doc_2', titre: 'Guide Pédagogique Enseignant', auteur: 'Direction', categorie: 'Guides Pédagogiques', matiere: 'Pédagogie', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Enseignants', date: new Date().toISOString() }
                         ]));
                     }
                     docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
@@ -643,43 +643,140 @@
                 } catch(e) { docs = []; }
 
                 var rows = docs.map(function(d) {
+                    var p = d.permissions || 'Tout le monde';
+                    var badge = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+                    if (p.indexOf('Enseignants') !== -1 && p.indexOf('Tout') === -1) badge = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
+                    if (p.indexOf('Direction') !== -1) badge = 'text-purple-400 bg-purple-500/10 border-purple-500/30';
+                    if (p.indexOf('Parents') !== -1 || p.indexOf('Élèves') !== -1) badge = 'text-blue-400 bg-blue-500/10 border-blue-500/30';
+
                     return '<tr class="border-b border-white/5 hover:bg-white/5">'
-                        + '<td class="px-4 py-3 text-white font-semibold">' + (d.titre || '') + '</td>'
-                        + '<td class="px-4 py-3 text-gray-400">' + (d.auteur || '') + '</td>'
-                        + '<td class="px-4 py-3 text-gray-400">' + (d.categorie || '') + '</td>'
-                        + '<td class="px-4 py-3 text-gray-400">' + (d.matiere || '') + '</td>'
-                        + '<td class="px-4 py-3 text-gray-400">' + (d.permissions || '') + '</td>'
-                        + '<td class="px-4 py-3">'
-                        + '<a href="/lecteur.html?url=' + encodeURIComponent(d.url) + '&titre=' + encodeURIComponent(d.titre || '') + '" target="_blank" class="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg mr-2">📖 Lire</a>'
+                        + '<td class="px-4 py-3 text-white font-semibold flex items-center gap-2">📄 ' + (d.titre || '') + '</td>'
+                        + '<td class="px-4 py-3 text-gray-400">' + (d.auteur || 'Direction') + '</td>'
+                        + '<td class="px-4 py-3 text-gray-400">' + (d.categorie || 'Général') + '</td>'
+                        + '<td class="px-4 py-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold border ' + badge + '">' + p + '</span></td>'
+                        + '<td class="px-4 py-3 text-right">'
+                        + '<a href="/lecteur.html?id=' + encodeURIComponent(d.id) + '" target="_blank" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg mr-2 inline-block">📖 Lire</a>'
+                        + '<button onclick="window._inlineDeleteDoc(\'' + d.id + '\')" class="px-2 py-1 bg-red-500/10 hover:bg-red-500/30 text-red-400 text-xs rounded-lg">🗑️</button>'
                         + '</td></tr>';
                 }).join('');
 
-                container.innerHTML = '<div class="mb-6 flex justify-between items-end">'
+                container.innerHTML = '<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">'
                     + '<div><h2 class="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">'
                     + '📚 Bibliothèque Virtuelle</h2>'
-                    + '<p class="text-gray-400 text-sm mt-1">Gérez le catalogue des ouvrages accessibles en mode lecture sécurisée.</p></div>'
-                    + '<button onclick="window._bibliothequeAddDoc()" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition">+ Ajouter un document</button>'
+                    + '<p class="text-gray-400 text-sm mt-1">Publiez des manuels et choisissez les profils cibles (Tout le monde, Enseignants, Direction, Élèves & Parents).</p></div>'
+                    + '<button onclick="window._inlineOpenUpload()" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-500/25">☁️ Exporter / Publier un document</button>'
                     + '</div>'
                     + '<div class="glass-panel p-6 rounded-3xl border border-white/10">'
                     + '<h3 class="font-black text-lg mb-6 text-white">📋 Catalogue des Documents (' + docs.length + ')</h3>'
                     + '<div class="overflow-x-auto"><table class="w-full text-sm">'
                     + '<thead><tr class="border-b border-white/10 text-gray-400 text-xs uppercase">'
                     + '<th class="px-4 py-3 text-left">Titre</th><th class="px-4 py-3 text-left">Auteur</th>'
-                    + '<th class="px-4 py-3 text-left">Catégorie</th><th class="px-4 py-3 text-left">Matière</th>'
-                    + '<th class="px-4 py-3 text-left">Permissions</th><th class="px-4 py-3 text-left">Actions</th>'
-                    + '</thead><tbody>' + (rows || '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Aucun document dans le catalogue.</td></tr>') + '</tbody>'
-                    + '</table></div></div>';
+                    + '<th class="px-4 py-3 text-left">Catégorie</th><th class="px-4 py-3 text-left">Qui peut voir</th><th class="px-4 py-3 text-right">Actions</th>'
+                    + '</thead><tbody>' + (rows || '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Aucun document dans le catalogue. Cliquez sur "Exporter / Publier un document".</td></tr>') + '</tbody>'
+                    + '</table></div></div>'
+                    + '<div id="inline-modal-upload" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">'
+                    + '<div class="bg-slate-900 border border-white/20 p-6 md:p-8 rounded-3xl w-full max-w-xl text-white max-h-[90vh] overflow-y-auto space-y-4">'
+                    + '<div class="flex justify-between items-center pb-3 border-b border-white/10"><h3 class="text-xl font-bold">Nouveau Document</h3><button onclick="window._inlineCloseUpload()" class="text-gray-400 hover:text-white text-xl">✕</button></div>'
+                    + '<div><label class="block text-xs font-bold uppercase text-gray-300 mb-1">Fichier PDF *</label>'
+                    + '<input type="file" id="inline-doc-file" accept="application/pdf" class="w-full p-2 bg-slate-800 rounded-xl text-xs border border-white/10">'
+                    + '<p class="text-[11px] text-gray-400 mt-1">Ou URL directe :</p>'
+                    + '<input type="url" id="inline-doc-url" placeholder="https://.../doc.pdf" class="w-full p-2 bg-slate-800 rounded-xl text-xs border border-white/10 mt-1"></div>'
+                    + '<div><label class="block text-xs font-bold uppercase text-gray-300 mb-1">Titre du document *</label><input type="text" id="inline-doc-titre" placeholder="Titre..." class="w-full p-2 bg-slate-800 rounded-xl text-sm border border-white/10"></div>'
+                    + '<div class="grid grid-cols-2 gap-3">'
+                    + '<div><label class="block text-xs font-bold uppercase text-gray-300 mb-1">Auteur</label><input type="text" id="inline-doc-auteur" value="Direction" class="w-full p-2 bg-slate-800 rounded-xl text-xs border border-white/10"></div>'
+                    + '<div><label class="block text-xs font-bold uppercase text-gray-300 mb-1">Catégorie</label><select id="inline-doc-cat" class="w-full p-2 bg-slate-800 rounded-xl text-xs border border-white/10"><option>Manuels Scolaires</option><option>Guides Pédagogiques</option><option>Devoirs & Exercices</option><option>Règlements & Textes</option></select></div>'
+                    + '</div>'
+                    + '<div class="p-3 bg-white/5 rounded-xl border border-white/10"><label class="block text-xs font-bold uppercase text-amber-400 mb-2">Cases à cocher : Qui peut voir ce document ? *</label>'
+                    + '<div class="space-y-2 text-xs">'
+                    + '<label class="flex items-center gap-2"><input type="checkbox" id="inline-p-tous" checked class="accent-indigo-500"> <span>🌍 Tout le monde (Public)</span></label>'
+                    + '<label class="flex items-center gap-2"><input type="checkbox" id="inline-p-ens" checked class="accent-indigo-500"> <span>👨‍🏫 Enseignants (Espace Prof)</span></label>'
+                    + '<label class="flex items-center gap-2"><input type="checkbox" id="inline-p-dir" checked class="accent-indigo-500"> <span>🏛️ Direction & Préfets</span></label>'
+                    + '<label class="flex items-center gap-2"><input type="checkbox" id="inline-p-par" checked class="accent-indigo-500"> <span>👨‍👩‍👧 Élèves & Parents (Espace Famille)</span></label>'
+                    + '</div></div>'
+                    + '<div class="flex gap-3 pt-2"><button onclick="window._inlineCloseUpload()" class="flex-1 py-2.5 rounded-xl border border-white/10 font-bold text-gray-300">Annuler</button><button onclick="window._inlineSubmitDoc()" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-white shadow-lg">Publier et Envoyer 🚀</button></div>'
+                    + '</div></div>';
 
-                window._bibliothequeAddDoc = function() {
-                    var titre = prompt('Titre du nouveau document :');
-                    if (!titre) return;
-                    var d = { id: 'doc_' + Date.now(), titre: titre, auteur: 'Admin', categorie: 'Général', matiere: 'Divers',
-                        url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-                        permissions: 'Tout le monde', date: new Date().toISOString() };
-                    var current = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
-                    current.push(d);
-                    localStorage.setItem('hr_bibliotheque_db', JSON.stringify(current));
-                    renderBibliothequeInline();
+                window._inlineOpenUpload = function() {
+                    var m = document.getElementById('inline-modal-upload');
+                    if (m) m.classList.remove('hidden');
+                };
+                window._inlineCloseUpload = function() {
+                    var m = document.getElementById('inline-modal-upload');
+                    if (m) m.classList.add('hidden');
+                };
+
+                window._inlineSubmitDoc = function() {
+                    var titre = (document.getElementById('inline-doc-titre').value || '').trim();
+                    var auteur = (document.getElementById('inline-doc-auteur').value || 'Direction').trim();
+                    var cat = document.getElementById('inline-doc-cat').value;
+                    var fileInput = document.getElementById('inline-doc-file');
+                    var urlInput = (document.getElementById('inline-doc-url').value || '').trim();
+
+                    if (!titre) { alert("Veuillez renseigner le titre."); return; }
+
+                    var pTous = document.getElementById('inline-p-tous').checked;
+                    var pEns = document.getElementById('inline-p-ens').checked;
+                    var pDir = document.getElementById('inline-p-dir').checked;
+                    var pPar = document.getElementById('inline-p-par').checked;
+
+                    var perms = [];
+                    if (pTous) perms.push('Tout le monde');
+                    else {
+                        if (pEns) perms.push('Enseignants');
+                        if (pDir) perms.push('Direction');
+                        if (pPar) perms.push('Élèves & Parents');
+                    }
+                    if (perms.length === 0) perms.push('Tout le monde');
+                    var permsStr = perms.join(', ');
+
+                    function saveAndFinish(finalUrl) {
+                        var d = {
+                            id: 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                            titre: titre,
+                            auteur: auteur,
+                            categorie: cat,
+                            matiere: 'Général',
+                            url: finalUrl,
+                            permissions: permsStr,
+                            date: new Date().toISOString()
+                        };
+                        var current = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+                        current.unshift(d);
+                        localStorage.setItem('hr_bibliotheque_db', JSON.stringify(current));
+
+                        try {
+                            fetch('/api/bibliotheque', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(d)
+                            });
+                        } catch(e) {}
+
+                        window._inlineCloseUpload();
+                        renderBibliothequeInline();
+                        alert('✅ Document "' + titre + '" publié avec succès !\nVisible par : ' + permsStr);
+                    }
+
+                    if (fileInput && fileInput.files && fileInput.files[0]) {
+                        var file = fileInput.files[0];
+                        var reader = new FileReader();
+                        reader.onload = function(re) { saveAndFinish(re.target.result); };
+                        reader.readAsDataURL(file);
+                    } else if (urlInput) {
+                        saveAndFinish(urlInput);
+                    } else {
+                        alert("Veuillez choisir un fichier PDF ou renseigner une URL.");
+                    }
+                };
+
+                window._inlineDeleteDoc = function(id) {
+                    if (confirm("Supprimer ce document ?")) {
+                        var current = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+                        current = current.filter(function(x) { return x.id !== id; });
+                        localStorage.setItem('hr_bibliotheque_db', JSON.stringify(current));
+                        try { fetch('/api/bibliotheque?id=' + id, { method: 'DELETE' }); } catch(e) {}
+                        renderBibliothequeInline();
+                    }
                 };
 
                 if (window.lucide) lucide.createIcons();
@@ -692,14 +789,13 @@
                     if (el) {
                         e.preventDefault();
                         e.stopPropagation();
-                        // Mettre à jour les nav items
                         document.querySelectorAll('.nav-item').forEach(function(n) {
                             n.classList.toggle('active', n.dataset && n.dataset.target === 'bibliotheque');
                         });
                         renderBibliothequeInline();
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
-                }, true); // capture=true pour intercepter avant le module
+                }, true);
             });
         })();
     </script>

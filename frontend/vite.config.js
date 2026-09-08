@@ -21,7 +21,8 @@ export default defineConfig({
         prefet: resolve(__dirname, 'prefet-dashboard.html'),
         rh: resolve(__dirname, 'rh-dashboard.html'),
         teacher: resolve(__dirname, 'teacher-dashboard.html'),
-        pointage: resolve(__dirname, 'pointage.html')
+        pointage: resolve(__dirname, 'pointage.html'),
+        lecteur: resolve(__dirname, 'lecteur.html')
       }
     }
   }

@@ -47,6 +47,10 @@
     {
       "source": "/api/visio",
       "destination": "/api/visio.js"
+    },
+    {
+      "source": "/api/bibliotheque",
+      "destination": "/api/bibliotheque.js"
     }
   ]
 }

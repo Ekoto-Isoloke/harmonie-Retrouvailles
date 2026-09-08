@@ -4656,16 +4656,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     function renderBibliotheque() {
         window.renderBibliotheque = renderBibliotheque;
+        if (!window._adminViews) window._adminViews = {};
+        window._adminViews['bibliotheque'] = renderBibliotheque;
+        window._adminBiblioView = renderBibliotheque;
+
         const targetContainer = document.getElementById('main-content') || ui.content;
         if (!targetContainer) return;
-        
+
+        // Synchronisation en arrière-plan avec l'API
+        if (!window._adminBiblioSyncStarted) {
+            window._adminBiblioSyncStarted = true;
+            fetch('/api/bibliotheque').then(r => r.json()).then(remoteDocs => {
+                if (Array.isArray(remoteDocs) && remoteDocs.length > 0) {
+                    localStorage.setItem('hr_bibliotheque_db', JSON.stringify(remoteDocs));
+                    renderBibliotheque();
+                }
+            }).catch(err => console.warn("Sync biblio remote:", err));
+        }
+
         // Safe DB Initialization
         let docs = [];
         try {
             if (!localStorage.getItem('hr_bibliotheque_db')) {
                 localStorage.setItem('hr_bibliotheque_db', JSON.stringify([
                     { id: 'doc_1', titre: 'Manuel de Mathématiques - 4ème', auteur: 'Ministère EPST', categorie: 'Manuels Scolaires', matiere: 'Mathématiques', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Tout le monde', date: new Date().toISOString() },
-                    { id: 'doc_2', titre: 'Guide Pédagogique Enseignant', auteur: 'Direction', categorie: 'Guides', matiere: 'Pédagogie', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Enseignants uniquement', date: new Date().toISOString() }
+                    { id: 'doc_2', titre: 'Guide Pédagogique Enseignant', auteur: 'Direction', categorie: 'Guides Pédagogiques', matiere: 'Pédagogie', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Enseignants', date: new Date().toISOString() }
                 ]));
             }
             docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
@@ -4676,74 +4691,236 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let html = `
-            <div class="mb-6 flex justify-between items-end">
+            <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
                     <h2 class="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
                         <i data-lucide="library" class="w-8 h-8 text-indigo-400"></i>
                         Bibliothèque Virtuelle
                     </h2>
-                    <p class="text-gray-400 text-sm mt-1">Gérez le catalogue des ouvrages accessibles en mode lecture sécurisée.</p>
+                    <p class="text-gray-400 text-sm mt-1">Publiez des manuels et documents avec ciblage précis (Tout le monde, Enseignants, Direction, Élèves & Parents) en mode lecture sécurisée.</p>
                 </div>
-                <button id="btn-add-doc" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-500/20">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Ajouter un document
+                <button id="btn-add-doc" class="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-500/25 cursor-pointer">
+                    <i data-lucide="upload-cloud" class="w-5 h-5"></i> Exporter / Publier un document
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div class="glass-panel p-5 rounded-2xl border border-white/10">
                     <div class="flex items-center gap-3 mb-2">
                         <div class="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center"><i data-lucide="book" class="w-5 h-5 text-indigo-400"></i></div>
-                        <h3 class="text-gray-400 text-xs font-bold uppercase">Total Ouvrages</h3>
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">Total Catalogue</h3>
                     </div>
                     <p class="text-3xl font-black text-white">${docs.length}</p>
                 </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center"><i data-lucide="users" class="w-5 h-5 text-emerald-400"></i></div>
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">Public / Tous</h3>
+                    </div>
+                    <p class="text-3xl font-black text-white">${docs.filter(d => (d.permissions || '').toLowerCase().includes('tout le monde')).length}</p>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center"><i data-lucide="graduation-cap" class="w-5 h-5 text-amber-400"></i></div>
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">Enseignants</h3>
+                    </div>
+                    <p class="text-3xl font-black text-white">${docs.filter(d => (d.permissions || '').toLowerCase().includes('enseignant')).length}</p>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border border-white/10">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center"><i data-lucide="shield-check" class="w-5 h-5 text-blue-400"></i></div>
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">Direction & Parents</h3>
+                    </div>
+                    <p class="text-3xl font-black text-white">${docs.filter(d => (d.permissions || '').toLowerCase().includes('direction') || (d.permissions || '').toLowerCase().includes('parent')).length}</p>
+                </div>
             </div>
 
+            <!-- Table -->
             <div class="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden">
-                <h3 class="font-black text-lg mb-6 flex items-center gap-2 text-white">
-                    <i data-lucide="list" class="w-5 h-5 text-indigo-400"></i> Catalogue Actuel
-                </h3>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-lg flex items-center gap-2 text-white">
+                        <i data-lucide="list" class="w-5 h-5 text-indigo-400"></i> Catalogue des Documents Publiés
+                    </h3>
+                    <span class="text-xs text-gray-400">Protection anti-téléchargement & lecture PDF intégrée</span>
+                </div>
                 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm whitespace-nowrap">
                         <thead>
                             <tr class="text-gray-400 border-b border-white/10 uppercase tracking-wider text-[10px]">
-                                <th class="pb-3 font-semibold">Titre & Auteur</th>
-                                <th class="pb-3 font-semibold">Catégorie</th>
-                                <th class="pb-3 font-semibold">Accès</th>
+                                <th class="pb-3 font-semibold">Titre du Document</th>
+                                <th class="pb-3 font-semibold">Auteur</th>
+                                <th class="pb-3 font-semibold">Discipline / Catégorie</th>
+                                <th class="pb-3 font-semibold">Qui peut voir (Permissions)</th>
                                 <th class="pb-3 font-semibold text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5">
-                            ${docs.map(d => `
-                            <tr class="hover:bg-white/5 transition group">
-                                <td class="py-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-10 bg-indigo-500/10 rounded flex items-center justify-center border border-indigo-500/20">
-                                            <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i>
+                            ${docs.map(d => {
+                                const perms = d.permissions || 'Tout le monde';
+                                let badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+                                if (perms.includes('Enseignants') && !perms.includes('Tout')) badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+                                if (perms.includes('Direction')) badgeColor = 'bg-purple-500/10 text-purple-400 border-purple-500/30';
+                                if (perms.includes('Parents') || perms.includes('Élèves')) badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+
+                                return `
+                                <tr class="hover:bg-white/5 transition group">
+                                    <td class="py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-9 h-11 bg-indigo-500/10 rounded-lg flex items-center justify-center border border-indigo-500/20 text-indigo-400">
+                                                <i data-lucide="file-text" class="w-5 h-5"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-bold text-white text-sm">${d.titre}</p>
+                                                <p class="text-[10px] text-gray-400 font-mono">${d.id}</p>
+                                            </div>
                                         </div>
+                                    </td>
+                                    <td class="py-4 text-gray-300 font-medium">${d.auteur || 'Direction'}</td>
+                                    <td class="py-4">
                                         <div>
-                                            <p class="font-bold text-white text-sm">${d.titre}</p>
-                                            <p class="text-[10px] text-gray-400">${d.auteur}</p>
+                                            <span class="px-2.5 py-1 bg-white/5 rounded-lg text-xs font-semibold text-gray-300">${d.categorie || 'Général'}</span>
+                                            <span class="text-xs text-gray-400 ml-1 font-mono">${d.matiere || ''}</span>
                                         </div>
-                                    </div>
-                                </td>
-                                <td class="py-4"><span class="px-2 py-1 bg-white/5 rounded text-xs font-medium text-gray-300">${d.categorie}</span></td>
-                                <td class="py-4"><span class="text-xs font-semibold text-emerald-400">${d.permissions}</span></td>
-                                <td class="py-4 text-right">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <button onclick="window.open('/lecteur.html?id=${d.id}', '_blank')" class="p-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition" title="Aperçu Sécurisé">
-                                            <i data-lucide="eye" class="w-4 h-4"></i>
-                                        </button>
-                                        <button onclick="deleteDoc('${d.id}')" class="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition" title="Supprimer">
-                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>`).join('')}
-                            ${docs.length === 0 ? `<tr><td colspan="4" class="py-8 text-center text-gray-500 font-medium">Aucun document dans la bibliothèque.</td></tr>` : ''}
+                                    </td>
+                                    <td class="py-4">
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${badgeColor}">
+                                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                            ${perms}
+                                        </span>
+                                    </td>
+                                    <td class="py-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <a href="/lecteur.html?id=${d.id}" target="_blank" class="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5" title="Consulter en mode sécurisé">
+                                                <i data-lucide="book-open" class="w-4 h-4"></i> Lire
+                                            </a>
+                                            <button onclick="window.deleteDoc('${d.id}')" class="p-2 bg-red-500/10 hover:bg-red-500/25 text-red-400 rounded-xl transition cursor-pointer" title="Supprimer le document">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>`;
+                            }).join('')}
+                            ${docs.length === 0 ? `<tr><td colspan="5" class="py-12 text-center text-gray-500 font-medium">Aucun document dans la bibliothèque. Cliquez sur "Exporter / Publier un document" ci-dessus.</td></tr>` : ''}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- MODAL: AJOUTER / EXPORTER UN DOCUMENT -->
+            <div id="modal-upload-doc" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+                <div class="glass-panel w-full max-w-2xl p-6 md:p-8 rounded-3xl border border-white/20 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                <i data-lucide="file-plus" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-black text-white">Nouveau Document Virtuel</h3>
+                                <p class="text-xs text-gray-400">Importez le fichier PDF et sélectionnez les profils autorisés à le consulter.</p>
+                            </div>
+                        </div>
+                        <button id="btn-close-modal" class="p-2 text-gray-400 hover:text-white rounded-xl hover:bg-white/10 transition cursor-pointer">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+
+                    <form id="form-upload-doc" class="space-y-5 text-sm">
+                        <!-- 1. Fichier PDF -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-gray-300 mb-2 flex items-center gap-2">
+                                <i data-lucide="file-up" class="w-4 h-4 text-indigo-400"></i> Fichier PDF du Document *
+                            </label>
+                            <div class="border-2 border-dashed border-indigo-500/30 hover:border-indigo-500/60 rounded-2xl p-4 text-center transition bg-indigo-500/5 cursor-pointer" onclick="document.getElementById('input-doc-file').click()">
+                                <input type="file" id="input-doc-file" accept="application/pdf" class="hidden">
+                                <i data-lucide="upload" class="w-8 h-8 text-indigo-400 mx-auto mb-2"></i>
+                                <p id="file-chosen-text" class="text-sm font-bold text-white">Cliquez pour choisir un fichier PDF depuis votre appareil</p>
+                                <p class="text-[11px] text-gray-400 mt-1">Format accepté : .pdf (Le document sera sécurisé contre le téléchargement)</p>
+                            </div>
+                            <div class="mt-2 text-center text-xs text-gray-500 font-medium">--- OU collez une URL directe ---</div>
+                            <input type="url" id="input-doc-url" placeholder="https://mon-serveur.com/document.pdf (Optionnel si vous choisissez un fichier)" class="mt-1 w-full bg-slate-900/80 border border-white/10 rounded-xl p-3 text-white text-xs placeholder-gray-500 outline-none focus:border-indigo-500">
+                        </div>
+
+                        <!-- 2. Titre -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-gray-300 mb-1">Titre du Document *</label>
+                            <input type="text" id="input-doc-titre" required placeholder="Ex: Manuel de Sciences & Biologie 4ème Humanités" class="w-full bg-slate-900/80 border border-white/10 rounded-xl p-3 text-white font-semibold placeholder-gray-500 outline-none focus:border-indigo-500">
+                        </div>
+
+                        <!-- 3. Auteur & Matière & Catégorie -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-gray-300 mb-1">Auteur / Source</label>
+                                <input type="text" id="input-doc-auteur" value="Direction Générale" placeholder="Ex: EPST / Direction" class="w-full bg-slate-900/80 border border-white/10 rounded-xl p-2.5 text-white outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-gray-300 mb-1">Matière / Discipline</label>
+                                <input type="text" id="input-doc-matiere" placeholder="Ex: Mathématiques, Français..." class="w-full bg-slate-900/80 border border-white/10 rounded-xl p-2.5 text-white outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-gray-300 mb-1">Catégorie</label>
+                                <select id="input-doc-categorie" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white outline-none focus:border-indigo-500">
+                                    <option value="Manuels Scolaires">Manuels Scolaires</option>
+                                    <option value="Guides Pédagogiques">Guides Pédagogiques</option>
+                                    <option value="Devoirs & Exercices">Devoirs & Exercices</option>
+                                    <option value="Règlements & Textes">Règlements & Textes</option>
+                                    <option value="Culture & Divers">Culture & Divers</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 4. CASES À COCHER (EMBOX) : QUI PEUT VOIR LE DOCUMENT -->
+                        <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
+                            <label class="block text-xs font-bold uppercase text-amber-400 mb-3 flex items-center gap-2">
+                                <i data-lucide="check-square" class="w-4 h-4"></i> Choisissez qui a le droit de voir ce document *
+                            </label>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <label class="flex items-center gap-3 p-3 bg-slate-900/80 rounded-xl border border-white/10 hover:border-indigo-500/50 cursor-pointer transition">
+                                    <input type="checkbox" id="perm-tous" checked class="w-4 h-4 rounded text-indigo-600 accent-indigo-500">
+                                    <div>
+                                        <p class="font-bold text-white text-xs">🌍 Tout le monde (Public)</p>
+                                        <p class="text-[10px] text-gray-400">Accessible à tous les comptes</p>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center gap-3 p-3 bg-slate-900/80 rounded-xl border border-white/10 hover:border-indigo-500/50 cursor-pointer transition">
+                                    <input type="checkbox" id="perm-enseignants" checked class="w-4 h-4 rounded text-indigo-600 accent-indigo-500">
+                                    <div>
+                                        <p class="font-bold text-white text-xs">👨‍🏫 Enseignants</p>
+                                        <p class="text-[10px] text-gray-400">Visible dans l'Espace Enseignant</p>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center gap-3 p-3 bg-slate-900/80 rounded-xl border border-white/10 hover:border-indigo-500/50 cursor-pointer transition">
+                                    <input type="checkbox" id="perm-direction" checked class="w-4 h-4 rounded text-indigo-600 accent-indigo-500">
+                                    <div>
+                                        <p class="font-bold text-white text-xs">🏛️ Direction & Préfets</p>
+                                        <p class="text-[10px] text-gray-400">Visible dans l'Espace Direction</p>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center gap-3 p-3 bg-slate-900/80 rounded-xl border border-white/10 hover:border-indigo-500/50 cursor-pointer transition">
+                                    <input type="checkbox" id="perm-parents" checked class="w-4 h-4 rounded text-indigo-600 accent-indigo-500">
+                                    <div>
+                                        <p class="font-bold text-white text-xs">👨‍👩‍👧 Élèves & Parents</p>
+                                        <p class="text-[10px] text-gray-400">Visible dans l'Espace Parents</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="pt-2 flex gap-3">
+                            <button type="button" id="btn-cancel-modal" class="flex-1 py-3 border border-white/10 rounded-xl text-gray-300 hover:bg-white/5 font-bold transition cursor-pointer">
+                                Annuler
+                            </button>
+                            <button type="submit" id="btn-submit-doc" class="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-black rounded-xl shadow-lg shadow-indigo-500/30 transition flex items-center justify-center gap-2 cursor-pointer">
+                                <i data-lucide="send" class="w-4 h-4"></i> Publier et Envoyer
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         `;
@@ -4751,76 +4928,154 @@ document.addEventListener('DOMContentLoaded', () => {
         targetContainer.innerHTML = html;
         if (window.lucide) lucide.createIcons();
 
-        // Setup Cloudinary Widget (Mock for now)
+        // Éléments du Modal
+        const modal = document.getElementById('modal-upload-doc');
         const btnAdd = document.getElementById('btn-add-doc');
-        if (btnAdd) {
+        const btnClose = document.getElementById('btn-close-modal');
+        const btnCancel = document.getElementById('btn-cancel-modal');
+        const fileInput = document.getElementById('input-doc-file');
+        const fileChosenText = document.getElementById('file-chosen-text');
+        const formUpload = document.getElementById('form-upload-doc');
+
+        let selectedFileDataUrl = null;
+
+        if (btnAdd && modal) {
             btnAdd.onclick = () => {
-                if (typeof cloudinary === 'undefined') {
-                    alert("Le script Cloudinary n'est pas chargé. Ajout d'un document de test manuellement.");
-                    addTestDocument();
+                modal.classList.remove('hidden');
+                if (window.lucide) lucide.createIcons();
+            };
+        }
+
+        const closeModalFunc = () => {
+            if (modal) modal.classList.add('hidden');
+            selectedFileDataUrl = null;
+            if (fileChosenText) fileChosenText.innerHTML = "Cliquez pour choisir un fichier PDF depuis votre appareil";
+            if (formUpload) formUpload.reset();
+        };
+
+        if (btnClose) btnClose.onclick = closeModalFunc;
+        if (btnCancel) btnCancel.onclick = closeModalFunc;
+
+        // Gestion de la sélection du fichier PDF
+        if (fileInput) {
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+                        alert("Veuillez sélectionner un fichier au format PDF uniquement.");
+                        fileInput.value = '';
+                        return;
+                    }
+                    const sizeMo = (file.size / (1024 * 1024)).toFixed(2);
+                    fileChosenText.innerHTML = `✅ <span class="text-emerald-400 font-bold">${file.name}</span> (${sizeMo} Mo sélectionné)`;
+                    
+                    // Lecture en DataURL (base64)
+                    const reader = new FileReader();
+                    reader.onload = (re) => {
+                        selectedFileDataUrl = re.target.result;
+                    };
+                    reader.readAsDataURL(file);
+
+                    // Pré-remplir le titre si vide
+                    const titreInput = document.getElementById('input-doc-titre');
+                    if (titreInput && !titreInput.value) {
+                        titreInput.value = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+                    }
+                }
+            };
+        }
+
+        // Soumission du formulaire
+        if (formUpload) {
+            formUpload.onsubmit = async (e) => {
+                e.preventDefault();
+                const titre = document.getElementById('input-doc-titre').value.trim();
+                const auteur = document.getElementById('input-doc-auteur').value.trim() || 'Direction';
+                const matiere = document.getElementById('input-doc-matiere').value.trim() || 'Général';
+                const categorie = document.getElementById('input-doc-categorie').value;
+                const urlDirect = document.getElementById('input-doc-url').value.trim();
+
+                const finalUrl = selectedFileDataUrl || urlDirect;
+
+                if (!finalUrl) {
+                    alert("Veuillez sélectionner un fichier PDF depuis votre appareil ou entrer une URL directe.");
                     return;
                 }
-                
-                // Real implementation would look like this:
-                /*
-                let myWidget = cloudinary.createUploadWidget({
-                    cloudName: 'demo', 
-                    uploadPreset: 'docs_preset',
-                    clientAllowedFormats: ['pdf'],
-                    maxFiles: 1
-                }, (error, result) => { 
-                    if (!error && result && result.event === "success") { 
-                        // Save result.info.secure_url to db
-                    }
-                });
-                myWidget.open();
-                */
-                
-                // For demonstration, we'll prompt the user for title and just add a sample PDF
-                const titre = prompt("Titre du nouveau document (PDF de démonstration sera lié) :");
-                if (titre) {
-                    const newDoc = {
-                        id: 'doc_' + Date.now(),
-                        titre: titre,
-                        auteur: 'Admin',
-                        categorie: 'Général',
-                        matiere: 'Divers',
-                        url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-                        permissions: 'Tout le monde',
-                        date: new Date().toISOString()
-                    };
-                    const currentDocs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
-                    currentDocs.push(newDoc);
-                    localStorage.setItem('hr_bibliotheque_db', JSON.stringify(currentDocs));
-                    renderBibliotheque();
+
+                // Calcul des permissions (Cases à cocher embox)
+                const permTous = document.getElementById('perm-tous').checked;
+                const permEns = document.getElementById('perm-enseignants').checked;
+                const permDir = document.getElementById('perm-direction').checked;
+                const permPar = document.getElementById('perm-parents').checked;
+
+                let perms = [];
+                if (permTous) {
+                    perms.push('Tout le monde');
+                } else {
+                    if (permEns) perms.push('Enseignants');
+                    if (permDir) perms.push('Direction');
+                    if (permPar) perms.push('Élèves & Parents');
                 }
+                if (perms.length === 0) perms.push('Tout le monde');
+                const permsStr = perms.join(', ');
+
+                const newDoc = {
+                    id: 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                    titre: titre,
+                    auteur: auteur,
+                    categorie: categorie,
+                    matiere: matiere,
+                    url: finalUrl,
+                    permissions: permsStr,
+                    date: new Date().toISOString()
+                };
+
+                const submitBtn = document.getElementById('btn-submit-doc');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = "Envoi et publication en cours...";
+                }
+
+                // Sauvegarde locale instantanée
+                try {
+                    const currentDocs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+                    currentDocs.unshift(newDoc);
+                    localStorage.setItem('hr_bibliotheque_db', JSON.stringify(currentDocs));
+                } catch(lsErr) {
+                    console.error("Erreur sauvegarde locale:", lsErr);
+                }
+
+                // Sauvegarde distante dans PostgreSQL via /api/bibliotheque
+                try {
+                    await fetch('/api/bibliotheque', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newDoc)
+                    });
+                } catch(apiErr) {
+                    console.warn("Info API save:", apiErr);
+                }
+
+                closeModalFunc();
+                renderBibliotheque();
+                alert(`✅ Document "${titre}" publié avec succès !\nVisible par : ${permsStr}`);
             };
         }
     };
     
-    window.deleteDoc = function(id) {
-        if(confirm("Confirmez-vous la suppression de ce document du catalogue ?")) {
+    window.deleteDoc = async function(id) {
+        if (confirm("Confirmez-vous la suppression de ce document du catalogue ?")) {
             let docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
             docs = docs.filter(d => d.id !== id);
             localStorage.setItem('hr_bibliotheque_db', JSON.stringify(docs));
+
+            // Tentative de suppression distante
+            try {
+                await fetch(`/api/bibliotheque?id=${id}`, { method: 'DELETE' });
+            } catch(e) {}
+
             renderBibliotheque();
         }
     };
-    
-    function addTestDocument() {
-        const docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
-        docs.push({
-            id: 'doc_' + Date.now(),
-            titre: 'Nouveau Fichier Test',
-            auteur: 'Super-Admin',
-            categorie: 'Test',
-            matiere: 'N/A',
-            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-            permissions: 'Tout le monde',
-            date: new Date().toISOString()
-        });
-        localStorage.setItem('hr_bibliotheque_db', JSON.stringify(docs));
-        renderBibliotheque();
-    }
 
 })(); // fin du module

@@ -840,34 +840,64 @@
     }
 
     function viewBibliotheque() {
-      const docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+      // Synchronisation en arrière-plan avec le serveur
+      if (!window._biblioSyncStarted) {
+        window._biblioSyncStarted = true;
+        fetch('/api/bibliotheque').then(r => r.json()).then(remote => {
+          if (Array.isArray(remote) && remote.length > 0) {
+            localStorage.setItem('hr_bibliotheque_db', JSON.stringify(remote));
+            const container = document.getElementById('tab-content');
+            if (container && window.currentTab === 'bibliotheque') {
+              container.innerHTML = viewBibliotheque();
+              if (window.lucide) lucide.createIcons();
+            }
+          }
+        }).catch(e => console.warn('Sync biblio:', e));
+      }
+
+      let docs = [];
+      try {
+        docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+      } catch(e) { docs = []; }
+
+      // Filtrer selon les permissions : Visible si "Tout le monde" ou "Enseignants"
+      const allowedDocs = docs.filter(d => {
+        const p = (d.permissions || 'Tout le monde').toLowerCase();
+        return p.includes('tout le monde') || p.includes('enseignant') || p.includes('prof');
+      });
+
       return `
         <div class="kpi-card mb-8">
-          <div class="flex items-center gap-4 mb-6">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
-              <i data-lucide="library" class="w-6 h-6 text-indigo-400"></i>
+          <div class="flex items-center justify-between gap-4 mb-6">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+                <i data-lucide="library" class="w-6 h-6 text-indigo-400"></i>
+              </div>
+              <div>
+                <h3 class="text-xl font-black">Bibliothèque Pédagogique (Enseignants)</h3>
+                <p class="text-xs text-gray-400">Consultez vos manuels scolaires et guides pédagogiques en mode lecture sécurisée anti-téléchargement.</p>
+              </div>
             </div>
-            <div>
-              <h3 class="text-xl font-black">Bibliothèque Virtuelle</h3>
-              <p class="text-xs text-gray-400">Consultez vos manuels scolaires et guides pédagogiques en mode lecture sécurisée.</p>
-            </div>
+            <span class="px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-bold text-xs">${allowedDocs.length} Ouvrage(s)</span>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            ${docs.map(d => `
+            ${allowedDocs.map(d => `
               <div class="glass p-5 rounded-2xl flex flex-col h-full border border-white/10 hover:border-indigo-500/40 transition group cursor-pointer relative overflow-hidden" onclick="window.open('/lecteur.html?id=${d.id}', '_blank')">
+                <div class="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-900/40 opacity-0 group-hover:opacity-100 transition"></div>
                 <div class="flex justify-between items-start mb-4 relative z-10">
-                  <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase rounded-lg border border-indigo-500/20">${d.categorie}</span>
-                  <i data-lucide="book-open" class="w-5 h-5 text-gray-500 group-hover:text-indigo-400 transition"></i>
+                  <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase rounded-lg border border-indigo-500/20">${d.categorie || 'Pédagogie'}</span>
+                  <span class="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded">${d.permissions || 'Accès'}</span>
                 </div>
                 <h4 class="font-bold text-sm mb-1 group-hover:text-white transition relative z-10">${d.titre}</h4>
-                <p class="text-[10px] text-gray-400 uppercase tracking-widest relative z-10">${d.matiere}</p>
-                <div class="mt-auto pt-4 relative z-10">
-                  <p class="text-xs text-gray-500">Par : ${d.auteur}</p>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest relative z-10">${d.matiere || 'Divers'}</p>
+                <div class="mt-auto pt-4 relative z-10 flex items-center justify-between">
+                  <p class="text-xs text-gray-500">Par : ${d.auteur || 'Direction'}</p>
+                  <span class="text-xs text-indigo-400 font-bold group-hover:translate-x-1 transition">Lire 📖</span>
                 </div>
               </div>
             `).join('')}
-            ${docs.length === 0 ? '<div class="col-span-full py-12 text-center text-gray-500 font-medium">Aucun document disponible dans la bibliothèque pour le moment.</div>' : ''}
+            ${allowedDocs.length === 0 ? '<div class="col-span-full py-12 text-center text-gray-500 font-medium">Aucun document réservé aux enseignants disponible pour le moment.</div>' : ''}
           </div>
         </div>
       `;

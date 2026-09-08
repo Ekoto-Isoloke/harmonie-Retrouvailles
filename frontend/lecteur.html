@@ -124,10 +124,7 @@
     
     // Auth check
     const userStr = localStorage.getItem('hr_user');
-    if (!userStr) {
-      showError("Session invalide. Veuillez vous connecter.");
-    }
-    const currentUser = JSON.parse(userStr);
+    const currentUser = userStr ? JSON.parse(userStr) : { role: 'Invite' };
 
     let pdfDoc = null;
     let currentScale = 1.2;
@@ -138,22 +135,95 @@
     // Get doc info
     const urlParams = new URLSearchParams(window.location.search);
     const docId = urlParams.get('id');
+    const directUrl = urlParams.get('url');
+    const directTitle = urlParams.get('titre');
     
     async function initViewer() {
       try {
-        const db = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
-        const doc = db.find(d => d.id === docId);
+        let doc = null;
+        let db = [];
+        try {
+          db = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+        } catch(e) { db = []; }
+
+        if (docId) {
+          doc = db.find(d => d.id === docId);
+        }
+
+        // Si non trouvé en local, tenter de charger depuis l'API en ligne
+        if (!doc && docId) {
+          try {
+            const res = await fetch('/api/bibliotheque');
+            if (res.ok) {
+              const remoteDocs = await res.json();
+              if (Array.isArray(remoteDocs)) {
+                doc = remoteDocs.find(d => d.id === docId);
+                // Sauvegarder dans le cache local
+                if (doc && !db.some(d => d.id === doc.id)) {
+                  db.push(doc);
+                  localStorage.setItem('hr_bibliotheque_db', JSON.stringify(db));
+                }
+              }
+            }
+          } catch (apiErr) {
+            console.warn("Erreur chargement API doc:", apiErr);
+          }
+        }
+
+        // Si URL directe fournie dans les query params
+        if (!doc && directUrl) {
+          doc = {
+            id: docId || 'direct',
+            titre: directTitle || 'Document Sécurisé',
+            matiere: 'Général',
+            categorie: 'Lecture',
+            url: directUrl,
+            permissions: 'Tout le monde'
+          };
+        }
         
         if (!doc) {
-          throw new Error("Document introuvable dans la bibliothèque.");
+          throw new Error("Document introuvable dans la bibliothèque virtuelle.");
+        }
+
+        // Vérification des permissions
+        const userRole = (currentUser.role || '').toLowerCase();
+        const perms = (doc.permissions || 'Tout le monde').toLowerCase();
+        const isAdmin = userRole.includes('admin') || userRole.includes('direction générale');
+        
+        if (!isAdmin && perms !== 'tout le monde') {
+          const isTeacher = userRole.includes('enseignant') || userRole.includes('prof');
+          const isPrefet = userRole.includes('préfet') || userRole.includes('direction') || userRole.includes('surveillant');
+          const isParent = userRole.includes('parent') || userRole.includes('élève') || userRole.includes('eleve');
+
+          let hasAccess = false;
+          if (isTeacher && perms.includes('enseignant')) hasAccess = true;
+          if (isPrefet && (perms.includes('direction') || perms.includes('préfet'))) hasAccess = true;
+          if (isParent && (perms.includes('parent') || perms.includes('élève') || perms.includes('eleve'))) hasAccess = true;
+
+          if (!hasAccess) {
+            throw new Error("Accès non autorisé : ce document est réservé aux profils spécifiés par la direction.");
+          }
         }
         
         // Update UI
-        document.getElementById('doc-title').textContent = doc.titre;
-        document.getElementById('doc-meta').textContent = doc.matiere + ' • ' + doc.categorie;
+        document.getElementById('doc-title').textContent = doc.titre || 'Document';
+        document.getElementById('doc-meta').textContent = (doc.matiere || '') + ' • ' + (doc.categorie || '') + ' • ' + (doc.permissions || 'Tout le monde');
         
-        // Fetch PDF
-        const loadingTask = pdfjsLib.getDocument(doc.url);
+        // Fetch and load PDF
+        let loadingTask;
+        if (doc.url && doc.url.startsWith('data:application/pdf;base64,')) {
+          const base64Str = doc.url.split(',')[1];
+          const rawBytes = atob(base64Str);
+          const uint8Array = new Uint8Array(rawBytes.length);
+          for (let i = 0; i < rawBytes.length; i++) {
+            uint8Array[i] = rawBytes.charCodeAt(i);
+          }
+          loadingTask = pdfjsLib.getDocument({ data: uint8Array });
+        } else {
+          loadingTask = pdfjsLib.getDocument(doc.url);
+        }
+
         pdfDoc = await loadingTask.promise;
         
         loadingState.classList.add('hidden');
