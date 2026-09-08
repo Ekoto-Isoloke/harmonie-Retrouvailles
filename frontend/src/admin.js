@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'dossier360': renderDossier360(); break;
             case 'gestion-comptes': renderGestionComptes(); break;
             case 'classe-virtuelle': renderClasseVirtuelle(); break;
-            case 'bibliotheque': renderBibliotheque(); break;
+            case 'bibliotheque': if(window._adminBiblioView) { window._adminBiblioView(); } else { renderBibliotheque(); } break;
             default: renderDashboard();
         }
         if (window.lucide) lucide.createIcons();
@@ -218,6 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ui.logout) ui.logout.onclick = () => { localStorage.removeItem('hr_user'); localStorage.removeItem('hr_token'); window.location.href = '/login.html'; };
 
     renderView();
+    // Enregistrement global pour résister à la minification Vite/Rollup
+    window._adminBiblioView = renderBibliotheque;
+    window.renderBibliotheque = renderBibliotheque;
     initInstitutionalSwitcher();
 
     function initInstitutionalSwitcher() {
