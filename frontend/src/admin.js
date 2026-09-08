@@ -185,14 +185,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.lucide) lucide.createIcons();
     };
 
-    ui.nav.forEach(item => {
-        item.onclick = (e) => {
-            e.preventDefault();
-            ui.nav.forEach(n => n.classList.remove('active'));
-            item.classList.add('active');
-            currentView = item.dataset.target;
-            renderView();
-        };
+    // Navigation robuste par délégation d'événements globale
+    document.addEventListener('click', (e) => {
+        const navItem = e.target.closest('a[data-target]');
+        if (navItem) {
+            const target = navItem.dataset.target;
+            if (target) {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                navItem.classList.add('active');
+                currentView = target;
+                renderView();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
     });
 
     if (ui.theme) ui.theme.onclick = () => { document.documentElement.classList.toggle('dark'); renderView(); };
@@ -319,12 +325,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3 class="font-black text-sm uppercase tracking-widest text-amber-300 mb-4 flex items-center gap-2">
                     <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Accès Rapide — Immersion Directe
                 </h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
                     <a href="/prefet-dashboard.html?view=harmonie" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 rounded-2xl transition group">
                         <span class="text-2xl">🏫</span><span class="text-[10px] font-black text-gray-300 group-hover:text-emerald-300 uppercase tracking-wider text-center">Direction Harmonie</span>
                     </a>
                     <a href="/prefet-dashboard.html?view=retrouvailles" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-purple-500/15 border border-white/10 hover:border-purple-500/40 rounded-2xl transition group">
                         <span class="text-2xl">🎓</span><span class="text-[10px] font-black text-gray-300 group-hover:text-purple-300 uppercase tracking-wider text-center">Direction Retrouvailles</span>
+                    </a>
+                    <a href="#" data-target="bibliotheque" class="nav-item flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-indigo-500/15 border border-white/10 hover:border-indigo-500/40 rounded-2xl transition group">
+                        <span class="text-2xl">📚</span><span class="text-[10px] font-black text-gray-300 group-hover:text-indigo-300 uppercase tracking-wider text-center">Bibliothèque Virtuelle</span>
                     </a>
                     <button type="button" onclick="openSupervisionEnseignantsModal(event)" class="flex flex-col items-center gap-2 p-4 bg-white/5 hover:bg-blue-500/15 border border-white/10 hover:border-blue-500/40 rounded-2xl transition group cursor-pointer">
                         <span class="text-2xl">👨‍🏫</span><span class="text-[10px] font-black text-gray-300 group-hover:text-blue-300 uppercase tracking-wider text-center">Corps Enseignant</span>
