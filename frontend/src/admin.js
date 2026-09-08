@@ -4640,16 +4640,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     function renderBibliotheque() {
         window.renderBibliotheque = renderBibliotheque;
-        if (!ui.content) return;
+        const targetContainer = document.getElementById('main-content') || ui.content;
+        if (!targetContainer) return;
         
-        // Initialize mock DB if empty
-        if (!localStorage.getItem('hr_bibliotheque_db')) {
-            localStorage.setItem('hr_bibliotheque_db', JSON.stringify([
-                { id: 'doc_1', titre: 'Manuel de Mathématiques - 4ème', auteur: 'Ministère EPST', categorie: 'Manuels Scolaires', matiere: 'Mathématiques', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Tout le monde', date: new Date().toISOString() },
-                { id: 'doc_2', titre: 'Guide Pédagogique Enseignant', auteur: 'Direction', categorie: 'Guides', matiere: 'Pédagogie', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Enseignants uniquement', date: new Date().toISOString() }
-            ]));
+        // Safe DB Initialization
+        let docs = [];
+        try {
+            if (!localStorage.getItem('hr_bibliotheque_db')) {
+                localStorage.setItem('hr_bibliotheque_db', JSON.stringify([
+                    { id: 'doc_1', titre: 'Manuel de Mathématiques - 4ème', auteur: 'Ministère EPST', categorie: 'Manuels Scolaires', matiere: 'Mathématiques', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Tout le monde', date: new Date().toISOString() },
+                    { id: 'doc_2', titre: 'Guide Pédagogique Enseignant', auteur: 'Direction', categorie: 'Guides', matiere: 'Pédagogie', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Enseignants uniquement', date: new Date().toISOString() }
+                ]));
+            }
+            docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+            if (!Array.isArray(docs)) docs = [];
+        } catch(e) {
+            console.error("Erreur lecture hr_bibliotheque_db:", e);
+            docs = [];
         }
-        const docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
 
         let html = `
             <div class="mb-6 flex justify-between items-end">
@@ -4724,7 +4732,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        ui.content.innerHTML = html;
+        targetContainer.innerHTML = html;
         if (window.lucide) lucide.createIcons();
 
         // Setup Cloudinary Widget (Mock for now)
