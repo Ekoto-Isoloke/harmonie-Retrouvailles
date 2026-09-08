@@ -254,7 +254,7 @@
                 <span class="font-bold text-amber-400">Classe Virtuelle</span>
             </a>
 
-            <a href="#" data-target="bibliotheque"
+            <a href="#" data-target="bibliotheque" onclick="window.switchAdminView('bibliotheque', event)"
                 class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-indigo-400 hover:bg-indigo-500/10 transition-colors border border-indigo-500/20 bg-indigo-500/5 mt-1">
                 <i data-lucide="library" class="w-5 h-5 text-indigo-400"></i>
                 <span class="font-bold text-indigo-400">Bibliothèque Virtuelle</span>
@@ -348,13 +348,20 @@
                                     <div class="text-[10px] text-gray-400">Pédagogie, Fichier & Horaires</div>
                                 </div>
                             </button>
-                            <a href="/pointage.html" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold transition group">
-                                <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">⏱️</div>
-                                <div>
-                                    <div class="text-gray-200 group-hover:text-cyan-400 font-bold">Borne Biométrique</div>
-                                    <div class="text-[10px] text-gray-400">Terminal de pointage live</div>
-                                </div>
-                            </a>
+                             <a href="#" data-target="bibliotheque" onclick="window.switchAdminView('bibliotheque', event); toggleDirectionGeneraleMenu(event);" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold transition group">
+                                 <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">📚</div>
+                                 <div>
+                                     <div class="text-gray-200 group-hover:text-indigo-400 font-bold">Bibliothèque Virtuelle</div>
+                                     <div class="text-[10px] text-gray-400">Gestion du catalogue & ouvrages</div>
+                                 </div>
+                             </a>
+                             <a href="/pointage.html" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 text-white text-xs font-semibold transition group">
+                                 <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">⏱️</div>
+                                 <div>
+                                     <div class="text-gray-200 group-hover:text-cyan-400 font-bold">Borne Biométrique</div>
+                                     <div class="text-[10px] text-gray-400">Terminal de pointage live</div>
+                                 </div>
+                             </a>
                         </div>
                     </div>
                 </div>

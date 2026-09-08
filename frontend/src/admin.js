@@ -185,6 +185,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.lucide) lucide.createIcons();
     };
 
+    window.switchAdminView = function(viewName, event) {
+        if (event) {
+            event.preventDefault();
+            if (event.stopPropagation) event.stopPropagation();
+        }
+        currentView = viewName;
+        document.querySelectorAll('.nav-item').forEach(n => {
+            if (n.dataset && n.dataset.target === viewName) {
+                n.classList.add('active');
+            } else {
+                n.classList.remove('active');
+            }
+        });
+        renderView();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     // Navigation robuste par délégation d'événements globale
     document.addEventListener('click', (e) => {
         const navItem = e.target.closest('a[data-target]');
@@ -192,11 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = navItem.dataset.target;
             if (target) {
                 e.preventDefault();
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-                navItem.classList.add('active');
-                currentView = target;
-                renderView();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.switchAdminView(target, e);
             }
         }
     });
