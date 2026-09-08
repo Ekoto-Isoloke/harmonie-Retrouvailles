@@ -49,8 +49,9 @@
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 font-black text-sm" id="prefet-avatar">--</div>
           <div class="min-w-0">
-            <p class="font-bold text-xs truncate" id="prefet-name">Utilisateur</p>
-            <p class="text-[10px] text-purple-300 font-medium truncate" id="prefet-role">Poste Officiel</p>
+            <p class="font-bold text-xs truncate text-white" id="prefet-name">Utilisateur</p>
+            <p class="text-[10px] text-purple-300 font-semibold truncate" id="prefet-role">Poste Officiel</p>
+            <p class="text-[9px] text-amber-400 font-bold truncate mt-0.5" id="prefet-inst-badge">Établissement</p>
           </div>
         </div>
       </div>
@@ -103,7 +104,15 @@
       if (dgBanner) dgBanner.classList.remove('hidden');
     }
 
-    document.getElementById('prefet-role').textContent = `${role} • ${ecole}`;
+    document.getElementById('prefet-role').textContent = `${role}`;
+    const instEl = document.getElementById('prefet-inst-badge');
+    if (instEl) {
+      if (user.role === 'Direction Générale' || user.role === 'Super-Admin') {
+        instEl.textContent = '🏛️ Direction Générale';
+      } else {
+        instEl.textContent = ecole === 'Harmonie' ? '🏫 C.S. Harmonie (Primaire)' : '🏫 G.S. Retrouvailles (Secondaire)';
+      }
+    }
     const initials = ((user.prenom || '')[0] || '') + ((user.nom || '')[0] || '');
     document.getElementById('prefet-avatar').textContent = initials.toUpperCase() || 'AG';
     document.getElementById('sidebar-role-title').textContent = role === 'Préfet' ? 'Préfecture' : role === 'D.E' ? 'Dir. Études' : role === 'D.D' ? 'Discipline' : isDP ? 'Dir. Primaire' : 'Surveillance';

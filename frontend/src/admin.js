@@ -121,26 +121,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const ui = {
         name: document.getElementById('admin-name'),
+        roleBadge: document.getElementById('admin-role-badge'),
+        instBadge: document.getElementById('admin-inst-badge'),
+        avatar: document.getElementById('admin-avatar-box'),
         content: document.getElementById('main-content'),
         nav: document.querySelectorAll('.nav-item'),
         theme: document.getElementById('theme-toggle'),
         logout: document.getElementById('logout-btn')
     };
 
-    if (ui.name) ui.name.textContent = `${user.prenom || ''} ${user.nom || ''}`;
-    // Update avatar with real initials — pas de ui-avatars (fausse image)
-    const avatarEl = document.querySelector('img[alt="User"]');
-    if (avatarEl) {
-        const initials = `${(user.prenom||'A')[0]}${(user.nom||'D')[0]}`.toUpperCase();
-        // Remplacer l'<img> par un <div> textuel avec initiales (comme teacher/prefet dashboard)
-        const avatarDiv = document.createElement('div');
-        avatarDiv.className = avatarEl.className + ' flex items-center justify-center font-black text-sm bg-amber-700/60 text-amber-200 border border-amber-500/40';
-        avatarDiv.textContent = initials;
-        avatarEl.replaceWith(avatarDiv);
+    const fullName = `${user.prenom || ''} ${user.nom || ''}`.trim() || 'Super Admin';
+    if (ui.name) ui.name.textContent = fullName;
+    
+    // Fonction officielle
+    const userRole = user.role || 'Super-Admin';
+    if (ui.roleBadge) ui.roleBadge.textContent = userRole;
+
+    // Institution officielle sans confusion
+    let institutionText = '🏛️ C.S. Harmonie & Retrouvailles';
+    if (user.ecole === 'Harmonie') institutionText = '🏫 C.S. Harmonie (Primaire)';
+    else if (user.ecole === 'Retrouvailles') institutionText = '🏫 G.S. Retrouvailles (Secondaire)';
+    else if (userRole === 'Direction Générale') institutionText = '🏛️ Direction Générale (Siège Central)';
+    else if (userRole === 'Super-Admin') institutionText = '🏛️ Super-Administration (Multi-Écoles)';
+    if (ui.instBadge) ui.instBadge.textContent = institutionText;
+
+    // Initiales Avatar
+    if (ui.avatar) {
+        const pInitial = (user.prenom || 'S')[0] || '';
+        const nInitial = (user.nom || 'A')[0] || '';
+        ui.avatar.textContent = (pInitial + nInitial).toUpperCase() || 'SA';
     }
-    // Show role badge
-    const roleBadge = document.querySelector('p.text-xs.text-gold-600');
-    if (roleBadge && user.role) roleBadge.textContent = user.role;
 
     // ==========================================
     // ADAPTATION SIDEBAR DIRECTION GÉNÉRALE

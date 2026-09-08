@@ -728,6 +728,11 @@ async function handleLogin(e) {
     return;
   }
 
+  // Normalisation de l'école / institution pour éviter toute confusion
+  if (!foundUser.ecole) {
+    foundUser.ecole = 'Harmonie-Retrouvailles';
+  }
+
   // Sauvegarde de session
   localStorage.setItem('hr_user', JSON.stringify(foundUser));
   localStorage.setItem('hr_token', token || 'token_auth_2026');

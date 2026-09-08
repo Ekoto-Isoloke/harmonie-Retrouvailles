@@ -274,19 +274,21 @@
         </nav>
 
         <!-- User Area -->
-        <div class="p-4 border-t border-white/5 dark:border-gray-700">
-            <div class="flex items-center justify-between mb-4">
+        <div class="p-4 border-t border-white/10">
+            <div class="p-3 rounded-2xl bg-white/5 border border-white/10 mb-3">
                 <div class="flex items-center gap-3">
-                    <img src="https://ui-avatars.com/api/?name=Admin+General&background=0D8ABC&color=fff" alt="User"
-                        class="w-10 h-10 rounded-full shadow-sm">
-                    <div>
-                        <p class="text-sm font-semibold text-gray-900 dark:text-white" id="admin-name">Super Admin</p>
-                        <p class="text-xs text-gold-600 font-medium">Direction</p>
+                    <div id="admin-avatar-box" class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-600 to-amber-800 text-amber-100 flex items-center justify-center font-black text-sm border border-amber-500/40 shrink-0 shadow-md">
+                        SA
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-bold text-white truncate" id="admin-name">Super Admin</p>
+                        <p class="text-[11px] text-amber-400 font-semibold truncate" id="admin-role-badge">Direction</p>
+                        <p class="text-[10px] text-gray-400 truncate mt-0.5" id="admin-inst-badge">🏛️ C.S. Harmonie & Retrouvailles</p>
                     </div>
                 </div>
             </div>
             <button id="logout-btn"
-                class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400">
+                class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl transition-all text-xs font-bold cursor-pointer">
                 <i data-lucide="log-out" class="w-4 h-4"></i>
                 Déconnexion
             </button>
@@ -795,8 +797,31 @@
                         renderBibliothequeInline();
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
-                }, true);
-            });
+            // Affichage immédiat de l'identité, fonction et institution
+            try {
+                var u = JSON.parse(localStorage.getItem('hr_user'));
+                if (u) {
+                    var elName = document.getElementById('admin-name');
+                    var elRole = document.getElementById('admin-role-badge');
+                    var elInst = document.getElementById('admin-inst-badge');
+                    var elAv = document.getElementById('admin-avatar-box');
+                    var fullN = ((u.prenom || '') + ' ' + (u.nom || '')).trim();
+                    if (elName && fullN) elName.textContent = fullN;
+                    if (elRole) elRole.textContent = u.role || 'Super-Admin';
+                    if (elInst) {
+                        var inst = '🏛️ C.S. Harmonie & Retrouvailles';
+                        if (u.ecole === 'Harmonie') inst = '🏫 C.S. Harmonie (Primaire)';
+                        else if (u.ecole === 'Retrouvailles') inst = '🏫 G.S. Retrouvailles (Secondaire)';
+                        else if (u.role === 'Direction Générale') inst = '🏛️ Direction Générale (Siège Central)';
+                        else if (u.role === 'Super-Admin') inst = '🏛️ Super-Administration (Multi-Établissements)';
+                        elInst.textContent = inst;
+                    }
+                    if (elAv) {
+                        var inits = (((u.prenom || 'S')[0] || '') + ((u.nom || 'A')[0] || '')).toUpperCase();
+                        elAv.textContent = inits || 'SA';
+                    }
+                }
+            } catch(e) {}
         })();
     </script>
     <!-- ===== FIN SCRIPT INLINE BIBLIOTHÈQUE ===== -->

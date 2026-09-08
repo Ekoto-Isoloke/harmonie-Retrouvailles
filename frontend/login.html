@@ -1005,6 +1005,13 @@
         return;
       }
 
+      // Normalisation de l'école / institution pour éviter toute confusion
+      if (!foundUser.ecole) {
+        if (['Directeur (D.P)', 'D.P', 'Sur École', 'Instituteur'].includes(role)) foundUser.ecole = 'Harmonie';
+        else if (['Préfet', 'D.E', 'D.D'].includes(role)) foundUser.ecole = 'Retrouvailles';
+        else foundUser.ecole = 'Harmonie-Retrouvailles';
+      }
+
       // Enregistrement de la session
       localStorage.setItem('hr_user', JSON.stringify(foundUser));
       localStorage.setItem('hr_token', token || 'token_auth_2026');

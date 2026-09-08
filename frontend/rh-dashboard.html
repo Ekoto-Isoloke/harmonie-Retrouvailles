@@ -21,10 +21,11 @@
       <!-- Profil utilisateur -->
       <div class="p-6">
         <div class="flex items-center gap-4 mb-2">
-          <div class="w-12 h-12 bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white border-2 border-gold-400 flex items-center justify-center text-white font-display font-bold text-xl">M</div>
-          <div>
-            <p class="font-bold text-sm text-white" id="rh-user-name">MBUYI Alain</p>
-            <p class="text-xs text-primary-200 uppercase tracking-widest mt-0.5">Enseignant – C.S. Harmonie</p>
+          <div class="w-12 h-12 bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white border-2 border-gold-400 flex items-center justify-center text-white font-display font-bold text-xl shrink-0" id="rh-avatar">M</div>
+          <div class="min-w-0">
+            <p class="font-bold text-sm text-white truncate" id="rh-user-name">MBUYI Alain</p>
+            <p class="text-xs text-amber-400 font-bold uppercase tracking-wider mt-0.5 truncate" id="rh-user-role">Responsable RH</p>
+            <p class="text-[10px] text-gray-300 font-semibold mt-0.5 truncate" id="rh-user-inst">🏫 C.S. Harmonie</p>
           </div>
         </div>
       </div>
@@ -169,5 +170,29 @@
     </main>
 
     <script type="module" src="/rh.js"></script>
+    <script>
+      try {
+        const u = JSON.parse(localStorage.getItem('hr_user'));
+        if (u) {
+          const elN = document.getElementById('rh-user-name');
+          const elR = document.getElementById('rh-user-role');
+          const elI = document.getElementById('rh-user-inst');
+          const elA = document.getElementById('rh-avatar');
+          const fullName = `${u.prenom || ''} ${u.nom || ''}`.trim();
+          if (elN && fullName) elN.textContent = fullName;
+          if (elR) elR.textContent = u.role || 'Agent RH';
+          if (elI) {
+            let inst = '🏫 C.S. Harmonie (Primaire)';
+            if (u.ecole === 'Retrouvailles') inst = '🏫 G.S. Retrouvailles (Secondaire)';
+            else if (u.ecole === 'Harmonie-Retrouvailles' || u.role === 'Direction Générale' || u.role === 'Super-Admin') inst = '🏛️ C.S. Harmonie & Retrouvailles';
+            elI.textContent = inst;
+          }
+          if (elA) {
+            const inits = (((u.prenom || 'R')[0] || '') + ((u.nom || 'H')[0] || '')).toUpperCase() || 'RH';
+            elA.textContent = inits;
+          }
+        }
+      } catch(e) {}
+    </script>
   </body>
 </html>

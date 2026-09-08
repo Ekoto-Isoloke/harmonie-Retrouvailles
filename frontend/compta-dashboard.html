@@ -28,10 +28,11 @@
 
       <div class="p-6">
         <div class="flex items-center gap-4 mb-2">
-          <div class="w-12 h-12 bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white border-2 border-gold-400 flex items-center justify-center text-white font-display font-bold text-xl">K</div>
-          <div>
-            <p class="font-bold text-sm text-white">KABONGO Marie</p>
-            <p class="text-xs text-primary-200 uppercase tracking-widest mt-0.5">Comptable – G.S. Retrouvailles</p>
+          <div class="w-12 h-12 bg-[#0A192F]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white border-2 border-gold-400 flex items-center justify-center text-white font-display font-bold text-xl shrink-0" id="compta-avatar">K</div>
+          <div class="min-w-0">
+            <p class="font-bold text-sm text-white truncate" id="compta-name">KABONGO Marie</p>
+            <p class="text-xs text-amber-400 font-bold uppercase tracking-wider mt-0.5 truncate" id="compta-role">Comptable</p>
+            <p class="text-[10px] text-gray-300 font-semibold mt-0.5 truncate" id="compta-inst">🏫 G.S. Retrouvailles</p>
           </div>
         </div>
       </div>
@@ -234,5 +235,29 @@
     </main>
 
     <script type="module" src="/compta.js"></script>
+    <script>
+      try {
+        const u = JSON.parse(localStorage.getItem('hr_user'));
+        if (u) {
+          const elN = document.getElementById('compta-name');
+          const elR = document.getElementById('compta-role');
+          const elI = document.getElementById('compta-inst');
+          const elA = document.getElementById('compta-avatar');
+          const fullName = `${u.prenom || ''} ${u.nom || ''}`.trim();
+          if (elN && fullName) elN.textContent = fullName;
+          if (elR) elR.textContent = u.role || 'Comptable';
+          if (elI) {
+            let inst = '🏫 G.S. Retrouvailles (Secondaire)';
+            if (u.ecole === 'Harmonie') inst = '🏫 C.S. Harmonie (Primaire)';
+            else if (u.ecole === 'Harmonie-Retrouvailles' || u.role === 'Direction Générale' || u.role === 'Super-Admin') inst = '🏛️ C.S. Harmonie & Retrouvailles';
+            elI.textContent = inst;
+          }
+          if (elA) {
+            const inits = (((u.prenom || 'C')[0] || '') + ((u.nom || 'P')[0] || '')).toUpperCase() || 'CP';
+            elA.textContent = inits;
+          }
+        }
+      } catch(e) {}
+    </script>
   </body>
 </html>

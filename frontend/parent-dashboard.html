@@ -106,9 +106,20 @@
       </nav>
     </div>
     
-    <div class="p-4 border-t border-white/10">
-      <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl font-medium transition-all text-sm">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+    <!-- User Profile Section -->
+    <div class="mt-auto p-4 border-t border-white/10">
+      <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 mb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-sm shrink-0" id="parent-avatar-badge">PA</div>
+          <div class="min-w-0">
+            <p class="font-bold text-xs truncate text-white" id="parent-sidebar-name">Parent d'Élève</p>
+            <p class="text-[10px] text-amber-400 font-semibold truncate" id="parent-role-badge">Parent d'Élève</p>
+            <p class="text-[9px] text-gray-400 font-bold truncate mt-0.5" id="parent-inst-badge">🏫 C.S. Harmonie & Retrouvailles</p>
+          </div>
+        </div>
+      </div>
+      <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-red-400 hover:bg-red-500/10 transition text-xs font-bold border border-red-500/20">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
         Déconnexion
       </button>
     </div>
@@ -125,10 +136,10 @@
       </div>
       <div class="flex items-center gap-4 self-end sm:self-auto">
         <div class="text-right hidden sm:block">
-          <p class="text-sm font-bold text-white" id="parent-name">Mme. KABUYA</p>
-          <p class="text-xs text-amber-500 font-semibold">Parent Associé</p>
+          <p class="text-sm font-bold text-white" id="parent-name">Parent</p>
+          <p class="text-xs text-amber-400 font-semibold" id="parent-top-role">Parent d'Élève • Harmonie-Retrouvailles</p>
         </div>
-        <div class="w-11 h-11 rounded-full bg-gradient-to-br from-blue-600 to-indigo-900 border-2 border-amber-500/50 flex items-center justify-center text-white font-bold text-lg shadow-lg">K</div>
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-600 to-amber-800 border border-amber-500/40 flex items-center justify-center text-white font-black text-sm shadow-lg" id="parent-avatar-top">PA</div>
       </div>
     </header>
 
@@ -788,9 +799,28 @@
           return;
         }
 
-        if (currentParentUser && (currentParentUser.nom || currentParentUser.prenom)) {
-          document.getElementById('parent-name').textContent = `${currentParentUser.prenom || ''} ${currentParentUser.nom || ''}`;
-        }
+        const parentFullName = `${currentParentUser.prenom || ''} ${currentParentUser.nom || ''}`.trim() || "Parent d'Élève";
+        const elParentName = document.getElementById('parent-name');
+        const elSidebarName = document.getElementById('parent-sidebar-name');
+        const elRoleBadge = document.getElementById('parent-role-badge');
+        const elTopRole = document.getElementById('parent-top-role');
+        const elInstBadge = document.getElementById('parent-inst-badge');
+        const elAvatarBadge = document.getElementById('parent-avatar-badge');
+        const elAvatarTop = document.getElementById('parent-avatar-top');
+
+        if (elParentName) elParentName.textContent = parentFullName;
+        if (elSidebarName) elSidebarName.textContent = parentFullName;
+        if (elRoleBadge) elRoleBadge.textContent = "Parent d'Élève";
+        
+        let parentInstitution = "🏫 C.S. Harmonie & Retrouvailles";
+        if (currentParentUser.ecole === 'Harmonie') parentInstitution = "🏫 C.S. Harmonie (Primaire)";
+        else if (currentParentUser.ecole === 'Retrouvailles') parentInstitution = "🏫 G.S. Retrouvailles (Secondaire)";
+        if (elInstBadge) elInstBadge.textContent = parentInstitution;
+        if (elTopRole) elTopRole.textContent = `Parent d'Élève • ${parentInstitution.replace('🏫 ', '')}`;
+
+        const pInits = (((currentParentUser.prenom || 'P')[0] || '') + ((currentParentUser.nom || 'A')[0] || '')).toUpperCase() || 'PA';
+        if (elAvatarBadge) elAvatarBadge.textContent = pInits;
+        if (elAvatarTop) elAvatarTop.textContent = pInits;
         
         // Fetch children from Cloud
         await loadParentChildren();

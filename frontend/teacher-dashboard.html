@@ -81,12 +81,13 @@
 
     <!-- User -->
     <div class="mt-auto">
-      <div class="glass-light p-4 rounded-2xl mb-3">
+      <div class="glass-light p-3.5 rounded-2xl mb-3">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-sm" id="teacher-avatar">--</div>
-          <div>
-            <p class="font-bold text-sm" id="teacher-name">---</p>
-            <p class="text-[11px] text-gray-400" id="teacher-role">Enseignant</p>
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-sm shrink-0" id="teacher-avatar">--</div>
+          <div class="min-w-0">
+            <p class="font-bold text-xs truncate text-white" id="teacher-name">---</p>
+            <p class="text-[10px] text-gray-300 font-semibold truncate" id="teacher-role">Enseignant</p>
+            <p class="text-[9px] text-amber-400 font-bold truncate mt-0.5" id="teacher-inst-badge">Établissement</p>
           </div>
         </div>
       </div>
@@ -913,11 +914,17 @@
     } else {
       const elName   = document.getElementById('teacher-name');
       const elRole   = document.getElementById('teacher-role');
+      const elInst   = document.getElementById('teacher-inst-badge');
       const elAvatar = document.getElementById('teacher-avatar');
       const fullName = [userInit.prenom, userInit.nom].filter(Boolean).join(' ');
-      if (elName)   elName.textContent   = fullName || 'Inconnu';
-      if (elRole)   elRole.textContent   = userInit.role || 'Agent';
-      if (elAvatar) elAvatar.textContent = (((userInit.prenom || '')[0]) + ((userInit.nom || '')[0])).toUpperCase() || '?';
+      if (elName)   elName.textContent   = fullName || 'Enseignant';
+      if (elRole)   elRole.textContent   = userInit.role || 'Enseignant';
+      if (elInst) {
+        if (userInit.ecole === 'Harmonie') elInst.textContent = '🏫 C.S. Harmonie (Primaire)';
+        else if (userInit.ecole === 'Retrouvailles') elInst.textContent = '🏫 G.S. Retrouvailles (Secondaire)';
+        else elInst.textContent = `🏫 ${userInit.ecole || 'Harmonie-Retrouvailles'}`;
+      }
+      if (elAvatar) elAvatar.textContent = (((userInit.prenom || 'E')[0]) + ((userInit.nom || 'N')[0])).toUpperCase() || 'EN';
     }
 
     showView('accueil');
