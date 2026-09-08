@@ -609,6 +609,102 @@
 
     <script src="/presence.js"></script>
     <script type="module" src="/src/admin.js"></script>
+
+    <!-- ===== SCRIPT INLINE: BIBLIOTHÈQUE VIRTUELLE (filet de sécurité) ===== -->
+    <!-- Ce script non-module s'exécute indépendamment du bundle Vite          -->
+    <!-- Il garantit que le bouton fonctionne même si le module a un problème  -->
+    <script>
+        (function() {
+            function renderBibliothequeInline() {
+                var container = document.getElementById('main-content');
+                if (!container) return;
+
+                // Si le module admin.js a déjà chargé sa version, on préfère l'utiliser
+                if (window._adminBiblioView) {
+                    window._adminBiblioView();
+                    return;
+                }
+                if (window.renderBibliotheque) {
+                    window.renderBibliotheque();
+                    return;
+                }
+
+                // Fallback: rendu direct inline
+                var docs = [];
+                try {
+                    if (!localStorage.getItem('hr_bibliotheque_db')) {
+                        localStorage.setItem('hr_bibliotheque_db', JSON.stringify([
+                            { id: 'doc_1', titre: 'Manuel de Mathématiques - 4ème', auteur: 'Ministère EPST', categorie: 'Manuels Scolaires', matiere: 'Mathématiques', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Tout le monde', date: new Date().toISOString() },
+                            { id: 'doc_2', titre: 'Guide Pédagogique Enseignant', auteur: 'Direction', categorie: 'Guides', matiere: 'Pédagogie', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', permissions: 'Enseignants uniquement', date: new Date().toISOString() }
+                        ]));
+                    }
+                    docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+                    if (!Array.isArray(docs)) docs = [];
+                } catch(e) { docs = []; }
+
+                var rows = docs.map(function(d) {
+                    return '<tr class="border-b border-white/5 hover:bg-white/5">'
+                        + '<td class="px-4 py-3 text-white font-semibold">' + (d.titre || '') + '</td>'
+                        + '<td class="px-4 py-3 text-gray-400">' + (d.auteur || '') + '</td>'
+                        + '<td class="px-4 py-3 text-gray-400">' + (d.categorie || '') + '</td>'
+                        + '<td class="px-4 py-3 text-gray-400">' + (d.matiere || '') + '</td>'
+                        + '<td class="px-4 py-3 text-gray-400">' + (d.permissions || '') + '</td>'
+                        + '<td class="px-4 py-3">'
+                        + '<a href="/lecteur.html?url=' + encodeURIComponent(d.url) + '&titre=' + encodeURIComponent(d.titre || '') + '" target="_blank" class="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg mr-2">📖 Lire</a>'
+                        + '</td></tr>';
+                }).join('');
+
+                container.innerHTML = '<div class="mb-6 flex justify-between items-end">'
+                    + '<div><h2 class="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">'
+                    + '📚 Bibliothèque Virtuelle</h2>'
+                    + '<p class="text-gray-400 text-sm mt-1">Gérez le catalogue des ouvrages accessibles en mode lecture sécurisée.</p></div>'
+                    + '<button onclick="window._bibliothequeAddDoc()" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition">+ Ajouter un document</button>'
+                    + '</div>'
+                    + '<div class="glass-panel p-6 rounded-3xl border border-white/10">'
+                    + '<h3 class="font-black text-lg mb-6 text-white">📋 Catalogue des Documents (' + docs.length + ')</h3>'
+                    + '<div class="overflow-x-auto"><table class="w-full text-sm">'
+                    + '<thead><tr class="border-b border-white/10 text-gray-400 text-xs uppercase">'
+                    + '<th class="px-4 py-3 text-left">Titre</th><th class="px-4 py-3 text-left">Auteur</th>'
+                    + '<th class="px-4 py-3 text-left">Catégorie</th><th class="px-4 py-3 text-left">Matière</th>'
+                    + '<th class="px-4 py-3 text-left">Permissions</th><th class="px-4 py-3 text-left">Actions</th>'
+                    + '</thead><tbody>' + (rows || '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Aucun document dans le catalogue.</td></tr>') + '</tbody>'
+                    + '</table></div></div>';
+
+                window._bibliothequeAddDoc = function() {
+                    var titre = prompt('Titre du nouveau document :');
+                    if (!titre) return;
+                    var d = { id: 'doc_' + Date.now(), titre: titre, auteur: 'Admin', categorie: 'Général', matiere: 'Divers',
+                        url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                        permissions: 'Tout le monde', date: new Date().toISOString() };
+                    var current = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+                    current.push(d);
+                    localStorage.setItem('hr_bibliotheque_db', JSON.stringify(current));
+                    renderBibliothequeInline();
+                };
+
+                if (window.lucide) lucide.createIcons();
+            }
+
+            // Interception des clics Bibliothèque
+            document.addEventListener('DOMContentLoaded', function() {
+                document.addEventListener('click', function(e) {
+                    var el = e.target.closest('[data-target="bibliotheque"]');
+                    if (el) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Mettre à jour les nav items
+                        document.querySelectorAll('.nav-item').forEach(function(n) {
+                            n.classList.toggle('active', n.dataset && n.dataset.target === 'bibliotheque');
+                        });
+                        renderBibliothequeInline();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                }, true); // capture=true pour intercepter avant le module
+            });
+        })();
+    </script>
+    <!-- ===== FIN SCRIPT INLINE BIBLIOTHÈQUE ===== -->
+
     <script>
         // Initialize Lucide icons
         if (window.lucide) lucide.createIcons();
