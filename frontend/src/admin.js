@@ -4629,7 +4629,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // RENDER: BIBLIOTHÈQUE VIRTUELLE
     // ==========================================
-    window.renderBibliotheque = function() {
+    function renderBibliotheque() {
+        window.renderBibliotheque = renderBibliotheque;
         if (!ui.content) return;
         
         // Initialize mock DB if empty
