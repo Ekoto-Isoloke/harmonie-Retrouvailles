@@ -5,10 +5,10 @@ import './style.css';
 // ETAT GLOBAL (Mocked Database in LocalStorage)
 // ==========================================
 // DB VERSION: Increment this to force a reset on user browsers
-const DB_VERSION = 40;
+const DB_VERSION = 41;
 
 const defaultData = {
-    version: 40,
+    version: 41,
     ecoleActive: 'Harmonie',
     institutions: {
         Harmonie: {
@@ -54,10 +54,7 @@ const defaultData = {
         }
     },
     rh: {
-        comptes: [
-            { id: 1, nom: 'KASOMBO', prenom: 'Paul', role: 'Directeur (D.P)', statut: 'Actif', ecole: 'Harmonie', email: 'kasombo@retrouvailles.cd', classes: [], login: 'P.KASOMBO' },
-            { id: 2, nom: 'MATUNGULU', prenom: 'Alain', role: 'Préfet', statut: 'Actif', ecole: 'Retrouvailles', email: 'matungulu@retrouvailles.cd', classes: [], login: 'A.MATUNGULU' }
-        ],
+        comptes: [],
         pointages: [],
         journalDirection: []
     },
@@ -70,6 +67,16 @@ try {
     if (!db.version || db.version < DB_VERSION) { db = defaultData; localStorage.setItem('admin_db', JSON.stringify(db)); }
 } catch (e) { db = defaultData; }
 const saveDb = () => localStorage.setItem('admin_db', JSON.stringify(db));
+
+// Purge automatique des anciens comptes fictifs de test (ex: kasombo@retrouvailles.cd, matungulu@retrouvailles.cd)
+try {
+    const dummyEmails = ['kasombo@retrouvailles.cd', 'matungulu@retrouvailles.cd', 'enseignant@retrouvailles.cd', 'compta@retrouvailles.cd', 'parent@retrouvailles.cd'];
+    let hrUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+    let cleaned = hrUsers.filter(u => !dummyEmails.includes((u.email || '').toLowerCase().trim()));
+    if (cleaned.length !== hrUsers.length) {
+        localStorage.setItem('hr_users_db_v2', JSON.stringify(cleaned));
+    }
+} catch (e) {}
 
 // ==========================================
 // CORE APP
@@ -328,12 +335,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const remoteUsers = await res.json();
             if (!Array.isArray(remoteUsers) || remoteUsers.length === 0) return;
 
+            const dummyEmails = ['kasombo@retrouvailles.cd', 'matungulu@retrouvailles.cd', 'enseignant@retrouvailles.cd', 'compta@retrouvailles.cd', 'parent@retrouvailles.cd'];
             let localDb = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+            // Filtrer les comptes fictifs résiduels
+            localDb = localDb.filter(lu => !dummyEmails.includes((lu.email || '').toLowerCase().trim()));
+
             let newlyAddedCount = 0;
             let lastNewUser = null;
 
             remoteUsers.forEach(ru => {
                 const cleanEmail = (ru.email || '').toLowerCase().trim();
+                if (!cleanEmail || dummyEmails.includes(cleanEmail)) return; // Ignorer les emails fictifs
+                const realPwd = ru.password || ru.mot_de_passe || '123456';
                 const existingIdx = localDb.findIndex(lu => (lu.email || '').toLowerCase().trim() === cleanEmail);
                 if (existingIdx === -1) {
                     // Nouvel utilisateur venant du serveur distant (créé sur téléphone ou autre poste)
@@ -345,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         role: ru.role || 'Enseignant',
                         ecole: ru.ecole || 'Retrouvailles',
                         phone: ru.telephone || '',
-                        password: ru.password || ru.mot_de_passe || '123456',
+                        password: realPwd,
                         statut: ru.statut || 'Actif',
                         created_at: ru.created_at || new Date().toISOString(),
                         faceDescriptor: null,
@@ -354,16 +367,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     newlyAddedCount++;
                     lastNewUser = ru;
                 } else {
-                    // Mettre à jour les champs si nécessaire
+                    // Mettre à jour les champs y compris le vrai mot de passe et l'école
                     localDb[existingIdx].role = ru.role || localDb[existingIdx].role;
                     localDb[existingIdx].ecole = ru.ecole || localDb[existingIdx].ecole;
                     localDb[existingIdx].nom = ru.nom || localDb[existingIdx].nom;
                     localDb[existingIdx].prenom = ru.prenom || localDb[existingIdx].prenom;
                     if (ru.telephone) localDb[existingIdx].phone = ru.telephone;
+                    if (ru.password || ru.mot_de_passe) localDb[existingIdx].password = ru.password || ru.mot_de_passe;
+                    if (ru.statut) localDb[existingIdx].statut = ru.statut;
                 }
             });
 
             localStorage.setItem('hr_users_db_v2', JSON.stringify(localDb));
+
+            // Synchroniser également db.rh.comptes avec les vrais utilisateurs
+            if (db && db.rh) {
+                db.rh.comptes = localDb.map(u => ({
+                    id: u.id,
+                    nom: u.nom || '',
+                    prenom: u.prenom || '',
+                    role: u.role || 'Personnel',
+                    statut: u.statut || 'Actif',
+                    ecole: u.ecole || 'Retrouvailles',
+                    email: u.email || '',
+                    classes: u.classes || [],
+                    login: u.login || ((u.prenom && u.nom) ? (u.prenom[0] + '.' + u.nom).toUpperCase() : (u.email || '').split('@')[0])
+                }));
+                saveDb();
+            }
 
             if (!silent && newlyAddedCount > 0 && lastNewUser) {
                 // Allumer le badge visuel sur Gestion des Comptes
@@ -478,7 +509,8 @@ document.addEventListener('DOMContentLoaded', () => {
             : 0;
         const totalElev = harmonie.pedagogie.eleves.length + retro.pedagogie.eleves.length;
         const totalClasses = harmonie.pedagogie.classes.length + retro.pedagogie.classes.length;
-        const totalComptes = db.rh.comptes.length;
+        const localHrUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+        const totalComptes = localHrUsers.length || db.rh.comptes.length;
         const today     = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
 
         ui.content.innerHTML = `
@@ -1043,6 +1075,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedEco = window.selectedEcoleRapport;
         const isSuperAdminRole = user && user.role === 'Super-Admin';
 
+        // Directeurs et préfets dynamiques issus de la vraie base de données
+        const allRegisteredUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+        const dpHarmonie = allRegisteredUsers.find(u => (u.role === 'DP' || u.role === 'Directeur' || u.role === 'Direction') && (u.ecole === 'Harmonie' || u.ecole === 'Harmonie-Retrouvailles'));
+        const prefRetrouvailles = allRegisteredUsers.find(u => (u.role === 'Préfet' || u.role === 'Direction') && (u.ecole === 'Retrouvailles' || u.ecole === 'Harmonie-Retrouvailles'));
+        const nomDPHarmonie = dpHarmonie ? `Directeur (D.P) ${dpHarmonie.prenom} ${dpHarmonie.nom}` : 'Directeur (D.P)';
+        const nomPrefRetrouvailles = prefRetrouvailles ? `Préfet des Études ${prefRetrouvailles.prenom} ${prefRetrouvailles.nom}` : 'Préfet des Études';
+
         // Rapports en attente pour le Super-Admin
         const pendingReports = reports.filter(r => r.status === 'submitted');
         
@@ -1139,7 +1178,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             
                             <div class="mt-4 p-3.5 rounded-xl bg-white/5 border border-white/5 space-y-1">
                                 <p class="text-xs text-gray-300">
-                                    Direction Locale : <strong class="text-white">Directeur (D.P) KASOMBO Paul</strong>
+                                    Direction Locale : <strong class="text-white">${nomDPHarmonie}</strong>
                                 </p>
                                 <p class="text-[11px] text-gray-400">
                                     ${harRep ? `Dernier rapport : <strong class="text-emerald-400">${harRep.date}</strong> • Statut : <strong class="text-emerald-300">Approuvé</strong>` : 'En attente de la rentrée et des inscriptions'}
@@ -1185,7 +1224,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             <div class="mt-4 p-3.5 rounded-xl bg-white/5 border border-white/5 space-y-1">
                                 <p class="text-xs text-gray-300">
-                                    Direction Locale : <strong class="text-white">Préfet des Études MATUNGULU Alain</strong>
+                                    Direction Locale : <strong class="text-white">${nomPrefRetrouvailles}</strong>
                                 </p>
                                 <p class="text-[11px] text-gray-400">
                                     ${retRep ? `Dernier rapport : <strong class="text-purple-400">${retRep.date}</strong> • Statut : <strong class="text-purple-300">Approuvé</strong>` : 'En attente de la rentrée et des inscriptions'}
@@ -1447,7 +1486,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="text-xs text-gray-400 max-w-lg mx-auto leading-relaxed">
                         Le système officiel est prêt et sécurisé avec la base de données <strong>Neon BD</strong>.
                         <br><br>
-                        <span class="text-amber-300 font-bold">En attente de la rentrée scolaire, des inscriptions officielles des enfants et de l'envoi du premier rapport officiel par la Direction (${selectedEco === 'Harmonie' ? 'Directeur D.P KASOMBO Paul' : 'Préfet des Études MATUNGULU Alain'}).</span>
+                        <span class="text-amber-300 font-bold">En attente de la rentrée scolaire, des inscriptions officielles des enfants et de l'envoi du premier rapport officiel par la Direction (${selectedEco === 'Harmonie' ? nomDPHarmonie : nomPrefRetrouvailles}).</span>
                     </p>
                 </div>
             `}
@@ -1863,7 +1902,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderRH() {
-        const allComptes = db.rh.comptes.filter(c => c.ecole === db.ecoleActive);
+        const dummyEmails = ['kasombo@retrouvailles.cd', 'matungulu@retrouvailles.cd', 'enseignant@retrouvailles.cd', 'compta@retrouvailles.cd', 'parent@retrouvailles.cd'];
+        let hrUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+        hrUsers = hrUsers.filter(u => !dummyEmails.includes((u.email || '').toLowerCase().trim()));
+
+        // Mettre à jour db.rh.comptes pour refléter les vrais comptes
+        db.rh.comptes = hrUsers.map(u => ({
+            id: u.id,
+            nom: u.nom || '',
+            prenom: u.prenom || '',
+            role: u.role || 'Personnel',
+            statut: u.statut || 'Actif',
+            ecole: u.ecole || 'Retrouvailles',
+            email: u.email || '',
+            password: u.password || u.mot_de_passe || '',
+            classes: u.classes || [],
+            login: u.login || ((u.prenom && u.nom) ? (u.prenom[0] + '.' + u.nom).toUpperCase() : (u.email || '').split('@')[0])
+        }));
+        saveDb();
+
+        const allComptes = db.rh.comptes.filter(c => c.ecole === db.ecoleActive || c.ecole === 'Harmonie-Retrouvailles' || c.role === 'Super-Admin');
         const allPointages = db.rh.pointages.filter(p => p.ecole === db.ecoleActive);
         const inst = db.institutions[db.ecoleActive];
         const allClasses = inst.pedagogie.classes;
@@ -2261,11 +2319,18 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         window.toggleStatut = function(id) {
+            let hrUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+            const user = hrUsers.find(u => u.id === id);
+            if (user) {
+                user.statut = user.statut === 'Actif' ? 'Inactif' : 'Actif';
+                localStorage.setItem('hr_users_db_v2', JSON.stringify(hrUsers));
+            }
             const compte = db.rh.comptes.find(c => c.id === id);
             if (compte) {
                 compte.statut = compte.statut === 'Actif' ? 'Inactif' : 'Actif';
-                saveDb(); renderRH();
+                saveDb();
             }
+            renderRH();
         };
 
         window.printRHReport = function() {
@@ -2291,16 +2356,44 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 500);
         };
 
-        window.createCompte = function(e) {
+        window.createCompte = async function(e) {
             e.preventDefault();
             const prenom = document.getElementById('new-prenom').value;
             const nom = document.getElementById('new-nom').value;
-            const email = document.getElementById('new-email').value;
+            const email = (document.getElementById('new-email').value || '').toLowerCase().trim();
             const role = document.getElementById('new-role').value;
             const ecole = document.getElementById('new-ecole').value;
-            const newId = Math.max(...db.rh.comptes.map(c => c.id)) + 1;
+            const newId = Date.now() + Math.floor(Math.random() * 1000);
             const login = prenom[0].toUpperCase() + '.' + nom.toUpperCase();
-            db.rh.comptes.push({ id: newId, nom, prenom, role, statut: 'Actif', ecole: ecole, email, classes: [], login });
+
+            // Enregistrement dans hr_users_db_v2
+            let hrUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+            hrUsers.unshift({
+                id: newId,
+                nom,
+                prenom,
+                email,
+                role,
+                ecole,
+                statut: 'Actif',
+                password: '123',
+                login,
+                classes: [],
+                phone: '',
+                faceDescriptor: null
+            });
+            localStorage.setItem('hr_users_db_v2', JSON.stringify(hrUsers));
+
+            // Sync API Neon
+            try {
+                await fetch('/api/utilisateurs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nom, prenom, email, role, ecole, password: '123' })
+                });
+            } catch (err) {}
+
+            db.rh.comptes.unshift({ id: newId, nom, prenom, role, statut: 'Actif', ecole: ecole, email, classes: [], login, password: '123' });
             saveDb();
             document.getElementById('modal-create-compte').classList.add('hidden');
             renderRH();

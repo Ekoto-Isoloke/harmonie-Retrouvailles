@@ -58,7 +58,7 @@ module.exports = async (req, res) => {
 
     if (req.method === 'GET') {
       const rows = await sql`
-        SELECT id, nom, prenom, email, role, ecole, telephone, statut, created_at 
+        SELECT id, nom, prenom, email, password, mot_de_passe, role, ecole, telephone, statut, created_at 
         FROM utilisateurs 
         ORDER BY created_at DESC
       `;
