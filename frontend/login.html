@@ -1068,13 +1068,18 @@
       db.push(newUser);
       localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
 
-      // Synchronisation cross-device: sauvegarder le nouveau compte dans le registre cloud
-      let cloudDB = JSON.parse(localStorage.getItem('hr_cloud_accounts')) || [];
-      if (!cloudDB.some(u => u.email.toLowerCase() === newUser.email.toLowerCase())) {
-        cloudDB.push(newUser);
-        localStorage.setItem('hr_cloud_accounts', JSON.stringify(cloudDB));
+      // Synchronisation en temps réel avec le serveur PostgreSQL pour avertir l'administrateur
+      try {
+        fetch('/api/utilisateurs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newUser)
+        }).catch(err => console.warn('Sync cloud user err:', err));
+      } catch(apiErr) {
+        console.warn('API sync warning:', apiErr);
       }
 
+      // Sauvegarde de session
       localStorage.setItem('hr_user', JSON.stringify(newUser));
       localStorage.setItem('hr_token', 'token_reg_2026');
 
@@ -1082,7 +1087,7 @@
 
       setTimeout(() => {
         window.location.href = getDashboardRoute(role);
-      }, 1200);
+      }, 1000);
     }
 
     // =================================================================

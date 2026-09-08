@@ -208,6 +208,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 n.classList.remove('active');
             }
         });
+
+        // Si l'admin consulte la gestion des comptes, réinitialiser le badge de notification
+        if (viewName === 'gestion-comptes') {
+            const b = document.getElementById('badge-comptes-signal');
+            if (b) b.classList.add('hidden');
+            const dot = document.getElementById('notif-signal-dot');
+            if (dot) dot.classList.add('hidden');
+            const badge = document.getElementById('notif-signal-badge');
+            if (badge) { badge.classList.add('hidden'); badge.textContent = '0'; }
+        }
+
         renderView();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -232,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window._adminBiblioView = renderBibliotheque;
     window.renderBibliotheque = renderBibliotheque;
     initInstitutionalSwitcher();
+    initLiveActivityFeed();
 
     function initInstitutionalSwitcher() {
         const btnH = document.getElementById('switch-harmonie');
@@ -246,6 +258,210 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnR) btnR.onclick = () => { db.ecoleActive = 'Retrouvailles'; saveDb(); updateHeader(); renderView(); };
         updateHeader();
     }
+
+    // ==========================================
+    // MODULE TEMPS RÉEL : LIVE FEED & SIGNAUX DES INSCRIPTIONS (NEON DB)
+    // ==========================================
+    let _lastKnownUsersCount = null;
+    let _notifAudio = null;
+
+    function playNotificationChime() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+            osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.4);
+        } catch (e) {}
+    }
+
+    function showAdminSignalToast(titre, message) {
+        let container = document.getElementById('admin-signal-toasts-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'admin-signal-toasts-container';
+            container.className = 'fixed top-24 right-6 z-50 flex flex-col gap-3 pointer-events-none max-w-sm w-full';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'pointer-events-auto bg-[#0a192f]/95 border border-emerald-500/50 shadow-[0_15px_40px_rgba(16,185,129,0.3)] rounded-2xl p-4 text-white flex items-start gap-3 backdrop-blur-xl animate-bounce';
+        toast.innerHTML = `
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 text-lg">
+                🔔
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-black uppercase tracking-wider text-emerald-400">${titre}</p>
+                <p class="text-xs text-gray-200 mt-0.5 font-medium leading-relaxed">${message}</p>
+                <button onclick="window.switchAdminView('gestion-comptes', event)" class="mt-2 text-[11px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer">
+                    Voir dans Gestion des Comptes →
+                </button>
+            </div>
+            <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-white p-1 text-sm">✕</button>
+        `;
+
+        container.appendChild(toast);
+        playNotificationChime();
+
+        setTimeout(() => {
+            if (toast && toast.parentElement) {
+                toast.classList.remove('animate-bounce');
+                toast.style.transition = 'all 0.5s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(20px)';
+                setTimeout(() => toast.remove(), 500);
+            }
+        }, 8000);
+    }
+
+    async function syncRemoteUsersWithLocal(silent = false) {
+        try {
+            const res = await fetch('/api/utilisateurs');
+            if (!res.ok) return;
+            const remoteUsers = await res.json();
+            if (!Array.isArray(remoteUsers) || remoteUsers.length === 0) return;
+
+            let localDb = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+            let newlyAddedCount = 0;
+            let lastNewUser = null;
+
+            remoteUsers.forEach(ru => {
+                const cleanEmail = (ru.email || '').toLowerCase().trim();
+                const existingIdx = localDb.findIndex(lu => (lu.email || '').toLowerCase().trim() === cleanEmail);
+                if (existingIdx === -1) {
+                    // Nouvel utilisateur venant du serveur distant (créé sur téléphone ou autre poste)
+                    localDb.unshift({
+                        id: ru.id || Date.now() + Math.floor(Math.random() * 1000),
+                        nom: ru.nom,
+                        prenom: ru.prenom || '',
+                        email: cleanEmail,
+                        role: ru.role || 'Enseignant',
+                        ecole: ru.ecole || 'Retrouvailles',
+                        phone: ru.telephone || '',
+                        password: ru.password || ru.mot_de_passe || '123456',
+                        statut: ru.statut || 'Actif',
+                        created_at: ru.created_at || new Date().toISOString(),
+                        faceDescriptor: null,
+                        biometric: false
+                    });
+                    newlyAddedCount++;
+                    lastNewUser = ru;
+                } else {
+                    // Mettre à jour les champs si nécessaire
+                    localDb[existingIdx].role = ru.role || localDb[existingIdx].role;
+                    localDb[existingIdx].ecole = ru.ecole || localDb[existingIdx].ecole;
+                    localDb[existingIdx].nom = ru.nom || localDb[existingIdx].nom;
+                    localDb[existingIdx].prenom = ru.prenom || localDb[existingIdx].prenom;
+                    if (ru.telephone) localDb[existingIdx].phone = ru.telephone;
+                }
+            });
+
+            localStorage.setItem('hr_users_db_v2', JSON.stringify(localDb));
+
+            if (!silent && newlyAddedCount > 0 && lastNewUser) {
+                // Allumer le badge visuel sur Gestion des Comptes
+                const b = document.getElementById('badge-comptes-signal');
+                if (b) {
+                    b.classList.remove('hidden');
+                    b.textContent = `+${newlyAddedCount} Nouveau${newlyAddedCount > 1 ? 'x' : ''}`;
+                }
+
+                // Allumer la cloche de notification
+                const dot = document.getElementById('notif-signal-dot');
+                if (dot) dot.classList.remove('hidden');
+                const badge = document.getElementById('notif-signal-badge');
+                if (badge) {
+                    badge.classList.remove('hidden');
+                    badge.textContent = `${newlyAddedCount}`;
+                }
+
+                showAdminSignalToast(
+                    "Nouveau Compte Enregistré !",
+                    `${lastNewUser.prenom || ''} ${lastNewUser.nom} s'est inscrit en tant que [${lastNewUser.role}] (${lastNewUser.ecole || 'Harmonie & Retrouvailles'}).`
+                );
+
+                // Si l'administrateur a actuellement la vue 'gestion-comptes' sous les yeux, re-rendre immédiatement
+                if (currentView === 'gestion-comptes') {
+                    renderGestionComptes(true);
+                }
+            }
+
+            _lastKnownUsersCount = localDb.length;
+        } catch (e) {
+            console.debug('Sync utilisateurs Neon:', e);
+        }
+    }
+
+    async function refreshLiveActivityFeed() {
+        const feedContainer = document.getElementById('live-feed');
+        if (!feedContainer) return;
+
+        try {
+            const res = await fetch('/api/utilisateurs?feed=1');
+            if (!res.ok) return;
+            const items = await res.json();
+            if (!Array.isArray(items) || items.length === 0) {
+                feedContainer.innerHTML = `
+                    <div class="text-[11px] text-gray-500 py-3 text-center italic">
+                        Aucune activité récente.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            items.slice(0, 8).forEach(item => {
+                let badgeBg = 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+                let icon = '👤';
+                if (item.type === 'NOUVEAU_COMPTE') {
+                    badgeBg = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+                    icon = item.role && item.role.includes('Directeur') ? '👔' : '✨';
+                }
+
+                const timeStr = item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Maintenant';
+
+                html += `
+                    <div class="p-2.5 rounded-xl bg-white/5 border border-white/5 hover:border-emerald-500/30 transition flex items-start gap-2.5">
+                        <div class="w-7 h-7 rounded-lg ${badgeBg} border flex items-center justify-center shrink-0 text-xs">
+                            ${icon}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-1">
+                                <span class="text-[10px] font-black uppercase text-emerald-400 truncate">${item.role || 'Compte'}</span>
+                                <span class="text-[9px] text-gray-400 font-mono shrink-0">${timeStr}</span>
+                            </div>
+                            <p class="text-xs font-bold text-white truncate mt-0.5">${item.auteur || item.titre}</p>
+                            <p class="text-[10px] text-gray-400 truncate">${item.ecole || 'Harmonie & Retrouvailles'}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            feedContainer.innerHTML = html;
+        } catch (e) {
+            console.debug('Erreur live feed:', e);
+        }
+    }
+
+    function initLiveActivityFeed() {
+        // 1ère synchronisation immédiate au chargement du dashboard
+        syncRemoteUsersWithLocal(true);
+        refreshLiveActivityFeed();
+
+        // Polling temps réel toutes les 10 secondes pour détecter les inscriptions mobiles
+        setInterval(() => {
+            syncRemoteUsersWithLocal(false);
+            refreshLiveActivityFeed();
+        }, 10000);
+    }
+    window.refreshRemoteUsers = () => syncRemoteUsersWithLocal(false);
 
     // ==========================================
     // RENDER: DIRECTION GÉNÉRALE COCKPIT
@@ -3025,7 +3241,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // VUE: GESTION DES COMPTES (SUPER-ADMIN SUPRÊME)
     // ==========================================
-    function renderGestionComptes() {
+    function renderGestionComptes(fromSync = false) {
+        if (!fromSync) {
+            // Synchroniser en arrière-plan depuis Neon DB pour récupérer les nouveaux inscrits (ex: DP sur téléphone)
+            syncRemoteUsersWithLocal(true).then(() => {
+                if (currentView === 'gestion-comptes') {
+                    renderGestionComptes(true);
+                }
+            }).catch(() => {});
+        }
+
         let db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
         
         // Assurer la présence permanente du Super-Admin s'il n'existe pas encore
@@ -3167,8 +3392,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
             document.getElementById('user-edit-modal')?.remove();
+
+            // Synchroniser avec Neon DB
+            try {
+                fetch('/api/utilisateurs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(u)
+                }).catch(() => {});
+            } catch (e) {}
+
             showNotification('Compte mis à jour avec succès', 'success');
-            renderGestionComptes();
+            renderGestionComptes(true);
         };
 
         // Action: Réinitialiser l'empreinte faciale
@@ -3180,7 +3415,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 u.biometric = false;
                 localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
                 showNotification(`Empreinte réinitialisée pour ${u.prenom} ${u.nom}.`, 'info');
-                renderGestionComptes();
+                renderGestionComptes(true);
             }
         };
 
@@ -3195,8 +3430,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (confirm(`⚠️ Confirmation de suppression : Êtes-vous sûr de vouloir supprimer définitivement le compte de ${u.prenom} ${u.nom} (${u.email}) ?`)) {
                 db = db.filter(x => x.id != id);
                 localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+
+                // Supprimer sur Neon DB
+                try {
+                    fetch(`/api/utilisateurs?email=${encodeURIComponent(u.email)}`, { method: 'DELETE' }).catch(() => {});
+                } catch (e) {}
+
                 showNotification(`Compte de ${u.prenom} ${u.nom} supprimé avec succès.`, 'success');
-                renderGestionComptes();
+                renderGestionComptes(true);
             }
         };
 
@@ -3331,8 +3572,18 @@ document.addEventListener('DOMContentLoaded', () => {
             db.push(newUser);
             localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
             document.getElementById('user-create-modal')?.remove();
+
+            // Synchroniser avec Neon DB
+            try {
+                fetch('/api/utilisateurs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newUser)
+                }).catch(() => {});
+            } catch (e) {}
+
             showNotification(`Compte créé pour ${newUser.prenom} ${newUser.nom} (${newUser.role})`, 'success');
-            renderGestionComptes();
+            renderGestionComptes(true);
         };
 
         // Table Rows HTML
@@ -3428,6 +3679,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="flex items-center gap-2.5">
+                    <button onclick="window.refreshRemoteUsers().then(() => renderGestionComptes(true))" title="Synchroniser immédiatement avec la base centrale" class="px-4 py-2.5 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 text-xs font-bold flex items-center gap-2 transition shadow-lg shadow-blue-500/10">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 text-blue-400"></i>
+                        Synchroniser
+                    </button>
                     <button onclick="cleanupDummyAccounts()" class="px-4 py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 text-xs font-bold flex items-center gap-2 transition shadow-lg shadow-red-500/10">
                         <i data-lucide="trash" class="w-4 h-4 text-red-400"></i>
                         Purger Comptes Fictifs

@@ -242,10 +242,13 @@
                 <span class="font-bold text-amber-400">Suivi Direction</span>
             </a>
 
-            <a href="#" data-target="gestion-comptes"
-                class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 dark:text-gray-300 hover:bg-[#112240]/50 dark:hover:bg-gray-700 transition-colors mt-1">
-                <i data-lucide="user-cog" class="w-5 h-5 text-blue-400"></i>
-                <span class="font-bold text-blue-400">Gestion des Comptes</span>
+            <a href="#" data-target="gestion-comptes" onclick="window.switchAdminView('gestion-comptes', event)"
+                class="nav-item flex items-center justify-between px-4 py-3 rounded-lg text-gray-300 dark:text-gray-300 hover:bg-[#112240]/50 dark:hover:bg-gray-700 transition-colors mt-1">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="user-cog" class="w-5 h-5 text-blue-400"></i>
+                    <span class="font-bold text-blue-400">Gestion des Comptes</span>
+                </div>
+                <span id="badge-comptes-signal" class="hidden px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse">Nouveau</span>
             </a>
 
             <a href="#" data-target="classe-virtuelle"
@@ -386,10 +389,11 @@
                 </button>
 
                 <!-- Notifications -->
-                <button title="Notifications" aria-label="Notifications"
-                    class="relative p-2 rounded-full hover:bg-white/10 dark:hover:bg-gray-700 text-gray-400 transition-colors">
+                <button id="btn-admin-notifications" onclick="window.switchAdminView('gestion-comptes', event)" title="Notifications & Nouveaux Comptes" aria-label="Notifications"
+                    class="relative p-2 rounded-full hover:bg-white/10 dark:hover:bg-gray-700 text-gray-400 hover:text-white transition-colors cursor-pointer">
                     <i data-lucide="bell" class="w-5 h-5"></i>
-                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                    <span id="notif-signal-dot" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white animate-ping"></span>
+                    <span id="notif-signal-badge" class="hidden absolute -top-1 -right-1 px-1.5 py-0.2 bg-red-500 text-[9px] font-black text-white rounded-full border border-[#0A192F]">0</span>
                 </button>
             </div>
         </header>
