@@ -70,8 +70,11 @@
       <div class="sidebar-link" onclick="showView('visio')">
         <i data-lucide="video" class="w-5 h-5"></i> Classe Virtuelle
       </div>
+      <div class="sidebar-link" onclick="showView('bibliotheque')">
+        <i data-lucide="library" class="w-5 h-5"></i> Bibliothèque
+      </div>
       <div class="sidebar-link" onclick="showView('messagerie')">
-        <i data-lucide="message-circle" class="w-5 h-5"></i> Messagerie Direction
+        <i data-lucide="message-square" class="w-5 h-5"></i> Messagerie Direction
         <span class="ml-auto bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">2</span>
       </div>
     </nav>
@@ -150,7 +153,7 @@
     function setActiveLink(viewName) {
       document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
       const links = document.querySelectorAll('.sidebar-link');
-      const map = { accueil:0, presences:1, cahier:2, notes:3, planning:4, visio:5, messagerie:6 };
+      const map = { accueil:0, presences:1, cahier:2, notes:3, planning:4, visio:5, bibliotheque:6, messagerie:7 };
       if (links[map[viewName]]) links[map[viewName]].classList.add('active');
     }
 
@@ -164,6 +167,7 @@
         case 'notes': c.innerHTML = viewNotes(); break;
         case 'planning': c.innerHTML = viewPlanning(); break;
         case 'visio': c.innerHTML = viewVisio(); setTimeout(initVirtualClassTeacher, 300); break;
+        case 'bibliotheque': c.innerHTML = viewBibliotheque(); break;
         case 'messagerie': c.innerHTML = viewMessagerie(); break;
       }
       if (window.lucide) lucide.createIcons();
@@ -833,6 +837,40 @@
       }
       clearInterval(vcTimer);
       showView('visio'); // Reset view
+    }
+
+    function viewBibliotheque() {
+      const docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+      return `
+        <div class="kpi-card mb-8">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+              <i data-lucide="library" class="w-6 h-6 text-indigo-400"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-black">Bibliothèque Virtuelle</h3>
+              <p class="text-xs text-gray-400">Consultez vos manuels scolaires et guides pédagogiques en mode lecture sécurisée.</p>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            ${docs.map(d => `
+              <div class="glass p-5 rounded-2xl flex flex-col h-full border border-white/10 hover:border-indigo-500/40 transition group cursor-pointer relative overflow-hidden" onclick="window.open('/lecteur.html?id=${d.id}', '_blank')">
+                <div class="flex justify-between items-start mb-4 relative z-10">
+                  <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase rounded-lg border border-indigo-500/20">${d.categorie}</span>
+                  <i data-lucide="book-open" class="w-5 h-5 text-gray-500 group-hover:text-indigo-400 transition"></i>
+                </div>
+                <h4 class="font-bold text-sm mb-1 group-hover:text-white transition relative z-10">${d.titre}</h4>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest relative z-10">${d.matiere}</p>
+                <div class="mt-auto pt-4 relative z-10">
+                  <p class="text-xs text-gray-500">Par : ${d.auteur}</p>
+                </div>
+              </div>
+            `).join('')}
+            ${docs.length === 0 ? '<div class="col-span-full py-12 text-center text-gray-500 font-medium">Aucun document disponible dans la bibliothèque pour le moment.</div>' : ''}
+          </div>
+        </div>
+      `;
     }
 
     // Init — Affichage nom & rôle réel

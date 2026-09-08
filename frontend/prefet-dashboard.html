@@ -155,7 +155,8 @@
       { id: 'deliberation', label: 'Palmarès & Jurys Primaire', icon: 'scale' },
       { id: 'rapports_sur_ecole', label: 'Rapports Sur-École & D.D', icon: 'file-check' },
       { id: 'correspondances', label: 'Correspondances Sous-Division', icon: 'send' },
-      { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' }
+      { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' },
+      { id: 'bibliotheque', label: 'Bibliothèque Virtuelle', icon: 'library' }
     ];
 
     const navConfigs = {
@@ -166,7 +167,8 @@
         { id: 'deliberation', label: 'Jury Délibérations', icon: 'scale' },
         { id: 'rapports_de_dd', label: 'Rapports D.E & D.D', icon: 'file-check' },
         { id: 'correspondances', label: 'Correspondances EPST', icon: 'send' },
-        { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' }
+        { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' },
+        { id: 'bibliotheque', label: 'Bibliothèque Virtuelle', icon: 'library' }
       ],
       'D.P': dpNav,
       'Directeur (D.P)': dpNav,
@@ -177,7 +179,8 @@
         { id: 'horaires', label: 'Emplois du Temps Globaux', icon: 'calendar' },
         { id: 'previsions', label: 'Prévisions des Matières', icon: 'list-checks' },
         { id: 'inspections', label: 'Visites de Classes', icon: 'eye' },
-        { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' }
+        { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' },
+        { id: 'bibliotheque', label: 'Bibliothèque Virtuelle', icon: 'library' }
       ],
       'D.D': [
         { id: 'accueil', label: 'Contrôle Disciplinaire', icon: 'shield-alert' },
@@ -185,7 +188,8 @@
         { id: 'billets', label: 'Billets & Justifications', icon: 'ticket' },
         { id: 'convocations', label: 'Convocations Parents', icon: 'phone-call' },
         { id: 'rondes', label: 'Rapports de Rondes', icon: 'map' },
-        { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' }
+        { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' },
+        { id: 'bibliotheque', label: 'Bibliothèque Virtuelle', icon: 'library' }
       ],
       'Sur École': [
         { id: 'accueil', label: 'Surveillance Générale', icon: 'building-2' },
@@ -194,7 +198,8 @@
         { id: 'controle_preparations', label: 'Cahiers & Fiches', icon: 'file-text' },
         { id: 'recreations', label: 'Rondes Récréations', icon: 'bell' },
         { id: 'rapport_dp', label: 'Rapport au D.P', icon: 'send' },
-        { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' }
+        { id: 'classe_virtuelle', label: 'Classe Virtuelle', icon: 'video' },
+        { id: 'bibliotheque', label: 'Bibliothèque Virtuelle', icon: 'library' }
       ]
     };
 
@@ -262,6 +267,7 @@
         else if (currentView === 'rapports_de_dd') html += viewPrefetRapports();
         else if (currentView === 'correspondances') html += viewPrefetCorrespondances();
         else if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
+        else if (currentView === 'bibliotheque') html += viewBibliotheque();
       } else if (isDP || effectiveRole === 'D.P') {
         if (currentView === 'accueil') html += viewDPAccueil();
         else if (currentView === 'charge_horaire') html += viewDPChargeHoraire();
@@ -270,6 +276,7 @@
         else if (currentView === 'rapports_sur_ecole') html += viewDPRapports();
         else if (currentView === 'correspondances') html += viewDPCorrespondances();
         else if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
+        else if (currentView === 'bibliotheque') html += viewBibliotheque();
       } else if (effectiveRole === 'D.E') {
         if (currentView === 'accueil') html += viewDEAccueil();
         else if (currentView === 'affectations') html += viewDEAffectations();
@@ -277,6 +284,7 @@
         else if (currentView === 'previsions') html += viewDEPrevisions();
         else if (currentView === 'inspections') html += viewDEInspections();
         else if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
+        else if (currentView === 'bibliotheque') html += viewBibliotheque();
       } else if (effectiveRole === 'D.D') {
         if (currentView === 'accueil') html += viewDDAccueil();
         else if (currentView === 'incidents') html += viewDDIncidents();
@@ -284,6 +292,7 @@
         else if (currentView === 'convocations') html += viewDDConvocations();
         else if (currentView === 'rondes') html += viewDDRondes();
         else if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
+        else if (currentView === 'bibliotheque') html += viewBibliotheque();
       } else if (effectiveRole === 'Sur École') {
         if (currentView === 'accueil') html += viewSurEcoleAccueil();
         else if (currentView === 'affectations_primaire') html += viewSurEcoleAffectations();
@@ -292,9 +301,10 @@
         else if (currentView === 'recreations') html += viewSurEcoleRecreations();
         else if (currentView === 'rapport_dp') html += viewSurEcoleRapportDP();
         else if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
+        else if (currentView === 'bibliotheque') html += viewBibliotheque();
       } else {
         if (currentView === 'classe_virtuelle') html += viewVirtualClassPrefet();
-        else html += viewGenericDashboard();
+        else if (currentView === 'bibliotheque') html += viewBibliotheque();
       }
 
       main.innerHTML = html;
@@ -2374,6 +2384,48 @@ L'assiduité du corps enseignant a permis le maintien d'une cadence académique 
       printWin.document.close();
       printWin.focus();
       setTimeout(() => { printWin.print(); }, 500);
+    };
+
+    // ══════════════════════════════════════════════════════════════
+    // VUE: BIBLIOTHÈQUE VIRTUELLE
+    // ══════════════════════════════════════════════════════════════
+    window.viewBibliotheque = function() {
+      const docs = JSON.parse(localStorage.getItem('hr_bibliotheque_db')) || [];
+      // Filtrer éventuellement selon le rôle ou garder tout public pour l'instant
+      const allowedDocs = docs; 
+
+      let html = `
+        <div class="kpi-card mb-8">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+              <i data-lucide="library" class="w-6 h-6 text-indigo-400"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-black">Catalogue Virtuel</h3>
+              <p class="text-xs text-gray-400">Consultez les manuels, guides et ouvrages en mode lecture sécurisée.</p>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            ${allowedDocs.map(d => `
+              <div class="glass p-5 rounded-2xl flex flex-col h-full border border-white/10 hover:border-indigo-500/40 transition group cursor-pointer relative overflow-hidden" onclick="window.open('/lecteur.html?id=${d.id}', '_blank')">
+                <div class="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-900/40 opacity-0 group-hover:opacity-100 transition"></div>
+                <div class="flex justify-between items-start mb-4 relative z-10">
+                  <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase rounded-lg border border-indigo-500/20">${d.categorie}</span>
+                  <i data-lucide="book-open" class="w-5 h-5 text-gray-500 group-hover:text-indigo-400 transition"></i>
+                </div>
+                <h4 class="font-bold text-sm mb-1 group-hover:text-white transition relative z-10">${d.titre}</h4>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest relative z-10">${d.matiere}</p>
+                <div class="mt-auto pt-4 relative z-10">
+                  <p class="text-xs text-gray-500">Par : ${d.auteur}</p>
+                </div>
+              </div>
+            `).join('')}
+            ${allowedDocs.length === 0 ? '<div class="col-span-full py-12 text-center text-gray-500 font-medium">Le catalogue est actuellement vide.</div>' : ''}
+          </div>
+        </div>
+      `;
+      return html;
     };
 
     // Initialisation
