@@ -360,6 +360,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         phone: ru.telephone || '',
                         password: realPwd,
                         statut: ru.statut || 'Actif',
+                        autre_poste: ru.autre_poste || '',
+                        courses: ru.courses || '',
                         created_at: ru.created_at || new Date().toISOString(),
                         faceDescriptor: null,
                         biometric: false
@@ -375,6 +377,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (ru.telephone) localDb[existingIdx].phone = ru.telephone;
                     if (ru.password || ru.mot_de_passe) localDb[existingIdx].password = ru.password || ru.mot_de_passe;
                     if (ru.statut) localDb[existingIdx].statut = ru.statut;
+                    if (ru.autre_poste) localDb[existingIdx].autre_poste = ru.autre_poste;
+                    if (ru.courses) localDb[existingIdx].courses = ru.courses;
                 }
             });
 
@@ -413,9 +417,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     badge.textContent = `${newlyAddedCount}`;
                 }
 
+                const cumulInfo = (lastNewUser.autre_poste && lastNewUser.autre_poste !== 'Non (Poste unique)' && lastNewUser.autre_poste !== 'Non') ? ` — Cumul : ${lastNewUser.autre_poste}` : '';
                 showAdminSignalToast(
                     "Nouveau Compte Enregistré !",
-                    `${lastNewUser.prenom || ''} ${lastNewUser.nom} s'est inscrit en tant que [${lastNewUser.role}] (${lastNewUser.ecole || 'Harmonie & Retrouvailles'}).`
+                    `${lastNewUser.prenom || ''} ${lastNewUser.nom} s'est inscrit en tant que [${lastNewUser.role}] (${lastNewUser.ecole || 'Harmonie & Retrouvailles'})${cumulInfo}.`
                 );
 
                 // Si l'administrateur a actuellement la vue 'gestion-comptes' sous les yeux, re-rendre immédiatement
@@ -3727,6 +3732,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td class="py-4 px-4 text-xs font-mono text-gray-300">${u.email}</td>
                         <td class="py-4 px-4">
                             <span class="inline-block px-2.5 py-1 rounded-lg text-xs border ${roleBadge}">${u.role}</span>
+                            ${(u.autre_poste && u.autre_poste !== 'Non (Poste unique)' && u.autre_poste !== 'Non') ? `
+                                <div class="text-[10px] text-amber-300 font-bold bg-amber-500/15 border border-amber-500/30 rounded px-2 py-0.5 mt-1 flex items-center gap-1 w-fit">
+                                    <span>🏛️ Cumul :</span>
+                                    <span>${u.autre_poste}</span>
+                                </div>
+                            ` : ''}
                         </td>
                         <td class="py-4 px-4 text-xs font-medium text-gray-300">
                             <span class="px-2 py-0.5 rounded bg-white/5 border border-white/5">${u.ecole || 'Harmonie'}</span>
