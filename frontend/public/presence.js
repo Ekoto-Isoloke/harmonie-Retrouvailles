@@ -1,4 +1,4 @@
-﻿// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // presence.js — Système de Présence Biométrique (Flux 3 Étapes)
 // C.S. Harmonie & G.S. Retrouvailles — Kinshasa, RDC
 // ═══════════════════════════════════════════════════════════════
@@ -148,18 +148,51 @@ function injectPresenceAuthGate() {
     >
       📸 Capturer mon visage
     </button>
+    <img id="presence-capture-preview" src="" alt="Capture" style="display:none;width:70px;height:70px;border-radius:50%;object-fit:cover;border:2px solid #d97706;margin-top:0.6rem;" />
+    <div id="presence-retry-btn" style="display:none;margin-top:0.5rem;">
+      <button
+        onclick="retryPresenceCapture()"
+        style="padding:0.5rem 1.2rem;background:#fff7ed;color:#d97706;border:1.5px solid #fed7aa;border-radius:8px;font-size:0.82rem;cursor:pointer;font-weight:600;"
+      >
+        🔄 Réessayer la capture
+      </button>
+    </div>
     <button
       onclick="closePresenceModal()"
       style="margin-top:0.6rem;padding:0.5rem 1.2rem;background:transparent;color:#64748b;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.82rem;cursor:pointer;"
     >
       Annuler
     </button>
+
   `;
 
   // ── Étape C : Résultat ──
   const resultStep = document.createElement('div');
   resultStep.id = 'presence-result-step';
-  resultStep.style.cssText = 'display:none;flex-direction:column;align-items:center;padding:1.5rem;min-height:340px;justify-content:center;';
+  resultStep.style.cssText = 'display:none;flex-direction:column;align-items:center;padding:1.5rem;min-height:340px;justify-content:center;animation:presenceResultFadeIn 0.4s ease;';
+  resultStep.innerHTML = `
+    <div id="presence-result-greet" style="font-size:1.3rem;font-weight:800;color:#16a34a;margin-bottom:0.5rem;text-align:center;"></div>
+    <img
+      id="presence-result-photo"
+      src=""
+      alt="Photo"
+      style="display:none;width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid #16a34a;margin-bottom:0.8rem;"
+    />
+    <div id="presence-result-name" style="font-size:1.15rem;font-weight:700;color:#1e293b;margin-bottom:0.2rem;text-align:center;"></div>
+    <div id="presence-result-role" style="font-size:0.8rem;color:#64748b;margin-bottom:0.7rem;text-align:center;"></div>
+    <div id="presence-result-badge" style="margin-bottom:0.7rem;"></div>
+    <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.4rem;">
+      <span style="font-size:0.85rem;color:#374151;font-weight:600;">🕐</span>
+      <span id="presence-result-time" style="font-size:1rem;font-weight:700;color:#2563eb;"></span>
+    </div>
+    <div id="presence-result-score" style="font-size:0.72rem;color:#94a3b8;margin-bottom:1rem;"></div>
+    <button
+      onclick="closePresenceModal()"
+      style="padding:0.55rem 1.4rem;background:#f1f5f9;color:#374151;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.85rem;cursor:pointer;font-weight:600;"
+    >
+      Fermer
+    </button>
+  `;
 
   wrapper.appendChild(authGate);
   wrapper.appendChild(cameraStep);
