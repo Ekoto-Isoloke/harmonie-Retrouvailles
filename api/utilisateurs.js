@@ -32,14 +32,18 @@ module.exports = async (req, res) => {
         statut VARCHAR(50) DEFAULT 'Actif',
         autre_poste VARCHAR(255),
         courses VARCHAR(255),
+        photo_profil TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
 
-    // S'assurer que les colonnes autre_poste et courses existent sur les tables déjà créées
+    // S'assurer que les colonnes nécessaires existent sur les tables déjà créées
     try {
       await sql`ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS autre_poste VARCHAR(255)`;
       await sql`ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS courses VARCHAR(255)`;
+      await sql`ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS photo_profil TEXT`;
+      await sql`ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS face_data TEXT`;
+      await sql`ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS face_enrolled_at TIMESTAMP`;
     } catch(e) {}
 
     // 2. Table du journal des activités (Live Feed & Signaux Admin)
@@ -66,7 +70,7 @@ module.exports = async (req, res) => {
 
     if (req.method === 'GET') {
       const rows = await sql`
-        SELECT id, nom, prenom, email, password, mot_de_passe, role, ecole, telephone, statut, autre_poste, courses, created_at 
+        SELECT id, nom, prenom, email, password, mot_de_passe, role, ecole, telephone, statut, autre_poste, courses, photo_profil, face_data, face_enrolled_at, created_at 
         FROM utilisateurs 
         ORDER BY created_at DESC
       `;
@@ -74,7 +78,7 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'POST') {
-      const { nom, prenom, email, password, role, ecole, phone, telephone, autre_poste, autrePoste, courses } = req.body || {};
+      const { nom, prenom, email, password, role, ecole, phone, telephone, autre_poste, autrePoste, courses, photo_profil, face_data } = req.body || {};
       const cleanEmail = (email || '').toLowerCase().trim();
       const cleanNom = (nom || '').trim();
       const cleanPrenom = (prenom || '').trim();
@@ -84,6 +88,8 @@ module.exports = async (req, res) => {
       const rawPwd = password || '123456';
       const cleanAutrePoste = (autre_poste || autrePoste || '').trim();
       const cleanCourses = (courses || '').trim();
+      const cleanPhotoProfil = photo_profil || face_data || null;
+      const cleanFaceData = face_data || photo_profil || null;
 
       if (!cleanEmail || !cleanNom) {
         return res.status(400).json({ message: 'Email et Nom obligatoires' });
@@ -91,8 +97,8 @@ module.exports = async (req, res) => {
 
       // Insertion ou mise à jour de l'utilisateur
       const inserted = await sql`
-        INSERT INTO utilisateurs (nom, prenom, email, password, mot_de_passe, role, ecole, telephone, statut, autre_poste, courses)
-        VALUES (${cleanNom}, ${cleanPrenom}, ${cleanEmail}, ${rawPwd}, ${rawPwd}, ${cleanRole}, ${cleanEcole}, ${cleanPhone}, 'Actif', ${cleanAutrePoste}, ${cleanCourses})
+        INSERT INTO utilisateurs (nom, prenom, email, password, mot_de_passe, role, ecole, telephone, statut, autre_poste, courses, photo_profil, face_data, face_enrolled_at)
+        VALUES (${cleanNom}, ${cleanPrenom}, ${cleanEmail}, ${rawPwd}, ${rawPwd}, ${cleanRole}, ${cleanEcole}, ${cleanPhone}, 'Actif', ${cleanAutrePoste}, ${cleanCourses}, ${cleanPhotoProfil}, ${cleanFaceData}, ${cleanFaceData ? sql`NOW()` : null})
         ON CONFLICT (email) DO UPDATE SET
           nom = ${cleanNom},
           prenom = ${cleanPrenom},
@@ -102,8 +108,11 @@ module.exports = async (req, res) => {
           password = ${rawPwd},
           mot_de_passe = ${rawPwd},
           autre_poste = ${cleanAutrePoste},
-          courses = ${cleanCourses}
-        RETURNING id, nom, prenom, email, role, ecole, telephone, statut, autre_poste, courses, created_at
+          courses = ${cleanCourses},
+          photo_profil = COALESCE(${cleanPhotoProfil}, utilisateurs.photo_profil),
+          face_data = COALESCE(${cleanFaceData}, utilisateurs.face_data),
+          face_enrolled_at = COALESCE(utilisateurs.face_enrolled_at, ${cleanFaceData ? sql`NOW()` : null})
+        RETURNING id, nom, prenom, email, role, ecole, telephone, statut, autre_poste, courses, photo_profil, face_data, created_at
       `;
 
       // Enregistrement de l'événement dans le Live Feed pour avertir l'administrateur

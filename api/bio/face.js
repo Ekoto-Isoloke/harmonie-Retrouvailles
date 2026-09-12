@@ -19,15 +19,18 @@ module.exports = async (req, res) => {
     try {
       let rows;
       if (user_id) {
-        rows = await sql`SELECT id, nom, prenom, role, ecole, face_data, face_enrolled_at FROM utilisateurs WHERE id = ${user_id}`;
+        rows = await sql`SELECT id, nom, prenom, role, ecole, face_data, face_enrolled_at, photo_profil FROM utilisateurs WHERE id = ${user_id}`;
       } else {
-        rows = await sql`SELECT id, nom, prenom, role, ecole, face_data, face_enrolled_at FROM utilisateurs WHERE LOWER(email) = ${email.toLowerCase().trim()}`;
+        rows = await sql`SELECT id, nom, prenom, role, ecole, face_data, face_enrolled_at, photo_profil FROM utilisateurs WHERE LOWER(email) = ${email.toLowerCase().trim()}`;
       }
       if (rows.length === 0) return res.status(404).json({ message: 'Utilisateur introuvable' });
 
+      const finalFace = rows[0].face_data || rows[0].photo_profil || null;
+
       return res.status(200).json({
-        enrolled: !!rows[0].face_data,
-        face_data: rows[0].face_data || null,
+        enrolled: !!finalFace,
+        face_data: finalFace,
+        photo_profil: rows[0].photo_profil || finalFace,
         face_enrolled_at: rows[0].face_enrolled_at || null,
         user: {
           id: rows[0].id,

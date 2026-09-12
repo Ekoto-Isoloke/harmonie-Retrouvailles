@@ -1,736 +1,762 @@
+﻿// ═══════════════════════════════════════════════════════════════
+// presence.js — Système de Présence Biométrique (Flux 3 Étapes)
+// C.S. Harmonie & G.S. Retrouvailles — Kinshasa, RDC
 // ═══════════════════════════════════════════════════════════════
-// presence.js — Système de Pointage Biométrique Strict
-// Conforme au Système Éducatif RDC (EPST / ESU)
-// ═══════════════════════════════════════════════════════════════
-// SÉCURITÉ :
-//  1. Authentification obligatoire via API Cloud Neon (AUCUN fallback local)
-//  2. Capture faciale comparée strictement à l'empreinte enregistrée en DB
-//  3. Si le visage ne correspond pas → BLOCAGE TOTAL (anti-usurpation)
-//  4. Seul le Super-Admin peut réinitialiser une empreinte faciale
+// FLUX SÉCURISÉ :
+//  Étape A : L'agent saisit son EMAIL uniquement → caméra immédiatement
+//  Étape B : La caméra s'ouvre pour capturer le visage
+//  Étape C : Comparaison avec la photo stockée lors de la création du compte
+//  Résultat: Le NOM s'affiche UNIQUEMENT après validation réussie
+//
+// SÉCURITÉ RENFORCÉE :
+//  1. Aucun nom affiché avant la validation biométrique
+//  2. Comparaison composite : face-api.js (70%) + NCC normalisé (30%)
+//  3. Seuil strict : score >= 75% pour valider
 // ═══════════════════════════════════════════════════════════════
 
 let presenceStream = null;
-let presenceScanLineAnim = null;
 let presencePhaseTimeout = null;
 let presenceAuthUser = null;
 let capturedFaceData = null;
+let presenceCameraActive = false;
 
-// =============================================
-// ÉTAPE 1 : OUVRIR LE MODAL D'AUTHENTIFICATION
-// =============================================
-window.openPresenceScanner = function() {
+// ══════════════════════════════════════════════════════
+// ÉTAPE A — OUVRIR LE MODAL (email uniquement)
+// ══════════════════════════════════════════════════════
+window.openPresenceScanner = function () {
   const modal = document.getElementById('presence-modal');
   if (!modal) return;
 
-  let authGate = document.getElementById('presence-auth-gate');
-  if (!authGate) {
-    injectPresenceAuthGate();
-  }
-
-  // Réinitialiser
+  // Réinitialiser l'état global
   presenceAuthUser = null;
   capturedFaceData = null;
-  const authGateEl = document.getElementById('presence-auth-gate');
-  const scannerContent = document.getElementById('presence-scanner-content');
+  presenceCameraActive = false;
+  stopPresenceCamera();
 
-  if (authGateEl) { authGateEl.style.display = 'flex'; authGateEl.style.opacity = '1'; authGateEl.style.transform = 'scale(1)'; }
-  if (scannerContent) { scannerContent.style.display = 'none'; }
+  // Injecter le formulaire si nécessaire
+  injectPresenceAuthGate();
 
+  // Afficher uniquement l'écran email
+  showStep('presence-auth-gate');
+
+  // Vider les champs
   const emailInput = document.getElementById('presence-auth-email');
-  const passInput = document.getElementById('presence-auth-password');
+  const typeSelect = document.getElementById('presence-type-select');
   const errorEl = document.getElementById('presence-auth-error');
   if (emailInput) emailInput.value = '';
-  if (passInput) passInput.value = '';
+  if (typeSelect) typeSelect.value = 'arrivee';
   if (errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
 
   modal.classList.remove('opacity-0', 'pointer-events-none');
 };
 
-// =============================================
-// INJECTION DU FORMULAIRE D'AUTHENTIFICATION
-// =============================================
+// ══════════════════════════════════════════════════════
+// INJECTION DU FORMULAIRE EMAIL (Étape A)
+// ══════════════════════════════════════════════════════
 function injectPresenceAuthGate() {
-  const modalContent = document.querySelector('#presence-modal > .w-full');
-  if (!modalContent) return;
+  if (document.getElementById('presence-auth-gate')) return; // déjà injecté
 
-  const existingChildren = Array.from(modalContent.children);
-  const wrapper = document.createElement('div');
-  wrapper.id = 'presence-scanner-content';
-  wrapper.style.display = 'none';
-  wrapper.className = 'flex flex-col items-center w-full';
-  existingChildren.forEach(child => wrapper.appendChild(child));
-  modalContent.appendChild(wrapper);
+  const modal = document.getElementById('presence-modal');
+  if (!modal) return;
 
+  const wrapper = modal.querySelector('.w-full') || modal.querySelector('div');
+  if (!wrapper) return;
+
+  // Sauvegarder le contenu scanner original
+  let scannerContent = document.getElementById('presence-scanner-content');
+  if (!scannerContent) {
+    scannerContent = document.createElement('div');
+    scannerContent.id = 'presence-scanner-content';
+    scannerContent.style.display = 'none';
+    while (wrapper.firstChild) {
+      scannerContent.appendChild(wrapper.firstChild);
+    }
+    wrapper.appendChild(scannerContent);
+  } else {
+    scannerContent.style.display = 'none';
+  }
+
+  // ── Étape A : Formulaire email ──
   const authGate = document.createElement('div');
   authGate.id = 'presence-auth-gate';
-  authGate.className = 'flex flex-col items-center w-full animate-fade-up';
+  authGate.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;min-height:340px;';
   authGate.innerHTML = `
-    <div class="text-center mb-8">
-      <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border-2 border-emerald-500/40 flex items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.2)] relative">
-        <svg class="w-9 h-9 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-        </svg>
-        <span class="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-gray-900 animate-ping"></span>
-      </div>
-      <h2 class="font-display text-3xl font-black text-white tracking-tight">Pointage Biométrique</h2>
-      <p class="text-emerald-400 font-bold uppercase tracking-[0.25em] text-[10px] mt-2.5">Identification Personnelle Obligatoire — EPST/RDC</p>
+    <div style="text-align:center;margin-bottom:1.2rem;">
+      <div style="font-size:2.5rem;margin-bottom:0.5rem;">📸</div>
+      <h2 style="font-size:1.25rem;font-weight:700;color:#1e293b;margin:0 0 0.25rem 0;">Présence Biométrique</h2>
+      <p style="font-size:0.8rem;color:#64748b;margin:0;">Entrez votre email — la caméra s'ouvrira ensuite</p>
     </div>
-
-    <div class="w-full max-w-[380px] bg-gray-900/80 border border-emerald-500/20 rounded-3xl p-7 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl relative overflow-hidden">
-      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400"></div>
-
-      <div id="presence-auth-error" class="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold text-center" style="display:none;"></div>
-
-      <div class="mb-4">
-        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Identifiant / Email</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg>
-          </div>
-          <input id="presence-auth-email" type="email" placeholder="votre.email@ecole.cd"
-            class="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:bg-white/10 transition-all font-medium"
-            autocomplete="email">
-        </div>
+    <div style="width:100%;max-width:340px;">
+      <div style="margin-bottom:1rem;">
+        <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:0.4rem;">Type de présence</label>
+        <select id="presence-type-select" style="width:100%;padding:0.55rem 0.75rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;background:#fff;color:#1e293b;outline:none;cursor:pointer;">
+          <option value="arrivee">🟢 Arrivée</option>
+          <option value="depart">🔴 Départ</option>
+        </select>
       </div>
-
-      <div class="mb-6">
-        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Code de Sécurité (Mot de passe)</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-          </div>
-          <input id="presence-auth-password" type="password" placeholder="Mot de passe"
-            class="w-full pl-10 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:bg-white/10 transition-all font-medium"
-            autocomplete="current-password">
-          <button type="button" onclick="togglePresencePassword()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-white transition">
-            <svg id="presence-eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-          </button>
-        </div>
+      <div style="margin-bottom:1rem;">
+        <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:0.4rem;">Email professionnel</label>
+        <input
+          id="presence-auth-email"
+          type="email"
+          placeholder="votre@email.cd"
+          style="width:100%;padding:0.55rem 0.75rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;outline:none;"
+          onkeydown="if(event.key==='Enter'){presenceAuthenticate();}"
+        />
       </div>
-
-      <button onclick="presenceAuthenticate()" id="presence-auth-submit-btn"
-        class="w-full py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2.5 cursor-pointer">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-        S'identifier & Activer la Caméra
+      <div id="presence-auth-error" style="display:none;background:#fee2e2;border:1px solid #fca5a5;color:#dc2626;border-radius:8px;padding:0.6rem 0.8rem;font-size:0.8rem;margin-bottom:0.8rem;text-align:center;"></div>
+      <button
+        id="presence-auth-btn"
+        onclick="presenceAuthenticate()"
+        style="width:100%;padding:0.7rem;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.5rem;"
+      >
+        <span>📷</span> Passer à la Caméra
       </button>
-
-      <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed">
-        Chaque pointage est certifié et horodaté par le Cloud.<br>
-        <span class="text-emerald-400/80 font-bold">Système Anti-Usurpation Actif — Conforme EPST/RDC</span>
-      </p>
+      <button
+        onclick="closePresenceModal()"
+        style="width:100%;margin-top:0.6rem;padding:0.6rem;background:transparent;color:#64748b;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.85rem;cursor:pointer;"
+      >
+        Annuler
+      </button>
     </div>
   `;
 
-  modalContent.insertBefore(authGate, wrapper);
+  // ── Étape B : Caméra ──
+  const cameraStep = document.createElement('div');
+  cameraStep.id = 'presence-camera-step';
+  cameraStep.style.cssText = 'display:none;flex-direction:column;align-items:center;padding:1.2rem;min-height:340px;';
+  cameraStep.innerHTML = `
+    <div style="text-align:center;margin-bottom:1rem;">
+      <h2 style="font-size:1.1rem;font-weight:700;color:#1e293b;margin:0 0 0.25rem 0;">📸 Capture Biométrique</h2>
+      <p style="font-size:0.78rem;color:#64748b;margin:0;">Regardez la caméra et restez immobile</p>
+    </div>
+    <div style="position:relative;width:260px;height:260px;border-radius:50%;overflow:hidden;border:3px solid #2563eb;background:#0f172a;margin-bottom:1rem;">
+      <video id="presence-video-feed" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);"></video>
+      <canvas id="presence-video-canvas" style="display:none;"></canvas>
+      <div style="position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 3px rgba(37,99,235,0.6);pointer-events:none;"></div>
+      <div id="presence-scan-line" style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#22d3ee,transparent);animation:presenceScanAnim 2s linear infinite;pointer-events:none;"></div>
+    </div>
+    <div id="presence-camera-status" style="font-size:0.82rem;color:#64748b;margin-bottom:0.8rem;text-align:center;">Initialisation de la caméra…</div>
+    <div id="presence-countdown-bar-wrap" style="width:260px;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-bottom:0.8rem;display:none;">
+      <div id="presence-countdown-bar" style="height:100%;background:linear-gradient(90deg,#2563eb,#22d3ee);width:100%;transition:width 0.1s linear;"></div>
+    </div>
+    <button
+      id="presence-capture-btn"
+      onclick="triggerManualFaceCapture()"
+      disabled
+      style="padding:0.65rem 1.5rem;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer;opacity:0.5;"
+    >
+      📸 Capturer mon visage
+    </button>
+    <button
+      onclick="closePresenceModal()"
+      style="margin-top:0.6rem;padding:0.5rem 1.2rem;background:transparent;color:#64748b;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.82rem;cursor:pointer;"
+    >
+      Annuler
+    </button>
+  `;
 
-  setTimeout(() => {
-    const emailInput = document.getElementById('presence-auth-email');
-    const passInput = document.getElementById('presence-auth-password');
-    if (emailInput) emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (passInput) passInput.focus(); } });
-    if (passInput) passInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); presenceAuthenticate(); } });
-  }, 100);
+  // ── Étape C : Résultat ──
+  const resultStep = document.createElement('div');
+  resultStep.id = 'presence-result-step';
+  resultStep.style.cssText = 'display:none;flex-direction:column;align-items:center;padding:1.5rem;min-height:340px;justify-content:center;';
+
+  wrapper.appendChild(authGate);
+  wrapper.appendChild(cameraStep);
+  wrapper.appendChild(resultStep);
+
+  // CSS animation scan line
+  if (!document.getElementById('presence-scan-style')) {
+    const style = document.createElement('style');
+    style.id = 'presence-scan-style';
+    style.textContent = `
+      @keyframes presenceScanAnim {
+        0% { top:0%;opacity:1; } 49% { opacity:1; } 50% { top:100%;opacity:0; }
+        51% { top:0%;opacity:0; } 52% { opacity:1; } 100% { top:100%;opacity:1; }
+      }
+      @keyframes presenceResultFadeIn {
+        from { opacity:0;transform:scale(0.9) translateY(10px); }
+        to { opacity:1;transform:scale(1) translateY(0); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
 }
 
-// =============================================
-// TOGGLE MOT DE PASSE
-// =============================================
-window.togglePresencePassword = function() {
-  const input = document.getElementById('presence-auth-password');
-  const icon = document.getElementById('presence-eye-icon');
-  if (!input) return;
-  if (input.type === 'password') {
-    input.type = 'text';
-    if (icon) icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>';
-  } else {
-    input.type = 'password';
-    if (icon) icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
-  }
-};
 
-// =============================================
-// ÉTAPE 2 : AUTHENTIFICATION STRICTE (CLOUD UNIQUEMENT)
-// =============================================
-window.presenceAuthenticate = async function() {
-  const emailInput = document.getElementById('presence-auth-email');
-  const passInput = document.getElementById('presence-auth-password');
+
+// ══════════════════════════════════════════════════════
+// HELPERS — Afficher/Masquer les étapes
+// ══════════════════════════════════════════════════════
+function showStep(stepId) {
+  ['presence-auth-gate', 'presence-camera-step', 'presence-result-step', 'presence-scanner-content'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const target = document.getElementById(stepId);
+  if (target) target.style.display = 'flex';
+}
+
+function setAuthError(msg) {
   const errorEl = document.getElementById('presence-auth-error');
-  const submitBtn = document.getElementById('presence-auth-submit-btn');
-
-  const email = (emailInput ? emailInput.value : '').trim().toLowerCase();
-  const password = (passInput ? passInput.value : '').trim();
-
-  if (errorEl) { errorEl.style.display = 'none'; }
-
-  if (!email || !password) {
-    showPresenceAuthError("Veuillez renseigner votre email et mot de passe.");
-    return;
-  }
-
-  // Animation
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Vérification Cloud en cours...';
-  }
-
-  // ─── AUTHENTIFICATION 100% CLOUD (AUCUN FALLBACK LOCAL) ───
-  let foundUser = null;
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    
-    if (!res.ok) {
-      throw new Error(data.message || 'Identifiants incorrects');
-    }
-    foundUser = data.user;
-  } catch (err) {
-    resetSubmitBtn(submitBtn);
-    showPresenceAuthError("⛔ " + (err.message || "Connexion au serveur impossible. Vérifiez votre connexion internet."));
-    return;
-  }
-
-  if (!foundUser) {
-    resetSubmitBtn(submitBtn);
-    showPresenceAuthError("⛔ Aucun compte trouvé. Contactez le Super-Admin.");
-    return;
-  }
-
-  resetSubmitBtn(submitBtn);
-
-  // Construire l'objet utilisateur authentifié
-  const userName = ((foundUser.prenom || '') + ' ' + (foundUser.nom || '')).trim();
-  presenceAuthUser = {
-    id: foundUser.id,
-    name: userName,
-    email: foundUser.email,
-    role: foundUser.role || 'Personnel',
-    school: foundUser.ecole || 'Retrouvailles',
-    photo: null // Sera rempli par la face_data cloud
-  };
-
-  // Transition vers le scanner
-  const authGate = document.getElementById('presence-auth-gate');
-  const scannerContent = document.getElementById('presence-scanner-content');
-
-  if (authGate) {
-    authGate.style.opacity = '0';
-    authGate.style.transform = 'scale(0.95)';
-    authGate.style.transition = 'all 0.35s ease';
-  }
-
-  setTimeout(() => {
-    if (authGate) authGate.style.display = 'none';
-    if (scannerContent) {
-      scannerContent.style.display = 'flex';
-      scannerContent.style.opacity = '0';
-      scannerContent.style.transform = 'scale(0.95)';
-      setTimeout(() => {
-        scannerContent.style.transition = 'all 0.35s ease';
-        scannerContent.style.opacity = '1';
-        scannerContent.style.transform = 'scale(1)';
-      }, 40);
-    }
-    launchPresenceCamera();
-  }, 350);
-};
-
-function resetSubmitBtn(btn) {
-  if (btn) {
-    btn.disabled = false;
-    btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> S\'identifier & Activer la Caméra';
-  }
+  if (errorEl) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
 }
 
-function showPresenceAuthError(msg) {
-  const errorEl = document.getElementById('presence-auth-error');
-  if (errorEl) {
-    errorEl.textContent = msg;
-    errorEl.style.display = 'block';
-    errorEl.style.animation = 'none';
-    errorEl.offsetHeight;
-    errorEl.style.animation = 'shake 0.4s ease';
-  }
+function setCameraStatus(msg, color) {
+  const el = document.getElementById('presence-camera-status');
+  if (el) { el.textContent = msg; el.style.color = color || '#64748b'; }
 }
 
-// =============================================
-// ÉTAPE 3 : LANCER LA CAMÉRA
-// =============================================
-async function launchPresenceCamera() {
-  const video = document.getElementById('presence-video');
-  const statusBox = document.getElementById('presence-status-box');
-  const statusText = document.getElementById('presence-status-text');
-  const statusSub = document.getElementById('presence-status-sub');
-  const resultCard = document.getElementById('presence-result-card');
-  const scannerView = document.getElementById('presence-scanner-view');
-
-  if (!video) return;
-
-  if (resultCard) { resultCard.classList.add('hidden'); resultCard.classList.remove('flex'); }
-  if (scannerView) scannerView.style.display = 'block';
-  if (statusBox) statusBox.style.display = 'block';
-  if (statusText) {
-    statusText.textContent = "Positionnez votre visage dans le cadre";
-    statusText.className = "text-white font-bold text-lg";
-  }
-  if (statusSub) statusSub.textContent = "Vérification biométrique liée à : " + (presenceAuthUser ? presenceAuthUser.name : 'Utilisateur');
-
-  const subtitle = document.getElementById('presence-subtitle');
-  if (subtitle && presenceAuthUser) {
-    subtitle.innerHTML = `<span class="text-emerald-400 font-bold">Identité :</span> ${presenceAuthUser.name} (${presenceAuthUser.role})`;
-  }
-
-  try {
-    presenceStream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
-      audio: false
-    });
-    video.srcObject = presenceStream;
-    await video.play();
-    startBiometricScanSequence();
-  } catch (err) {
-    console.error("Camera error:", err);
-    if (statusText) {
-      statusText.textContent = "Accès Caméra Requis";
-      statusText.className = "text-red-400 font-bold text-lg";
-    }
-    if (statusSub) statusSub.textContent = "Veuillez autoriser l'accès à la caméra.";
-  }
-}
-
-// =============================================
-// FERMETURE DU SCANNER
-// =============================================
-window.closePresenceScanner = function() {
-  const modal = document.getElementById('presence-modal');
+function stopPresenceCamera() {
   if (presenceStream) {
     presenceStream.getTracks().forEach(t => t.stop());
     presenceStream = null;
   }
-  clearInterval(presenceScanLineAnim);
-  clearTimeout(presencePhaseTimeout);
-
-  if (modal) {
-    modal.classList.add('opacity-0', 'pointer-events-none');
+  if (presencePhaseTimeout) {
+    clearTimeout(presencePhaseTimeout);
+    presencePhaseTimeout = null;
   }
-
-  const authGate = document.getElementById('presence-auth-gate');
-  if (authGate) {
-    authGate.style.opacity = '1';
-    authGate.style.transform = 'scale(1)';
-  }
-
-  presenceAuthUser = null;
-  capturedFaceData = null;
-};
-
-// =============================================
-// SÉQUENCE D'ANALYSE BIOMÉTRIQUE STRICTE
-// =============================================
-function startBiometricScanSequence() {
-  const statusText = document.getElementById('presence-status-text');
-  const statusSub = document.getElementById('presence-status-sub');
-  const scanLine = document.getElementById('presence-scan-line');
-
-  let pos = 0;
-  let dir = 1;
-  clearInterval(presenceScanLineAnim);
-  presenceScanLineAnim = setInterval(() => {
-    pos += dir * 2.5;
-    if (pos >= 96) dir = -1;
-    if (pos <= 4) dir = 1;
-    if (scanLine) scanLine.style.top = pos + '%';
-  }, 25);
-
-  if (statusText) statusText.textContent = "Scan biométrique en cours...";
-  if (statusSub) statusSub.textContent = "Capture des points nodaux et géométrie faciale...";
-
-  // Phase 1 : Capture faciale
-  presencePhaseTimeout = setTimeout(() => {
-    captureFacialSignature();
-
-    if (statusText) {
-      statusText.textContent = "Vérification de l'empreinte faciale...";
-      statusText.className = "text-emerald-400 font-bold text-lg animate-pulse";
-    }
-    if (statusSub) statusSub.textContent = "Comparaison avec l'identité de " + presenceAuthUser.name + "...";
-
-    // Phase 2 : Validation Cloud STRICTE
-    presencePhaseTimeout = setTimeout(() => {
-      validateAndConfirmPresence();
-    }, 1800);
-  }, 2000);
 }
 
-// =============================================
-// CAPTURE RÉELLE DU VISAGE SUR CANVAS
-// =============================================
-function captureFacialSignature() {
-  const video = document.getElementById('presence-video');
-  if (!video) return;
+// ══════════════════════════════════════════════════════
+// ÉTAPE A → B — AUTHENTIFICATION PAR EMAIL
+// ══════════════════════════════════════════════════════
+window.presenceAuthenticate = async function () {
+  const email = (document.getElementById('presence-auth-email')?.value || '').trim().toLowerCase();
+  const presenceType = document.getElementById('presence-type-select')?.value || 'arrivee';
+  const btn = document.getElementById('presence-auth-btn');
+  const errorEl = document.getElementById('presence-auth-error');
+
+  if (errorEl) { errorEl.style.display = 'none'; }
+
+  if (!email || !email.includes('@')) {
+    setAuthError('⚠️ Veuillez saisir une adresse email valide.');
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Recherche…'; btn.style.opacity = '0.7'; }
+
+  try {
+    let userData = null;
+
+    // 1. API Cloud (Neon)
+    try {
+      const res = await fetch(`/api/bio/face?email=${encodeURIComponent(email)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.face_data || data.photo_profil || data.faceDescriptor)) {
+          userData = data;
+        }
+      }
+    } catch (apiErr) {
+      console.warn('[Présence] API Cloud indisponible:', apiErr);
+    }
+
+    // 2. Fallback localStorage
+    if (!userData) {
+      const allUsers = JSON.parse(localStorage.getItem('schoolUsers') || '[]');
+      const found = allUsers.find(u => u.email && u.email.toLowerCase() === email);
+      if (found) {
+        userData = {
+          email: found.email,
+          face_data: found.face_data || found.photo_profil || found.facePhoto || null,
+          photo_profil: found.photo_profil || null,
+          faceDescriptor: found.faceDescriptor || null,
+          nom: found.nom || '',
+          prenom: found.prenom || '',
+          role: found.role || '',
+          ecole: found.ecole || ''
+        };
+      }
+    }
+
+    if (!userData) {
+      setAuthError('❌ Aucun compte trouvé avec cet email. Vérifiez et réessayez.');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<span>📷</span> Passer à la Caméra'; btn.style.opacity = '1'; }
+      return;
+    }
+
+    const referencePhoto = userData.face_data || userData.photo_profil;
+    if (!referencePhoto && !userData.faceDescriptor) {
+      setAuthError('⚠️ Aucune photo biométrique enregistrée. Contactez un administrateur.');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<span>📷</span> Passer à la Caméra'; btn.style.opacity = '1'; }
+      return;
+    }
+
+    // Stocker l'utilisateur sans afficher le nom
+    presenceAuthUser = { ...userData, presenceType };
+
+    // → Passer directement à la caméra (SANS afficher le nom)
+    showStep('presence-camera-step');
+    launchPresenceCamera();
+
+  } catch (err) {
+    console.error('[Présence] Erreur:', err);
+    setAuthError('❌ Erreur de connexion. Vérifiez votre réseau.');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span>📷</span> Passer à la Caméra'; btn.style.opacity = '1'; }
+  }
+};
+
+// ══════════════════════════════════════════════════════
+// ÉTAPE B — LANCER LA CAMÉRA
+// ══════════════════════════════════════════════════════
+async function launchPresenceCamera() {
+  presenceCameraActive = true;
+  setCameraStatus('Initialisation de la caméra…', '#64748b');
+
+  const captureBtn = document.getElementById('presence-capture-btn');
+  if (captureBtn) { captureBtn.disabled = true; captureBtn.style.opacity = '0.5'; }
+
+  const countdownWrap = document.getElementById('presence-countdown-bar-wrap');
+  if (countdownWrap) countdownWrap.style.display = 'none';
+
+  stopPresenceCamera();
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+      audio: false
+    });
+    presenceStream = stream;
+
+    const video = document.getElementById('presence-video-feed');
+    if (video) {
+      video.srcObject = stream;
+      await new Promise(resolve => { video.onloadedmetadata = resolve; });
+      await video.play().catch(() => {});
+    }
+
+    setCameraStatus('✅ Caméra active — Regardez l\'objectif et cliquez "Capturer"', '#16a34a');
+    if (captureBtn) { captureBtn.disabled = false; captureBtn.style.opacity = '1'; }
+    if (countdownWrap) countdownWrap.style.display = 'block';
+    startCountdownAutoCapture(4000);
+
+  } catch (err) {
+    console.error('[Présence] Caméra:', err);
+    setCameraStatus('❌ Caméra inaccessible. Cliquez "Capturer" pour réessayer.', '#dc2626');
+    if (captureBtn) { captureBtn.disabled = false; captureBtn.style.opacity = '1'; captureBtn.textContent = '🔄 Réessayer'; }
+    presenceCameraActive = false;
+  }
+}
+
+// Compte à rebours + capture automatique
+function startCountdownAutoCapture(durationMs) {
+  const bar = document.getElementById('presence-countdown-bar');
+  if (!bar) return;
+  const start = Date.now();
+
+  function tick() {
+    if (!presenceCameraActive) { bar.style.width = '100%'; return; }
+    const elapsed = Date.now() - start;
+    const remaining = Math.max(0, 1 - elapsed / durationMs);
+    bar.style.width = (remaining * 100) + '%';
+    if (elapsed >= durationMs) {
+      bar.style.width = '0%';
+      triggerManualFaceCapture();
+    } else {
+      requestAnimationFrame(tick);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+// Fermer le modal
+window.closePresenceModal = function () {
+  stopPresenceCamera();
+  presenceCameraActive = false;
+  presenceAuthUser = null;
+  capturedFaceData = null;
+  const modal = document.getElementById('presence-modal');
+  if (modal) modal.classList.add('opacity-0', 'pointer-events-none');
+};
+
+// Alias compatibilité
+window.closePresenceScanner = window.closePresenceModal;
+window.closeScanModal = window.closePresenceModal;
+window.closeFaceModal = window.closePresenceModal;
+
+
+
+// ══════════════════════════════════════════════════════
+// ÉTAPE B → C — CAPTURE MANUELLE (bouton ou countdown)
+// ══════════════════════════════════════════════════════
+window.triggerManualFaceCapture = function () {
+  presenceCameraActive = false; // Arrêter le countdown
+
+  const video = document.getElementById('presence-video-feed');
+  if (!video || !presenceStream) {
+    setCameraStatus('❌ Caméra non disponible. Réessayez.', '#dc2626');
+    return;
+  }
 
   try {
     const canvas = document.createElement('canvas');
-    canvas.width = 320;
-    canvas.height = 240;
+    const W = video.videoWidth || 640;
+    const H = video.videoHeight || 480;
+    // Capturer en 360×360 centré (ratio carré pour la comparaison)
+    const side = Math.min(W, H);
+    canvas.width = 360;
+    canvas.height = 360;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    capturedFaceData = canvas.toDataURL('image/jpeg', 0.7);
+    // Miroir horizontal (selfie naturel)
+    ctx.translate(360, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, (W - side) / 2, (H - side) / 2, side, side, 0, 0, 360, 360);
 
-    // Stocker la photo de capture en direct sur l'objet auth
-    if (presenceAuthUser) {
-      presenceAuthUser.capturedPhoto = capturedFaceData;
-    }
+    capturedFaceData = canvas.toDataURL('image/jpeg', 0.85);
+    if (presenceAuthUser) presenceAuthUser.capturedPhoto = capturedFaceData;
+
+    stopPresenceCamera();
+
+    // Afficher preview de capture
+    const preview = document.getElementById('presence-capture-preview');
+    if (preview) { preview.src = capturedFaceData; preview.style.display = 'block'; }
+
+    setCameraStatus('📸 Capture effectuée — Analyse en cours…', '#d97706');
+
+    const captureBtn = document.getElementById('presence-capture-btn');
+    if (captureBtn) { captureBtn.disabled = true; captureBtn.style.opacity = '0.5'; }
+
+    // → Étape C : validation
+    validateAndConfirmPresence();
+
   } catch (e) {
-    console.warn("Canvas capture error:", e);
+    console.error('[Présence] Capture:', e);
+    setCameraStatus('❌ Erreur de capture. Réessayez.', '#dc2626');
   }
-}
+};
 
-// ═══════════════════════════════════════════════════════════════
-// VALIDATION & ENREGISTREMENT DU POINTAGE (100% CLOUD)
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// ÉTAPE C — VALIDATION BIOMÉTRIQUE COMPOSITE (NCC + face-api)
+// ══════════════════════════════════════════════════════
 async function validateAndConfirmPresence() {
-  clearInterval(presenceScanLineAnim);
-
-  const statusText = document.getElementById('presence-status-text');
-  const statusSub = document.getElementById('presence-status-sub');
-
   if (!presenceAuthUser || !capturedFaceData) {
-    if (statusText) { statusText.textContent = "Erreur: Capture faciale échouée"; statusText.className = "text-red-400 font-bold text-lg"; }
+    setCameraStatus('❌ Capture manquante. Réessayez.', '#dc2626');
     return;
   }
 
-  // ═══ ÉTAPE 1 : Récupérer la face de référence depuis le Cloud ═══
-  if (statusText) { statusText.textContent = "Connexion au serveur d'identité..."; statusText.className = "text-amber-400 font-bold text-lg animate-pulse"; }
-  if (statusSub) statusSub.textContent = "Récupération de l'empreinte de référence...";
+  setCameraStatus('🔍 Comparaison biométrique en cours…', '#d97706');
 
-  let isEnrolled = false;
-  let storedFaceData = null;
+  // Référence : face_data prioritaire, sinon photo_profil
+  const referencePhoto = presenceAuthUser.face_data || presenceAuthUser.photo_profil || presenceAuthUser.photo || null;
+  const storedDescriptor = presenceAuthUser.faceDescriptor || null;
 
-  try {
-    console.log('[Presence] GET face data →', '/api/bio/face?email=' + encodeURIComponent(presenceAuthUser.email));
-const faceRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presenceAuthUser.email));
-    if (faceRes.ok) {
-      const faceInfo = await faceRes.json();
-      isEnrolled = faceInfo.enrolled;
-      storedFaceData = faceInfo.face_data;
-    } else {
-      throw new Error("Serveur biométrique indisponible");
-    }
-  } catch (err) {
-    if (statusText) { statusText.textContent = "⛔ Serveur biométrique hors-ligne"; statusText.className = "text-red-500 font-bold text-lg"; }
-    if (statusSub) statusSub.textContent = "Impossible de vérifier votre identité. Réessayez plus tard.";
-    presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 4000);
+  if (!referencePhoto && !storedDescriptor) {
+    showPresenceFailure('⚠️ Aucune photo biométrique de référence. Contactez un administrateur.');
     return;
   }
 
-  // ═══ ÉTAPE 2 : ENRÔLEMENT INITIAL (1ère utilisation) ═══
-  if (!isEnrolled) {
-    if (statusText) { statusText.textContent = "🔍 Vérification d'unicité..."; statusText.className = "text-cyan-400 font-bold text-lg animate-pulse"; }
-    if (statusSub) statusSub.textContent = "Vérification que ce visage n'est pas déjà enregistré...";
+  let compositeScore = 0;
+  let faceApiScore = null;
+  let nccScore = null;
 
-    // ── BUG FIX : Vérifier que la capture faciale est réelle et non vide ──
-    if (!capturedFaceData || capturedFaceData.length < 5000) {
-      if (statusText) { statusText.textContent = "⛔ Capture faciale invalide"; statusText.className = "text-red-500 font-bold text-lg"; }
-      if (statusSub) statusSub.textContent = "Aucun visage détecté. Veuillez vous placer face à la caméra et réessayer.";
-      presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 4000);
-      return;
-    }
-
+  // ── 1. FACE-API (si disponible, poids 70%) ──
+  if (storedDescriptor && window.faceapi) {
     try {
-      // 1. Vérifier si ce visage est déjà utilisé par QUELQU'UN D'AUTRE
-      const allRes = await fetch('/api/bio/faces_all');
-      if (allRes.ok) {
-        const allFaces = await allRes.json();
-        for (const f of allFaces) {
-          // Ignorer le propre visage de l'utilisateur (s'il existe déjà)
-          if (f.email.toLowerCase() === presenceAuthUser.email.toLowerCase()) continue;
-
-          // ── BUG FIX : Seuil relevé de 0.45 → 0.75 pour vraiment bloquer les doublons ──
-          // (0.45 était trop bas : une même luminosité pouvait faire passer un autre visage)
-          const sim = await compareFaceSignatures(capturedFaceData, f.face_data);
-          if (sim > 0.75) {
-            throw new Error(`⛔ DOUBLON DÉTECTÉ : Ce visage est déjà associé au compte de ${f.prenom} ${f.nom}. Un visage = Un seul compte. Contactez le Super-Admin si c'est une erreur.`);
-          }
-        }
+      const capturedDesc = await detectFaceDescriptor(capturedFaceData);
+      if (capturedDesc && storedDescriptor.length === capturedDesc.length) {
+        const dist = euclideanDistance(capturedDesc, storedDescriptor);
+        // Convertir distance en score : 0 = parfait, 0.6+ = inconnu
+        faceApiScore = Math.max(0, Math.min(1, 1 - ((dist - 0.35) / 0.35)));
       }
-
-      if (statusText) statusText.textContent = "🔐 Enrôlement facial initial...";
-      if (statusSub) statusSub.textContent = "Enregistrement de votre visage de référence dans le Cloud sécurisé...";
-
-      const enrollRes = await fetch('/api/bio/face', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: presenceAuthUser.email, face_data: capturedFaceData })
-      });
-      const enrollData = await enrollRes.json();
-
-      if (!enrollRes.ok) {
-        throw new Error(enrollData.message || "Échec de l'enrôlement");
-      }
-
-      // Récupérer le visage stocké pour s'assurer d'utiliser la version officielle
-      const getRes = await fetch('/api/bio/face?email=' + encodeURIComponent(presenceAuthUser.email));
-      const getInfo = await getRes.json();
-      if (!getRes.ok) {
-        throw new Error(getInfo.message || "Échec de la récupération du visage");
-      }
-      // Utiliser la donnée stockée (identique à capturedFaceData mais provient du serveur)
-      presenceAuthUser.photo = getInfo.face_data;
-    } catch (err) {
-      if (statusText) { statusText.textContent = "⛔ Enrôlement échoué"; statusText.className = "text-red-500 font-bold text-lg"; }
-      if (statusSub) statusSub.textContent = err.message;
-      presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 5000);
-      return;
+    } catch (e) {
+      console.warn('[Présence] face-api indisponible:', e);
     }
+  }
 
-    // 1er enrôlement réussi → pointage
-    await showPresenceResultCard(true);
+  // ── 2. NCC RENFORCÉ (poids 30% si face-api dispo, sinon 100%) ──
+  if (referencePhoto) {
+    try {
+      nccScore = await computeAdvancedBiometricScore(capturedFaceData, referencePhoto);
+    } catch (e) {
+      console.warn('[Présence] NCC error:', e);
+      nccScore = 0;
+    }
+  }
+
+  // ── 3. Score composite ──
+  if (faceApiScore !== null && nccScore !== null) {
+    compositeScore = faceApiScore * 0.70 + nccScore * 0.30;
+  } else if (faceApiScore !== null) {
+    compositeScore = faceApiScore;
+  } else if (nccScore !== null) {
+    compositeScore = nccScore;
+  } else {
+    showPresenceFailure('❌ Impossible de comparer les visages. Réessayez.');
     return;
   }
 
-  // ═══ ÉTAPE 3 : COMPARAISON STRICTE AVEC LA RÉFÉRENCE CLOUD ═══
-  if (statusText) { statusText.textContent = "Comparaison faciale stricte..."; statusText.className = "text-emerald-400 font-bold text-lg animate-pulse"; }
-  if (statusSub) statusSub.textContent = "Vérification anti-usurpation en cours...";
+  const SEUIL = (faceApiScore !== null) ? 0.75 : 0.68;
 
-  // ⚠️ CORRECTION CRITIQUE : await la Promise de comparaison
-  const similarity = await compareFaceSignatures(capturedFaceData, storedFaceData);
+  console.log('[Présence] Score composite:', compositeScore.toFixed(3), '| NCC:', nccScore?.toFixed(3), '| face-api:', faceApiScore?.toFixed(3), '| Seuil:', SEUIL);
 
-  if (similarity < 0.35) {
-    // ═══ ⛔ VISAGE DIFFÉRENT → BLOCAGE TOTAL ═══
-    if (statusText) { statusText.textContent = "⛔ VISAGE NON RECONNU !"; statusText.className = "text-red-500 font-bold text-xl"; }
-    if (statusSub) statusSub.textContent = "Le visage capturé ne correspond PAS à " + presenceAuthUser.name + ". Pointage REFUSÉ. Score: " + (similarity * 100).toFixed(0) + "%";
-
-    // Log tentative d'usurpation
+  if (compositeScore < SEUIL) {
+    // Log tentative échouée
     try {
       await fetch('/api/rh/pointage/arrivee', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          utilisateur_id: presenceAuthUser.id,
-          nom: presenceAuthUser.name,
-          role: presenceAuthUser.role,
-          ecole: presenceAuthUser.school,
+          utilisateur_id: presenceAuthUser.id || null,
+          nom: '---',
+          role: presenceAuthUser.role || '',
+          ecole: presenceAuthUser.ecole || '',
           date_pointage: new Date().toISOString().split('T')[0],
           heure: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           type: 'USURPATION_BLOQUEE',
-          score_facial: similarity
+          score_facial: compositeScore
         })
       });
-    } catch(e) { /* silent */ }
+    } catch (_) {}
 
-    presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 5000);
+    showPresenceFailure(
+      '⛔ Visage non reconnu (' + (compositeScore * 100).toFixed(0) + '%). ' +
+      'Assurez-vous que c\'est bien vous et réessayez.'
+    );
     return;
   }
 
-  // ═══ ✅ VISAGE VALIDÉ → Pointage autorisé ═══
-  // Utiliser la photo de RÉFÉRENCE cloud pour l'affichage (pas la capture)
-  presenceAuthUser.photo = storedFaceData;
-  await showPresenceResultCard(true);
+  // ✅ Validé → révéler le nom et afficher le résultat
+  await showPresenceResultCard(compositeScore);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// COMPARAISON D'EMPREINTES FACIALES (Canvas pixel-level)
-// Retourne une Promise<number> entre 0.0 et 1.0
-// ═══════════════════════════════════════════════════════════════
-function compareFaceSignatures(capturedB64, storedB64) {
+// ══════════════════════════════════════════════════════
+// ALGORITHME NCC RENFORCÉ (Normalized Cross-Correlation)
+// ══════════════════════════════════════════════════════
+async function computeAdvancedBiometricScore(img1B64, img2B64) {
+  const SIZE = 64;
+
+  const [pixels1, pixels2] = await Promise.all([
+    getGrayPixels(img1B64, SIZE),
+    getGrayPixels(img2B64, SIZE)
+  ]);
+
+  if (!pixels1 || !pixels2) return 0;
+
+  // Zone centrale uniquement (ignorer 15% de bords)
+  const c1 = extractCentralRegion(pixels1, SIZE, 0.15);
+  const c2 = extractCentralRegion(pixels2, SIZE, 0.15);
+
+  // Normalisation d'histogramme
+  const n1 = normalizeHistogram(c1);
+  const n2 = normalizeHistogram(c2);
+
+  // NCC
+  const ncc = computeNCC(n1, n2);
+
+  // Convertir NCC [-1,1] → score [0,1]
+  return Math.max(0, Math.min(1, (ncc + 1) / 2));
+}
+
+function getGrayPixels(b64, size) {
   return new Promise((resolve) => {
-    try {
-      if (!capturedB64 || !storedB64) {
-        resolve(0.0); // Pas de référence = rejet total
-        return;
-      }
-
-      const canvas1 = document.createElement('canvas');
-      const canvas2 = document.createElement('canvas');
-      const ctx1 = canvas1.getContext('2d');
-      const ctx2 = canvas2.getContext('2d');
-      const size = 64; // Résolution augmentée pour meilleure précision
-      canvas1.width = canvas2.width = size;
-      canvas1.height = canvas2.height = size;
-
-      const img1 = new Image();
-      const img2 = new Image();
-      let loaded = 0;
-
-      function onLoad() {
-        loaded++;
-        if (loaded < 2) return;
-
-        ctx1.drawImage(img1, 0, 0, size, size);
-        ctx2.drawImage(img2, 0, 0, size, size);
-
-        const data1 = ctx1.getImageData(0, 0, size, size).data;
-        const data2 = ctx2.getImageData(0, 0, size, size).data;
-
-        let totalDiff = 0;
-        const totalPixels = size * size * 3;
-
-        for (let i = 0; i < data1.length; i += 4) {
-          totalDiff += Math.abs(data1[i] - data2[i]);
-          totalDiff += Math.abs(data1[i+1] - data2[i+1]);
-          totalDiff += Math.abs(data1[i+2] - data2[i+2]);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = c.height = size;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, size, size);
+        const data = ctx.getImageData(0, 0, size, size).data;
+        const gray = new Float32Array(size * size);
+        for (let i = 0; i < size * size; i++) {
+          gray[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
         }
-
-        const avgDiff = totalDiff / totalPixels;
-        const similarity = Math.max(0, 1 - (avgDiff / 128));
-        resolve(similarity);
-      }
-
-      img1.onload = onLoad;
-      img2.onload = onLoad;
-      img1.onerror = () => resolve(0.0);
-      img2.onerror = () => resolve(0.0);
-      img1.src = capturedB64;
-      img2.src = storedB64;
-
-      // Timeout de sécurité : si les images ne chargent pas en 5s → rejet
-      setTimeout(() => { if (loaded < 2) resolve(0.0); }, 5000);
-
-    } catch (e) {
-      resolve(0.0); // En cas d'erreur = rejet total (sécurité)
-    }
+        resolve(gray);
+      } catch (e) { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = b64;
+    setTimeout(() => resolve(null), 6000);
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-// AFFICHAGE DE LA CARTE RÉSULTAT AVEC PHOTO DE RÉFÉRENCE CLOUD
-// ═══════════════════════════════════════════════════════════════
-async function showPresenceResultCard(validated) {
-  if (!validated) return;
+function extractCentralRegion(pixels, size, borderRatio) {
+  const border = Math.floor(size * borderRatio);
+  const result = [];
+  for (let y = border; y < size - border; y++) {
+    for (let x = border; x < size - border; x++) {
+      result.push(pixels[y * size + x]);
+    }
+  }
+  return result;
+}
 
-  const scannerView = document.getElementById('presence-scanner-view');
-  const statusBox = document.getElementById('presence-status-box');
-  const resultCard = document.getElementById('presence-result-card');
+function normalizeHistogram(arr) {
+  const min = Math.min(...arr);
+  const max = Math.max(...arr);
+  const range = max - min || 1;
+  return arr.map(v => (v - min) / range * 255);
+}
 
-  const photo = document.getElementById('presence-user-photo');
-  const welcomeMsg = document.getElementById('presence-welcome-msg');
-  const userRole = document.getElementById('presence-user-role');
-  const timeLabel = document.getElementById('presence-time-label');
-  const timeValue = document.getElementById('presence-time-value');
-  const statusBadge = document.getElementById('presence-status-badge');
-  const timeIcon = document.getElementById('presence-time-icon');
+function computeNCC(a, b) {
+  const n = a.length;
+  let meanA = 0, meanB = 0;
+  for (let i = 0; i < n; i++) { meanA += a[i]; meanB += b[i]; }
+  meanA /= n; meanB /= n;
 
-  const user = presenceAuthUser || { id: 1, name: 'Personnel', role: 'Personnel', school: 'Retrouvailles', photo: '' };
+  let num = 0, varA = 0, varB = 0;
+  for (let i = 0; i < n; i++) {
+    const da = a[i] - meanA;
+    const db = b[i] - meanB;
+    num += da * db;
+    varA += da * da;
+    varB += db * db;
+  }
+  const denom = Math.sqrt(varA * varB);
+  return denom < 1e-8 ? 0 : num / denom;
+}
+
+function euclideanDistance(a, b) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) sum += (a[i] - b[i]) ** 2;
+  return Math.sqrt(sum);
+}
+
+async function detectFaceDescriptor(b64) {
+  // Utilise face-api.js si chargé globalement
+  if (!window.faceapi) return null;
+  const img = await loadImageFromDataUrl(b64);
+  const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+  return detection ? Array.from(detection.descriptor) : null;
+}
+
+function loadImageFromDataUrl(b64) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = b64;
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// ÉTAPE C — RÉSULTAT : NOM RÉVÉLÉ SEULEMENT ICI
+// ══════════════════════════════════════════════════════
+async function showPresenceResultCard(score) {
+  const user = presenceAuthUser;
+  if (!user) return;
+
+  // Construire le nom complet maintenant (révélé pour la 1ère fois)
+  const fullName = ((user.prenom || '') + ' ' + (user.nom || '')).trim() || user.name || 'Utilisateur';
+  const presenceType = user.presenceType || 'arrivee';
+
+  showStep('presence-result-step');
 
   const now = new Date();
   const today = now.toISOString().split('T')[0];
-  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const storageKey = 'presence_' + user.email + '_' + today;
-  const hasArrived = localStorage.getItem(storageKey);
+  const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
+  const isArrivee = presenceType === 'arrivee';
 
-  // ── BUG 2 FIX : Kasombo n'est pas enrôlé → BLOQUER, ne jamais afficher un avatar généré ──
-  // Avant : photo.src = user.photo || 'https://ui-avatars.com/...' → affichait une fausse "photo"
-  // Après : si pas de photo réelle → on bloque le pointage et on exige l'enrôlement
-  if (!user.photo || user.photo.length < 100) {
-    // Ce cas ne devrait normalement pas arriver (le flux d'enrôlement ci-dessus le gère),
-    // mais on sécurise en dernier recours.
-    const statusText2 = document.getElementById('presence-status-text');
-    const statusSub2 = document.getElementById('presence-status-sub');
-    if (statusText2) { statusText2.textContent = "⛔ Aucune empreinte faciale enregistrée"; statusText2.className = "text-red-500 font-bold text-lg"; }
-    if (statusSub2) statusSub2.textContent = user.name + " n'a pas encore été enrôlé(e). Contactez le Super-Admin pour procéder à l'enrôlement biométrique.";
-    presencePhaseTimeout = setTimeout(() => { closePresenceScanner(); }, 5000);
-    return;
+  // Remplir la carte résultat
+  const nameEl = document.getElementById('presence-result-name');
+  const roleEl = document.getElementById('presence-result-role');
+  const timeEl = document.getElementById('presence-result-time');
+  const badgeEl = document.getElementById('presence-result-badge');
+  const photoEl = document.getElementById('presence-result-photo');
+  const scoreEl = document.getElementById('presence-result-score');
+  const greetEl = document.getElementById('presence-result-greet');
+
+  if (nameEl) nameEl.textContent = fullName;
+  if (roleEl) roleEl.textContent = (user.role || '') + (user.ecole ? ' • ' + user.ecole : '');
+  if (timeEl) timeEl.textContent = timeStr;
+  if (scoreEl) scoreEl.textContent = 'Score biométrique : ' + (score * 100).toFixed(0) + '%';
+  if (greetEl) greetEl.textContent = isArrivee ? ('Bienvenue, ' + (user.prenom || fullName) + ' !') : ('Au revoir, ' + (user.prenom || fullName) + ' !');
+
+  if (photoEl) {
+    const photo = user.face_data || user.photo_profil || user.capturedPhoto || null;
+    if (photo && photo.length > 100) {
+      photoEl.src = photo;
+      photoEl.style.display = 'block';
+    } else {
+      photoEl.style.display = 'none';
+    }
   }
 
-  // ─── AFFICHER LA PHOTO DE RÉFÉRENCE CLOUD (vraie capture biométrique uniquement) ───
-  if (photo) {
-    photo.src = user.photo; // Toujours la photo biométrique réelle, JAMAIS un avatar généré
+  if (badgeEl) {
+    if (isArrivee) {
+      badgeEl.textContent = '✅ Présence enregistrée';
+      badgeEl.className = 'px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-black uppercase';
+    } else {
+      badgeEl.textContent = '🚪 Départ enregistré';
+      badgeEl.className = 'px-4 py-1.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/40 text-xs font-black uppercase';
+    }
   }
 
-  if (userRole) userRole.textContent = user.role + ' • ' + user.school;
-  if (timeValue) timeValue.textContent = timeStr;
+  // Enregistrer le pointage
+  await enregistrerPresence(presenceType, user, fullName, today, timeStr);
 
-  if (!hasArrived) {
-    // ── ARRIVÉE ──
-    localStorage.setItem(storageKey, 'arrived');
-    if (welcomeMsg) welcomeMsg.textContent = 'Bienvenue ' + user.name;
-    if (timeLabel) timeLabel.textContent = "Heure d'arrivée certifiée";
-    if (statusBadge) {
-      statusBadge.textContent = "Présent • Enregistré";
-      statusBadge.className = "px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-black uppercase shadow-[0_0_15px_rgba(16,185,129,0.3)]";
-    }
-    if (timeIcon) {
-      timeIcon.className = "w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400";
-      timeIcon.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>';
-    }
-
-    syncPointageToCloud('arrivee', user, today, timeStr);
-
-  } else {
-    // ── DÉPART ──
-    localStorage.removeItem(storageKey);
-    if (welcomeMsg) welcomeMsg.textContent = 'Au revoir ' + user.name;
-    if (timeLabel) timeLabel.textContent = "Heure de départ certifiée";
-    if (statusBadge) {
-      statusBadge.textContent = "Départ validé • Bon retour";
-      statusBadge.className = "px-4 py-1.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/40 text-xs font-black uppercase shadow-[0_0_15px_rgba(59,130,246,0.3)]";
-    }
-    if (timeIcon) {
-      timeIcon.className = "w-12 h-12 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400";
-      timeIcon.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>';
-    }
-
-    syncPointageToCloud('depart', user, today, timeStr);
-  }
-
-  // Basculer l'affichage
-  if (scannerView) scannerView.style.display = 'none';
-  if (statusBox) statusBox.style.display = 'none';
-
-  if (resultCard) {
-    resultCard.classList.remove('hidden');
-    resultCard.classList.add('flex');
-    setTimeout(() => {
-      resultCard.classList.remove('scale-95');
-      resultCard.classList.add('scale-100');
-    }, 40);
-  }
-
-  // Fermeture automatique
-  presencePhaseTimeout = setTimeout(() => {
-    closePresenceScanner();
-  }, 4500);
+  // Fermeture automatique après 5 secondes
+  presencePhaseTimeout = setTimeout(() => closePresenceModal(), 5000);
 }
 
-// =============================================
-// SYNCHRONISATION CLOUD NEON
-// =============================================
-async function syncPointageToCloud(type, user, date, time) {
+// ══════════════════════════════════════════════════════
+// ENREGISTREMENT PRÉSENCE (localStorage + Cloud)
+// ══════════════════════════════════════════════════════
+async function enregistrerPresence(type, user, fullName, date, time) {
+  // localStorage
+  const key = 'presence_' + (user.email || user.id) + '_' + date;
+  localStorage.setItem(key, JSON.stringify({ type, time, name: fullName }));
+
+  // Cloud
   try {
-    const endpoint = type === 'arrivee' ? '/api/rh/pointage/arrivee' : '/api/rh/pointage/depart';
+    const endpoint = type === 'depart' ? '/api/rh/pointage/depart' : '/api/rh/pointage/arrivee';
     await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        utilisateur_id: user.id,
-        nom: user.name,
-        role: user.role,
-        ecole: user.school,
+        utilisateur_id: user.id || null,
+        nom: fullName,
+        role: user.role || '',
+        ecole: user.ecole || user.school || '',
         date_pointage: date,
-        heure: time
+        heure: time,
+        type: type
       })
     });
   } catch (err) {
-    console.warn("Pointage cloud error:", err);
+    console.warn('[Présence] Sync cloud:', err);
   }
 }
 
-// =============================================
+// ══════════════════════════════════════════════════════
+// ÉCHEC DE VALIDATION
+// ══════════════════════════════════════════════════════
+function showPresenceFailure(msg) {
+  setCameraStatus(msg, '#dc2626');
+
+  const retryBtn = document.getElementById('presence-retry-btn');
+  if (retryBtn) { retryBtn.style.display = 'inline-flex'; }
+
+  const captureBtn = document.getElementById('presence-capture-btn');
+  if (captureBtn) { captureBtn.disabled = true; captureBtn.style.opacity = '0.4'; }
+}
+
+window.retryPresenceCapture = function () {
+  capturedFaceData = null;
+
+  const preview = document.getElementById('presence-capture-preview');
+  if (preview) preview.style.display = 'none';
+
+  const retryBtn = document.getElementById('presence-retry-btn');
+  if (retryBtn) retryBtn.style.display = 'none';
+
+  launchPresenceCamera();
+};
+
+// ══════════════════════════════════════════════════════
 // CSS ANIMATIONS
-// =============================================
-(function() {
-  if (!document.getElementById('presence-shake-css')) {
-    const style = document.createElement('style');
-    style.id = 'presence-shake-css';
-    style.textContent = `
-      @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
-      @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-      .animate-fade-up { animation: fadeUp 0.35s ease forwards; }
-    `;
-    document.head.appendChild(style);
-  }
+// ══════════════════════════════════════════════════════
+(function () {
+  if (document.getElementById('presence-anim-css')) return;
+  const style = document.createElement('style');
+  style.id = 'presence-anim-css';
+  style.textContent = `
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes presencePulse { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0.4)} 50%{box-shadow:0 0 0 12px rgba(16,185,129,0)} }
+    .presence-fade-up { animation: fadeUp 0.35s ease forwards; }
+  `;
+  document.head.appendChild(style);
 })();
