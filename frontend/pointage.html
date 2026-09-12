@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -290,14 +290,21 @@
       return;
     }
 
-    const result = findUserByEmail(email);
-    if (!result) {
-      showError('Aucun compte trouvé', `Aucun compte n'est associé à l'email « ${email} ». Veuillez vérifier ou créer un compte.`);
-      return;
+    if (window.openPresenceScanner && window.presenceAuthenticate) {
+      // 1. Initialiser le modal
+      window.openPresenceScanner();
+      
+      // 2. Lancer directement l'authentification email (pour sauter l'etape 1 du modal)
+      // On masque l'etape A (email) pour que ca ait l'air fluide depuis le kiosk
+      setTimeout(() => {
+        const authGate = document.getElementById('presence-auth-gate');
+        if (authGate) authGate.style.display = 'none';
+        window.presenceAuthenticate(email, 'arrivee');
+      }, 50);
+    } else {
+      errorEl.textContent = "Le systeme de presence n'est pas charge.";
+      errorEl.classList.remove('hidden');
     }
-
-    currentUser = result.user;
-    openScanner();
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -615,5 +622,11 @@
   });
 </script>
 
+  <!-- NOUVEAU FLUX DE PRESENCE -->
+  <div id="presence-modal" class="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none">
+    <button onclick="closePresenceModal()" class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-50 text-xl font-bold">&#x2715;</button>
+    <div class="w-full max-w-sm mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden relative" style="min-height:360px;"></div>
+  </div>
+  <script src="/presence.js"></script>
 </body>
 </html>

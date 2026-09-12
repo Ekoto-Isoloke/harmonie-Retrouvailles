@@ -254,20 +254,21 @@ function stopPresenceCamera() {
 // ══════════════════════════════════════════════════════
 // ÉTAPE A → B — AUTHENTIFICATION PAR EMAIL
 // ══════════════════════════════════════════════════════
-window.presenceAuthenticate = async function () {
-  const email = (document.getElementById('presence-auth-email')?.value || '').trim().toLowerCase();
-  const presenceType = document.getElementById('presence-type-select')?.value || 'arrivee';
+window.presenceAuthenticate = async function (overrideEmail = null, overrideType = null) {
+  const email = (overrideEmail || document.getElementById('presence-auth-email')?.value || '').trim().toLowerCase();
+  const presenceType = overrideType || document.getElementById('presence-type-select')?.value || 'arrivee';
   const btn = document.getElementById('presence-auth-btn');
   const errorEl = document.getElementById('presence-auth-error');
 
-  if (errorEl) { errorEl.style.display = 'none'; }
+  if (errorEl && !overrideEmail) { errorEl.style.display = 'none'; }
 
   if (!email || !email.includes('@')) {
-    setAuthError('⚠️ Veuillez saisir une adresse email valide.');
+    if (!overrideEmail) setAuthError('⚠️ Veuillez saisir une adresse email valide.');
     return;
   }
 
   if (btn) { btn.disabled = true; btn.textContent = 'Recherche…'; btn.style.opacity = '0.7'; }
+
 
   try {
     let userData = null;
