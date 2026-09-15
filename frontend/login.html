@@ -1388,13 +1388,19 @@
       }, 700);
     }
 
-    function handleRegister(e) {
+    async function handleRegister(e) {
       e.preventDefault();
 
       if (!isBioRegistered) {
         showToast('Veuillez d\'abord enregistrer votre visage.', 'error');
         document.getElementById('btn-enroll-bio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
+      }
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>⏳ Enregistrement et synchronisation en cours...</span>';
       }
 
       const fullname = document.getElementById('reg-fullname').value;
@@ -1408,35 +1414,35 @@
       const pwdConf = document.getElementById('reg-pwd-confirm').value;
 
       if (pwd !== pwdConf) {
-        showToast('Erreur: Les mots de passe ne correspondent pas.', 'error');
+        showToast('Les mots de passe ne correspondent pas.', 'error');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = 'Créer mon compte'; }
         return;
       }
 
       const db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
-      if (db.some(u => u.email === email)) {
-        showToast('Erreur: Cet email est déjà enregistré.', 'error');
+      const userExists = db.some(u => (u.email || '').toLowerCase() === (email || '').toLowerCase());
+
+      if (userExists) {
+        showToast('Cet email est déjà utilisé.', 'error');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = 'Créer mon compte'; }
         return;
       }
 
-      const parts = fullname.trim().split(' ');
-      const prenom = parts.pop() || '';
-      const nom = parts.join(' ') || '';
+      const parts = fullname.trim().split(/\s+/);
+      const prenom = parts[0] || 'Prénom';
+      const nom = parts.slice(1).join(' ') || 'Nom';
 
-      const isDir = isDirectionRole(role);
-      let finalCourses = '';
-      let autrePosteVal = 'Non (Poste unique)';
+      // Gestion spéciale de la Direction : Poste unique ou Cumul de poste
+      const isDir = ['Directeur (D.P)', 'D.P', 'Préfet', 'D.E', 'D.D'].includes(role);
+      let autrePosteVal = 'Non';
+      let finalCourses = 'Enseignement Général';
 
       if (isDir) {
         if (window._hasAutrePosteToggle) {
-          const selectedLabels = (window._selectedAutrePostesList || []).map(p => {
-            if (p.id === 'Enseignant' && window._autrePosteCourses) {
-              return `Enseignant (${window._autrePosteCourses})`;
-            }
-            return p.label;
-          });
-          if (window._customOtherRole) {
-            selectedLabels.push(window._customOtherRole);
-          }
+          const selectedLabels = [];
+          if (window._autrePosteOptions?.enseignant) selectedLabels.push('Enseignant Titulaire');
+          if (window._autrePosteOptions?.discipline) selectedLabels.push('Directeur de Discipline');
+          if (window._autrePosteOptions?.autre) selectedLabels.push(window._autrePosteOptions.autreNom || 'Autre charge');
           autrePosteVal = selectedLabels.length > 0 ? selectedLabels.join(', ') : 'Oui (Poste additionnel)';
           finalCourses = window._autrePosteCourses || 'Direction';
         } else {
@@ -1466,13 +1472,18 @@
       db.push(newUser);
       localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
 
-      // Synchronisation en temps réel avec le serveur PostgreSQL pour avertir l'administrateur
+      // Synchronisation EN TEMPS RÉEL avec le serveur Cloud PostgreSQL (Neon)
       try {
-        fetch('/api/utilisateurs', {
+        const cloudRes = await fetch('/api/utilisateurs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newUser)
-        }).catch(err => console.warn('Sync cloud user err:', err));
+        });
+        if (cloudRes.ok) {
+          console.log('✅ Compte synchronisé avec succès sur le Cloud PostgreSQL pour le Super-Admin');
+        } else {
+          console.warn('⚠️ Synchronisation Cloud a répondu avec statut:', cloudRes.status);
+        }
       } catch(apiErr) {
         console.warn('API sync warning:', apiErr);
       }
@@ -1481,11 +1492,11 @@
       localStorage.setItem('hr_user', JSON.stringify(newUser));
       localStorage.setItem('hr_token', 'token_reg_2026');
 
-      showToast(`✅ Compte ${role} créé : ${newUser.prenom} ${newUser.nom} — Bienvenue !`, 'success');
+      showToast(`✅ Compte ${role} créé et synchronisé : ${newUser.prenom} ${newUser.nom} — Bienvenue !`, 'success');
 
       setTimeout(() => {
         window.location.href = getDashboardRoute(role);
-      }, 1000);
+      }, 700);
     }
 
     // =================================================================

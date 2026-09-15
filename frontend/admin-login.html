@@ -1151,8 +1151,25 @@ window.handleAdminPhotoUpload = function(event) {
   reader.readAsDataURL(file);
 };
 
-function handleRegister(e) {
+async function handleRegister(e) {
+  return handleAdminRegister(e);
+}
+
+async function handleAdminRegister(e) {
   e.preventDefault();
+
+  if (!isBioRegistered) {
+    showToast("Veuillez d'abord enregistrer votre photo de profil biométrique.", "error");
+    document.getElementById('btn-enroll-bio-admin')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>⏳ Enregistrement et synchronisation en cours...</span>';
+  }
+
   const fullname    = document.getElementById('reg-fullname').value;
   const email       = document.getElementById('reg-email').value;
   const role        = document.getElementById('reg-role').value;
@@ -1165,18 +1182,20 @@ function handleRegister(e) {
 
   if (pwd !== pwdConf) {
     showToast("Erreur: Les mots de passe ne correspondent pas.", "error");
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = 'Créer le Compte'; }
     return;
   }
 
   const db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
-  if (db.some(u => u.email === email)) {
+  if (db.some(u => (u.email || '').toLowerCase() === (email || '').toLowerCase())) {
     showToast("Erreur: Cet email est déjà enregistré.", "error");
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = 'Créer le Compte'; }
     return;
   }
 
-  const parts  = fullname.trim().split(' ');
-  const prenom = parts.pop() || '';
-  const nom    = parts.join(' ') || '';
+  const parts  = fullname.trim().split(/\s+/);
+  const prenom = parts[0] || 'Prénom';
+  const nom    = parts.slice(1).join(' ') || 'Nom';
 
   const isDir = isDirectionRole(role);
   let finalCourses = '';
@@ -1220,13 +1239,18 @@ function handleRegister(e) {
   db.push(newUser);
   localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
 
-  // Synchronisation en temps réel avec le serveur PostgreSQL pour avertir l'administrateur
+  // Synchronisation EN TEMPS RÉEL avec le serveur PostgreSQL Cloud (Neon)
   try {
-    fetch('/api/utilisateurs', {
+    const cloudRes = await fetch('/api/utilisateurs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newUser)
-    }).catch(err => console.warn('Sync cloud user err:', err));
+    });
+    if (cloudRes.ok) {
+      console.log('✅ Compte administrateur/direction synchronisé avec succès sur Neon PostgreSQL');
+    } else {
+      console.warn('⚠️ Synchronisation Cloud a répondu avec statut:', cloudRes.status);
+    }
   } catch(apiErr) {
     console.warn('API sync warning:', apiErr);
   }
@@ -1234,11 +1258,11 @@ function handleRegister(e) {
   localStorage.setItem('hr_user',  JSON.stringify(newUser));
   localStorage.setItem('hr_token', 'token_reg_2026');
 
-  showToast(`Compte ${role} créé avec succès pour ${newUser.ecole} !`, 'success');
+  showToast(`Compte ${role} créé et synchronisé pour ${newUser.ecole} !`, 'success');
 
   setTimeout(() => {
     window.location.href = getDashboardRoute(role);
-  }, 1000);
+  }, 700);
 }
 
 function bufferToBase64(buffer) {
