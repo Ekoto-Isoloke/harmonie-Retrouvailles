@@ -39,6 +39,7 @@ module.exports = async (req, res) => {
 
     // S'assurer que les colonnes nécessaires existent sur les tables déjà créées
     try {
+      await sql`ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS mot_de_passe VARCHAR(255)`;
       await sql`ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS autre_poste VARCHAR(255)`;
       await sql`ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS courses VARCHAR(255)`;
       await sql`ALTER TABLE utilisateurs ADD COLUMN IF NOT EXISTS photo_profil TEXT`;
@@ -70,7 +71,7 @@ module.exports = async (req, res) => {
 
     if (req.method === 'GET') {
       const rows = await sql`
-        SELECT id, nom, prenom, email, password, mot_de_passe, role, ecole, telephone, statut, autre_poste, courses, photo_profil, face_data, face_enrolled_at, created_at 
+        SELECT id, nom, prenom, email, role, ecole, telephone, statut, autre_poste, courses, photo_profil, face_data, face_enrolled_at, created_at 
         FROM utilisateurs 
         ORDER BY created_at DESC
       `;

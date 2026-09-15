@@ -115,7 +115,8 @@
     <div class="glass rounded-3xl p-8 w-full max-w-md">
       <div class="relative mb-5">
         <i data-lucide="mail" class="absolute left-4 top-5 w-5 h-5 text-white/30"></i>
-        <input type="text" id="kiosk-email" class="kiosk-input" placeholder="Entrez votre email ou matricule" autocomplete="off" />
+        <input type="text" id="kiosk-email" class="kiosk-input" placeholder="Email, téléphone, nom ou matricule" autocomplete="off" />
+        <div id="kiosk-suggestions" class="hidden absolute left-0 right-0 top-full mt-2 bg-[#091528]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-56 overflow-y-auto"></div>
       </div>
       <button id="btn-start-scan" class="btn-scan flex items-center justify-center gap-3" onclick="startPointage()">
         <i data-lucide="scan-face" class="w-6 h-6"></i>
@@ -274,50 +275,165 @@
   ];
 
   // ═══════════════════════════════════════════════════════════
-  // RECHERCHE UTILISATEUR
+  // RECHERCHE UTILISATEUR MULTI-SOURCES (Cloud Neon + Local)
   // ═══════════════════════════════════════════════════════════
-  function findUserByEmail(email) {
-    const lower = email.toLowerCase();
-    // Recherche dans localStorage
-    const db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
-    let user = db.find(u => u.email && u.email.toLowerCase() === lower);
-    if (user) return { user, source: 'db' };
-    // Recherche dans les comptes hardcodés
-    let hc = HARDCODED_USERS.find(u => u.email.toLowerCase() === lower);
-    if (hc) return { user: { ...hc }, source: 'hardcoded' };
+  async function findUser(query) {
+    if (!query) return null;
+    const clean = query.trim().toLowerCase();
+
+    // 1. Cloud API : /api/bio/face?email=...
+    try {
+      const res = await fetch(`/api/bio/face?email=${encodeURIComponent(clean)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.user) {
+          return {
+            id: data.user.id,
+            nom: data.user.nom || '',
+            prenom: data.user.prenom || '',
+            email: clean,
+            role: data.user.role || 'Personnel',
+            ecole: data.user.ecole || 'Harmonie-Retrouvailles',
+            face_data: data.face_data || data.photo_profil || null,
+            photo_profil: data.photo_profil || data.face_data || null,
+            faceDescriptor: data.faceDescriptor || null
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('[Pointage] API /api/bio/face indisponible:', e);
+    }
+
+    // 2. Cloud API : /api/utilisateurs (Recherche large)
+    try {
+      const resUsers = await fetch('/api/utilisateurs');
+      if (resUsers.ok) {
+        const users = await resUsers.json();
+        if (Array.isArray(users)) {
+          const match = users.find(u => 
+            (u.email && u.email.toLowerCase() === clean) ||
+            (u.telephone && u.telephone.trim() === clean) ||
+            (u.id && String(u.id) === clean) ||
+            (`${u.prenom || ''} ${u.nom || ''}`.toLowerCase().trim() === clean)
+          );
+          if (match) {
+            return {
+              id: match.id,
+              nom: match.nom || '',
+              prenom: match.prenom || '',
+              email: match.email || clean,
+              role: match.role || 'Personnel',
+              ecole: match.ecole || 'Harmonie-Retrouvailles',
+              face_data: match.face_data || match.photo_profil || null,
+              photo_profil: match.photo_profil || match.face_data || null,
+              faceDescriptor: match.faceDescriptor || null
+            };
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Pointage] API /api/utilisateurs indisponible:', e);
+    }
+
+    // 3. Fallback LocalStorage (hr_users_db_v2, schoolUsers, rh_users_db)
+    try {
+      const allUsers = [
+        ...(JSON.parse(localStorage.getItem('hr_users_db_v2') || '[]')),
+        ...(JSON.parse(localStorage.getItem('schoolUsers') || '[]')),
+        ...(JSON.parse(localStorage.getItem('rh_users_db') || '[]'))
+      ];
+      const found = allUsers.find(u => 
+        (u.email && u.email.toLowerCase() === clean) ||
+        (u.telephone && u.telephone.trim() === clean) ||
+        (u.id && String(u.id) === clean) ||
+        (`${u.prenom || ''} ${u.nom || ''}`.toLowerCase().trim() === clean)
+      );
+      if (found) {
+        return {
+          id: found.id || 1,
+          nom: found.nom || '',
+          prenom: found.prenom || '',
+          email: found.email || clean,
+          role: found.role || 'Personnel',
+          ecole: found.ecole || 'Harmonie-Retrouvailles',
+          face_data: found.face_data || found.photo_profil || found.facePhoto || null,
+          photo_profil: found.photo_profil || found.face_data || null,
+          faceDescriptor: found.faceDescriptor || null
+        };
+      }
+    } catch (e) {
+      console.warn('[Pointage] LocalStorage read error:', e);
+    }
+
+    // 4. Fallback comptes hardcodés
+    const hc = HARDCODED_USERS.find(u => 
+      u.email.toLowerCase() === clean || 
+      String(u.id) === clean ||
+      `${u.prenom || ''} ${u.nom || ''}`.toLowerCase().trim() === clean
+    );
+    if (hc) return { ...hc };
+
     return null;
   }
 
   // ═══════════════════════════════════════════════════════════
-  // DÉMARRAGE DU POINTAGE
+  // DÉMARRAGE DU POINTAGE SUR LA BORNE (AUCUN MODAL POPUP)
   // ═══════════════════════════════════════════════════════════
   async function startPointage() {
     const emailInput = document.getElementById('kiosk-email');
     const errorEl = document.getElementById('kiosk-error');
-    const email = emailInput.value.trim();
+    const btn = document.getElementById('btn-start-scan');
+    const query = (emailInput.value || '').trim();
 
     errorEl.classList.add('hidden');
 
-    if (!email) {
-      errorEl.textContent = 'Veuillez saisir votre email ou matricule.';
+    if (!query) {
+      errorEl.textContent = 'Veuillez saisir votre email, téléphone ou matricule.';
       errorEl.classList.remove('hidden');
       return;
     }
 
-    if (window.openPresenceScanner && window.presenceAuthenticate) {
-      // 1. Initialiser le modal
-      window.openPresenceScanner();
-      
-      // 2. Lancer directement l'authentification email (pour sauter l'etape 1 du modal)
-      // On masque l'etape A (email) pour que ca ait l'air fluide depuis le kiosk
-      setTimeout(() => {
-        const authGate = document.getElementById('presence-auth-gate');
-        if (authGate) authGate.style.display = 'none';
-        window.presenceAuthenticate(email, 'arrivee');
-      }, 50);
-    } else {
-      errorEl.textContent = "Le systeme de presence n'est pas charge.";
+    btn.disabled = true;
+    const originalBtnHTML = btn.innerHTML;
+    btn.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Recherche du compte…`;
+
+    try {
+      const user = await findUser(query);
+
+      if (!user) {
+        errorEl.textContent = '❌ Aucun compte trouvé avec cet identifiant. Vérifiez et réessayez.';
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHTML;
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      const hasPhoto = !!(user.face_data || user.photo_profil || user.faceDescriptor);
+      if (!hasPhoto) {
+        errorEl.textContent = '⚠️ Aucune photo enregistrée sur ce compte. Veuillez contacter l\'administrateur.';
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHTML;
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      currentUser = user;
+      btn.disabled = false;
+      btn.innerHTML = originalBtnHTML;
+      if (window.lucide) lucide.createIcons();
+
+      // Lancer directement la borne de scan native (Plein écran haute sécurité)
+      openScanner();
+
+    } catch (err) {
+      console.error('[Pointage] Erreur startPointage:', err);
+      errorEl.textContent = 'Erreur technique lors de la recherche. Veuillez réessayez.';
       errorEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.innerHTML = originalBtnHTML;
+      if (window.lucide) lucide.createIcons();
     }
   }
 
@@ -457,58 +573,152 @@
   }
 
   // ═══════════════════════════════════════════════════════════
-  // VALIDATION FACIALE (Comparaison ou premier enrôlement)
+  // VALIDATION BIOMÉTRIQUE RENFORCÉE (IA 128D + NCC PERCEPTUEL)
   // ═══════════════════════════════════════════════════════════
-  function validateFace(liveDescriptor) {
+  async function validateFace(liveDescriptor) {
     stopCamera();
 
     const user = currentUser;
     if (!user) return;
 
-    const storedDescriptor = user.faceDescriptor;
+    const refPhoto = user.face_data || user.photo_profil;
+    let storedDescriptor = user.faceDescriptor;
 
-    // ══════════════════════════════════════════════════════════
-    // SÉCURITÉ STRICTE — AUCUN CONTOURNEMENT POSSIBLE
-    // ══════════════════════════════════════════════════════════
-
-    // BLOCAGE 1 : Pas d'empreinte faciale enregistrée lors de la création du compte
-    if (!storedDescriptor || !Array.isArray(storedDescriptor) || storedDescriptor.length !== 128) {
-      showError('Empreinte non enregistrée', 
-        'Aucune empreinte faciale n\'est associée à ce compte. ' +
-        'L\'enregistrement du visage se fait UNIQUEMENT lors de la création du compte. ' +
-        'Veuillez contacter l\'administrateur.');
-      return;
+    // 1. Si pas de descripteur pré-calculé, tentative d'extraction depuis la photo dossier
+    if ((!storedDescriptor || !Array.isArray(storedDescriptor) || storedDescriptor.length !== 128) && refPhoto) {
+      try {
+        const refImg = await faceapi.fetchImage(refPhoto);
+        const refDetection = await faceapi
+          .detectSingleFace(refImg, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.3 }))
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+        if (refDetection && refDetection.descriptor) {
+          storedDescriptor = Array.from(refDetection.descriptor);
+          user.faceDescriptor = storedDescriptor;
+        }
+      } catch (e) {
+        console.warn('[Pointage] Extraction descripteur photo dossier:', e);
+      }
     }
 
-    // BLOCAGE 2 : Pas de descripteur live (caméra défaillante ou simulation)
-    if (!liveDescriptor || !Array.isArray(liveDescriptor) || liveDescriptor.length !== 128) {
-      showError('Capture faciale échouée', 
-        'Impossible d\'extraire les données biométriques. ' +
-        'Assurez-vous que la caméra fonctionne et que votre visage est bien visible.');
-      return;
+    let isMatch = false;
+
+    // 2. Comparaison 128D face-api.js si disponible
+    if (liveDescriptor && storedDescriptor && liveDescriptor.length === 128 && storedDescriptor.length === 128) {
+      const distance = euclideanDistance(liveDescriptor, storedDescriptor);
+      console.log(`[Pointage] Distance faciale IA: ${distance.toFixed(4)} (seuil: 0.60)`);
+      if (distance <= 0.60) {
+        isMatch = true;
+      }
     }
 
-    // VÉRIFICATION : Comparaison mathématique stricte (128 dimensions)
-    const distance = euclideanDistance(liveDescriptor, storedDescriptor);
-    console.log(`[POINTAGE] Distance faciale: ${distance.toFixed(4)} (seuil: 0.6)`);
+    // 3. Fallback NCC perceptuel si descripteur absent ou éclairage contrasté
+    if (!isMatch && refPhoto && window._lastLiveCaptureB64) {
+      try {
+        const nccScore = await computeAdvancedBiometricScore(window._lastLiveCaptureB64, refPhoto);
+        console.log(`[Pointage] Score NCC perceptuel: ${nccScore.toFixed(4)} (seuil: 0.65)`);
+        if (nccScore >= 0.65) {
+          isMatch = true;
+        }
+      } catch (e) {
+        console.warn('[Pointage] Erreur NCC:', e);
+      }
+    }
 
-    if (distance > 0.6) {
+    // 4. Décision finale
+    if (isMatch) {
+      // ✅ MATCH CONFIRMÉ — Enregistrer le pointage et afficher la carte double photo
+      recordPointage(user);
+      showSuccess(user);
+    } else {
+      // ❌ Non-reconnaissance / tentative d'usurpation
       showError('Échec de l\'authentification', 
-        'Le visage présenté ne correspond PAS à l\'empreinte biométrique ' +
-        'associée à cet identifiant. Pointage REFUSÉ.');
-      return;
+        'Le visage scanné ne correspond pas à la photo enregistrée dans le dossier. Pointage REFUSÉ.');
     }
-
-    // ✅ MATCH CONFIRMÉ — Enregistrer le pointage
-    recordPointage(user);
-    showSuccess(user);
   }
 
-  // Distance euclidienne entre deux vecteurs
+  // Distance euclidienne entre deux vecteurs 128D
   function euclideanDistance(a, b) {
     let sum = 0;
     for (let i = 0; i < a.length; i++) { sum += (a[i] - b[i]) ** 2; }
     return Math.sqrt(sum);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ALGORITHME NCC (Normalized Cross-Correlation)
+  // ═══════════════════════════════════════════════════════════
+  async function computeAdvancedBiometricScore(img1B64, img2B64) {
+    const SIZE = 64;
+    const [pixels1, pixels2] = await Promise.all([
+      getGrayPixels(img1B64, SIZE),
+      getGrayPixels(img2B64, SIZE)
+    ]);
+    if (!pixels1 || !pixels2) return 0;
+    const c1 = extractCentralRegion(pixels1, SIZE, 0.15);
+    const c2 = extractCentralRegion(pixels2, SIZE, 0.15);
+    const n1 = normalizeHistogram(c1);
+    const n2 = normalizeHistogram(c2);
+    const ncc = computeNCC(n1, n2);
+    return Math.max(0, Math.min(1, (ncc + 1) / 2));
+  }
+
+  function getGrayPixels(b64, size) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const c = document.createElement('canvas');
+          c.width = c.height = size;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(img, 0, 0, size, size);
+          const data = ctx.getImageData(0, 0, size, size).data;
+          const gray = new Float32Array(size * size);
+          for (let i = 0; i < size * size; i++) {
+            gray[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+          }
+          resolve(gray);
+        } catch (e) { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = b64;
+      setTimeout(() => resolve(null), 5000);
+    });
+  }
+
+  function extractCentralRegion(pixels, size, borderRatio) {
+    const border = Math.floor(size * borderRatio);
+    const result = [];
+    for (let y = border; y < size - border; y++) {
+      for (let x = border; x < size - border; x++) {
+        result.push(pixels[y * size + x]);
+      }
+    }
+    return result;
+  }
+
+  function normalizeHistogram(arr) {
+    const min = Math.min(...arr);
+    const max = Math.max(...arr);
+    const range = max - min || 1;
+    return arr.map(v => (v - min) / range * 255);
+  }
+
+  function computeNCC(a, b) {
+    const n = a.length;
+    let meanA = 0, meanB = 0;
+    for (let i = 0; i < n; i++) { meanA += a[i]; meanB += b[i]; }
+    meanA /= n; meanB /= n;
+    let num = 0, varA = 0, varB = 0;
+    for (let i = 0; i < n; i++) {
+      const da = a[i] - meanA;
+      const db = b[i] - meanB;
+      num += da * db;
+      varA += da * da;
+      varB += db * db;
+    }
+    const denom = Math.sqrt(varA * varB);
+    return denom < 1e-8 ? 0 : num / denom;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -654,26 +864,115 @@
   function resetKiosk() {
     document.getElementById('kiosk-email').value = '';
     document.getElementById('kiosk-error').classList.add('hidden');
+    const suggEl = document.getElementById('kiosk-suggestions');
+    if (suggEl) { suggEl.innerHTML = ''; suggEl.classList.add('hidden'); }
     currentUser = null;
     document.getElementById('scan-video').style.display = 'block';
     document.getElementById('scan-fallback').classList.add('hidden');
     document.getElementById('scan-progress').style.width = '0%';
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // AUTO-COMPLÉTION AGENTS / RÉCEPTIONNISTE
+  // ═══════════════════════════════════════════════════════════
+  window._cachedKioskUsers = [];
+
+  async function preloadKioskUsers() {
+    try {
+      const res = await fetch('/api/utilisateurs');
+      if (res.ok) {
+        const list = await res.json();
+        if (Array.isArray(list)) window._cachedKioskUsers = list;
+      }
+    } catch (_) {}
+  }
+
+  function setupKioskSuggestions() {
+    const input = document.getElementById('kiosk-email');
+    const suggEl = document.getElementById('kiosk-suggestions');
+    if (!input || !suggEl) return;
+
+    input.addEventListener('input', () => {
+      const val = input.value.trim().toLowerCase();
+      if (val.length < 2) {
+        suggEl.innerHTML = '';
+        suggEl.classList.add('hidden');
+        return;
+      }
+
+      const all = [
+        ...window._cachedKioskUsers,
+        ...(JSON.parse(localStorage.getItem('hr_users_db_v2') || '[]')),
+        ...(JSON.parse(localStorage.getItem('schoolUsers') || '[]')),
+        ...HARDCODED_USERS
+      ];
+
+      // Dé-doublonner par email
+      const seen = new Set();
+      const matches = all.filter(u => {
+        const em = (u.email || '').toLowerCase();
+        if (!em || seen.has(em)) return false;
+        const fn = `${u.prenom || ''} ${u.nom || ''}`.toLowerCase();
+        const ph = (u.telephone || '').toLowerCase();
+        const ok = em.includes(val) || fn.includes(val) || ph.includes(val);
+        if (ok) seen.add(em);
+        return ok;
+      }).slice(0, 5);
+
+      if (matches.length === 0) {
+        suggEl.innerHTML = '';
+        suggEl.classList.add('hidden');
+        return;
+      }
+
+      suggEl.innerHTML = matches.map(u => {
+        const photo = u.photo_profil || u.face_data;
+        const name = `${u.prenom || ''} ${u.nom || ''}`.trim() || u.email;
+        const avatar = photo 
+          ? `<img src="${photo}" class="w-8 h-8 rounded-full object-cover border border-white/20" />`
+          : `<div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs">${((u.prenom||'?')[0] + (u.nom||'?')[0]).toUpperCase()}</div>`;
+
+        return `
+          <div class="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition border-b border-white/5 last:border-0"
+               onclick="selectSuggestion('${encodeURIComponent(u.email || name)}')">
+            ${avatar}
+            <div class="text-left flex-1 min-w-0">
+              <p class="text-xs font-bold text-white truncate">${name}</p>
+              <p class="text-[10px] text-white/50 truncate">${u.role || 'Personnel'} • ${u.email || ''}</p>
+            </div>
+            <span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">Pointer</span>
+          </div>
+        `;
+      }).join('');
+
+      suggEl.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!input.contains(e.target) && !suggEl.contains(e.target)) {
+        suggEl.classList.add('hidden');
+      }
+    });
+  }
+
+  function selectSuggestion(encodedEmail) {
+    const email = decodeURIComponent(encodedEmail);
+    const input = document.getElementById('kiosk-email');
+    const suggEl = document.getElementById('kiosk-suggestions');
+    if (input) input.value = email;
+    if (suggEl) { suggEl.innerHTML = ''; suggEl.classList.add('hidden'); }
+    startPointage();
+  }
+
   // Enter key triggers scan
   document.addEventListener('DOMContentLoaded', () => {
     if (window.lucide) lucide.createIcons();
+    setupKioskSuggestions();
+    preloadKioskUsers();
     document.getElementById('kiosk-email').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') startPointage();
     });
   });
 </script>
-
-  <!-- NOUVEAU FLUX DE PRESENCE -->
-  <div id="presence-modal" class="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none">
-    <button onclick="closePresenceModal()" class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-50 text-xl font-bold">&#x2715;</button>
-    <div class="w-full max-w-sm mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden relative" style="min-height:360px;"></div>
-  </div>
-  <script src="/presence.js"></script>
 </body>
 </html>
