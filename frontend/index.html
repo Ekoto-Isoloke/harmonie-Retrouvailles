@@ -22,6 +22,25 @@
     .animate-marquee-smooth:hover {
       animation-play-state: paused;
     }
+
+    /* Sub-menu persistent hover & click styles */
+    .nav-dropdown-menu {
+      opacity: 0;
+      transform: translateY(6px);
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .nav-dropdown:hover .nav-dropdown-menu,
+    .nav-dropdown.active .nav-dropdown-menu {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .nav-dropdown:hover .nav-dropdown-arrow,
+    .nav-dropdown.active .nav-dropdown-arrow {
+      transform: rotate(180deg);
+      color: #fbbf24;
+    }
   </style>
 </head>
 
@@ -89,56 +108,60 @@
             </a>
 
             <!-- 2. L'Institution (Avec Sous-menus : Histoire & Vision) -->
-            <div class="relative group py-2">
-              <button class="flex items-center gap-1.5 font-display font-semibold text-[14px] text-gray-200 group-hover:text-amber-400 transition-colors cursor-pointer outline-none">
+            <div class="relative nav-dropdown py-2" id="nav-drop-institution">
+              <button type="button" onclick="toggleNavDropdown('nav-drop-institution', event)" class="flex items-center gap-1.5 font-display font-semibold text-[14px] text-gray-200 hover:text-amber-400 transition-colors cursor-pointer outline-none">
                 <span>L'Institution</span>
-                <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-amber-400 transition-transform duration-200 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200 nav-dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-              <!-- Dropdown Menu -->
-              <div class="absolute top-full left-0 mt-2 w-64 bg-[#0A192F]/95 backdrop-blur-2xl border border-amber-500/25 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] p-2 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 z-50">
-                <a href="#historique" class="flex items-center gap-3 p-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-amber-500/15 transition-all">
-                  <span class="text-lg">🏛️</span>
-                  <div>
-                    <div class="text-[13px] font-bold text-white">Notre Histoire</div>
-                    <div class="text-[11px] text-gray-400">Fondation & parcours d'excellence</div>
-                  </div>
-                </a>
-                <a href="#historique" class="flex items-center gap-3 p-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-amber-500/15 transition-all mt-1">
-                  <span class="text-lg">🎯</span>
-                  <div>
-                    <div class="text-[13px] font-bold text-white">Notre Vision</div>
-                    <div class="text-[11px] text-gray-400">Valeurs & projet éducatif</div>
-                  </div>
-                </a>
+              <!-- Dropdown Menu avec pont de survol continu (pt-2) -->
+              <div class="nav-dropdown-menu absolute top-full left-0 pt-2 w-64 z-50">
+                <div class="bg-[#0A192F]/95 backdrop-blur-2xl border border-amber-500/25 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] p-2">
+                  <a href="#historique" onclick="closeAllNavDropdowns()" class="flex items-center gap-3 p-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-amber-500/15 transition-all">
+                    <span class="text-lg">🏛️</span>
+                    <div>
+                      <div class="text-[13px] font-bold text-white">Notre Histoire</div>
+                      <div class="text-[11px] text-gray-400">Fondation & parcours d'excellence</div>
+                    </div>
+                  </a>
+                  <a href="#historique" onclick="closeAllNavDropdowns()" class="flex items-center gap-3 p-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-amber-500/15 transition-all mt-1">
+                    <span class="text-lg">🎯</span>
+                    <div>
+                      <div class="text-[13px] font-bold text-white">Notre Vision</div>
+                      <div class="text-[11px] text-gray-400">Valeurs & projet éducatif</div>
+                    </div>
+                  </a>
+                </div>
               </div>
             </div>
 
             <!-- 3. Nos Établissements (Regroupe les 2 écoles) -->
-            <div class="relative group py-2">
-              <button class="flex items-center gap-1.5 font-display font-semibold text-[14px] text-gray-200 group-hover:text-amber-400 transition-colors cursor-pointer outline-none">
+            <div class="relative nav-dropdown py-2" id="nav-drop-etablissements">
+              <button type="button" onclick="toggleNavDropdown('nav-drop-etablissements', event)" class="flex items-center gap-1.5 font-display font-semibold text-[14px] text-gray-200 hover:text-amber-400 transition-colors cursor-pointer outline-none">
                 <span>Nos Établissements</span>
-                <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-amber-400 transition-transform duration-200 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200 nav-dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-              <!-- Dropdown Menu -->
-              <div class="absolute top-full left-0 mt-2 w-72 bg-[#0A192F]/95 backdrop-blur-2xl border border-amber-500/25 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] p-2.5 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 z-50">
-                <a href="#cs-harmonie" class="flex items-center gap-3 p-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-amber-500/15 transition-all border-b border-white/5">
-                  <span class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-black text-sm shrink-0">H</span>
-                  <div>
-                    <div class="text-[13px] font-bold text-white">C.S. Harmonie</div>
-                    <div class="text-[11px] text-amber-300/80 font-medium">Maternelle & Primaire</div>
-                  </div>
-                </a>
-                <a href="#gs-retrouvailles" class="flex items-center gap-3 p-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-cyan-500/15 transition-all mt-1">
-                  <span class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-black text-sm shrink-0">R</span>
-                  <div>
-                    <div class="text-[13px] font-bold text-white">G.S. Retrouvailles</div>
-                    <div class="text-[11px] text-cyan-300/80 font-medium">Éducation de Base & Humanités</div>
-                  </div>
-                </a>
+              <!-- Dropdown Menu avec pont de survol continu (pt-2) -->
+              <div class="nav-dropdown-menu absolute top-full left-0 pt-2 w-72 z-50">
+                <div class="bg-[#0A192F]/95 backdrop-blur-2xl border border-amber-500/25 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] p-2.5">
+                  <a href="#cs-harmonie" onclick="closeAllNavDropdowns()" class="flex items-center gap-3 p-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-amber-500/15 transition-all border-b border-white/5">
+                    <span class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-black text-sm shrink-0">H</span>
+                    <div>
+                      <div class="text-[13px] font-bold text-white">C.S. Harmonie</div>
+                      <div class="text-[11px] text-amber-300/80 font-medium">Maternelle & Primaire</div>
+                    </div>
+                  </a>
+                  <a href="#gs-retrouvailles" onclick="closeAllNavDropdowns()" class="flex items-center gap-3 p-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-cyan-500/15 transition-all mt-1">
+                    <span class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-black text-sm shrink-0">R</span>
+                    <div>
+                      <div class="text-[13px] font-bold text-white">G.S. Retrouvailles</div>
+                      <div class="text-[11px] text-cyan-300/80 font-medium">Éducation de Base & Humanités</div>
+                    </div>
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -1330,8 +1353,31 @@
         </div>
       </div>
 
-    </div>
-  </div>
+  <script>
+    // Gestionnaire des sous-menus Haute Gamme (Hover & Click & Touch)
+    window.toggleNavDropdown = function (id, event) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      const target = document.getElementById(id);
+      document.querySelectorAll('.nav-dropdown').forEach(el => {
+        if (el !== target) el.classList.remove('active');
+      });
+      if (target) target.classList.toggle('active');
+    };
+
+    window.closeAllNavDropdowns = function () {
+      document.querySelectorAll('.nav-dropdown').forEach(el => el.classList.remove('active'));
+    };
+
+    // Fermer les sous-menus si on clique n'importe où ailleurs
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.nav-dropdown')) {
+        closeAllNavDropdowns();
+      }
+    });
+  </script>
 </body>
 
 </html>
