@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -172,33 +172,47 @@
   <!-- ═══════════════════════════════════════════ -->
   <!-- OVERLAY 3 : RÉSULTAT SUCCÈS                -->
   <!-- ═══════════════════════════════════════════ -->
-  <div id="overlay-success" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 result-backdrop" style="background: rgba(5,13,26,0.85); backdrop-filter: blur(12px);">
-    <div class="result-card glass rounded-3xl p-10 w-full max-w-sm text-center border border-emerald-500/20 shadow-2xl" style="box-shadow: 0 0 80px rgba(16,185,129,0.15);">
+  <div id="overlay-success" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 result-backdrop" style="background: rgba(5,13,26,0.9); backdrop-filter: blur(16px);">
+    <div class="result-card glass rounded-[2.5rem] p-8 w-full max-w-md text-center border border-emerald-500/30 shadow-2xl relative overflow-hidden" style="box-shadow: 0 0 90px rgba(16,185,129,0.2);">
       <!-- Green check -->
-      <div class="relative w-20 h-20 mx-auto mb-6">
+      <div class="relative w-16 h-16 mx-auto mb-3">
         <div class="absolute inset-0 rounded-full bg-emerald-500/20 pulse-ring"></div>
-        <div class="relative w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center">
-          <i data-lucide="check" class="w-10 h-10 text-emerald-400"></i>
+        <div class="relative w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500/60 flex items-center justify-center">
+          <i data-lucide="check" class="w-8 h-8 text-emerald-400"></i>
         </div>
       </div>
 
       <!-- Badge ARRIVÉE/DÉPART -->
-      <div id="result-badge" class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-5"></div>
+      <div id="result-badge" class="inline-flex items-center gap-2 px-5 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-4 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"></div>
 
-      <!-- Avatar -->
-      <div id="result-avatar" class="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl font-black mx-auto mb-4"></div>
+      <!-- Double Photo (Photo Dossier Officielle VS Photo Capturée Directe) -->
+      <div class="flex items-center justify-center gap-3 mb-4">
+        <div class="text-center">
+          <div class="w-20 h-20 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)] bg-black/60 mx-auto">
+            <img id="result-photo-official" src="" alt="Officielle" class="w-full h-full object-cover" />
+          </div>
+          <span class="text-[9px] font-black text-emerald-400 uppercase tracking-wider mt-1 block">Photo Dossier</span>
+        </div>
+        <div class="text-emerald-400 font-black text-xl">✓</div>
+        <div class="text-center">
+          <div class="w-20 h-20 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)] bg-black/60 mx-auto">
+            <img id="result-photo-live" src="" alt="Direct" class="w-full h-full object-cover" />
+          </div>
+          <span class="text-[9px] font-black text-blue-400 uppercase tracking-wider mt-1 block">Photo Direct</span>
+        </div>
+      </div>
 
-      <!-- Info -->
-      <h2 id="result-name" class="text-2xl font-black mb-1"></h2>
-      <p id="result-role" class="text-sm text-white/50 font-semibold mb-4"></p>
-      <p id="result-time" class="text-4xl font-black tracking-tight mb-2" style="font-variant-numeric: tabular-nums;"></p>
-      <p id="result-greeting" class="text-sm text-emerald-400/80 font-semibold mb-6"></p>
+      <!-- NOM COMPLET RÉVÉLÉ UNIQUEMENT ICI -->
+      <h2 id="result-name" class="text-2xl font-black mb-1 text-white tracking-tight"></h2>
+      <p id="result-role" class="text-xs text-white/60 font-semibold mb-3"></p>
+      <p id="result-time" class="text-3xl font-black tracking-tight mb-2 text-emerald-300" style="font-variant-numeric: tabular-nums;"></p>
+      <p id="result-greeting" class="text-xs text-emerald-400/90 font-semibold mb-4"></p>
 
-      <p class="text-[10px] text-white/20 font-bold uppercase tracking-widest">Identité confirmée par reconnaissance faciale</p>
+      <p class="text-[10px] text-white/30 font-bold uppercase tracking-widest">Identité confirmée par reconnaissance faciale</p>
 
       <!-- Countdown bar -->
-      <div class="mt-6 w-full h-1 bg-white/5 rounded-full overflow-hidden">
-        <div id="result-countdown" class="h-full bg-emerald-500/50 rounded-full countdown-bar"></div>
+      <div class="mt-5 w-full h-1 bg-white/5 rounded-full overflow-hidden">
+        <div id="result-countdown" class="h-full bg-emerald-500/60 rounded-full countdown-bar"></div>
       </div>
     </div>
   </div>
@@ -416,6 +430,14 @@
                 .withFaceDescriptor();
 
               if (detection && detection.descriptor) {
+                // ✅ Capture photo directe (snapshot live pour la carte résultat)
+                try {
+                  const snapCanvas = document.createElement('canvas');
+                  snapCanvas.width = video.videoWidth || 320;
+                  snapCanvas.height = video.videoHeight || 240;
+                  snapCanvas.getContext('2d').drawImage(video, 0, 0, snapCanvas.width, snapCanvas.height);
+                  window._lastLiveCaptureB64 = snapCanvas.toDataURL('image/jpeg', 0.82);
+                } catch(_) { window._lastLiveCaptureB64 = null; }
                 // ✅ Descripteur live obtenu → comparaison stricte
                 validateFace(Array.from(detection.descriptor));
               } else {
@@ -534,22 +556,47 @@
     const isDepart = now.getHours() >= 14;
     const type = isDepart ? 'DÉPART' : 'ARRIVÉE';
     const greeting = isDepart ? 'Au revoir, bonne fin de journée !' : 'Bonjour, excellente journée !';
-    const initials = ((user.prenom||'?')[0] + (user.nom||'?')[0]).toUpperCase();
 
-    // Badge
+    // Badge ARRIVÉE / DÉPART
     const badgeEl = document.getElementById('result-badge');
     badgeEl.textContent = type;
     badgeEl.className = isDepart
       ? 'inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-5 bg-blue-500/20 text-blue-400 border border-blue-500/30'
       : 'inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
 
-    document.getElementById('result-avatar').textContent = initials;
-    document.getElementById('result-name').textContent = `${user.prenom} ${user.nom}`;
-    document.getElementById('result-role').textContent = `${user.role} • ${user.ecole || 'Retrouvailles'}`;
+    // ── PHOTO OFFICIELLE (dossier / compte) ──
+    const officialSrc = user.face_data || user.photo_profil || '';
+    const officialEl = document.getElementById('result-photo-official');
+    if (officialEl) {
+      if (officialSrc) {
+        officialEl.src = officialSrc;
+        officialEl.style.display = '';
+      } else {
+        // Fallback initiales si aucune photo officielle
+        officialEl.style.display = 'none';
+        const initials = ((user.prenom||'?')[0] + (user.nom||'?')[0]).toUpperCase();
+        const parent = officialEl.parentElement;
+        if (parent && !parent.querySelector('.fallback-initials')) {
+          const fb = document.createElement('div');
+          fb.className = 'fallback-initials w-full h-full flex items-center justify-center text-2xl font-black text-emerald-400';
+          fb.textContent = initials;
+          parent.appendChild(fb);
+        }
+      }
+    }
+
+    // ── PHOTO DIRECTE (capture live au moment du scan) ──
+    const liveSrc = window._lastLiveCaptureB64 || officialSrc || '';
+    const liveEl = document.getElementById('result-photo-live');
+    if (liveEl) liveEl.src = liveSrc;
+
+    // ── INFOS IDENTITÉ (révélées uniquement à la validation) ──
+    document.getElementById('result-name').textContent = `${user.prenom || ''} ${user.nom || ''}`.trim();
+    document.getElementById('result-role').textContent = `${user.role || 'Membre'} • ${user.ecole || 'Retrouvailles'}`;
     document.getElementById('result-time').textContent = timeStr;
     document.getElementById('result-greeting').textContent = greeting;
 
-    // Reset countdown bar animation
+    // Reset barre de countdown
     const bar = document.getElementById('result-countdown');
     bar.classList.remove('countdown-bar');
     void bar.offsetWidth; // force reflow
@@ -559,7 +606,7 @@
     document.getElementById('screen-welcome').classList.remove('hidden');
     document.getElementById('overlay-success').classList.remove('hidden');
 
-    // Auto-dismiss after 5s
+    // Auto-dismiss après 5s
     setTimeout(() => dismissSuccess(), 5000);
   }
 
