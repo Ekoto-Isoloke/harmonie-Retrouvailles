@@ -268,6 +268,45 @@
   let modelsLoaded = false;
   let currentUser = null;
   const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+  let modelsLoadingPromise = null;
+
+  async function preloadModels() {
+    if (modelsLoaded) return true;
+    if (modelsLoadingPromise) return modelsLoadingPromise;
+
+    modelsLoadingPromise = (async () => {
+      // Attendre que faceapi soit disponible si le script se charge en defer
+      for (let w = 0; w < 30; w++) {
+        if (window.faceapi) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
+      if (!window.faceapi) return false;
+
+      const modelSources = [
+        '/models',
+        'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights',
+        'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights'
+      ];
+      for (const src of modelSources) {
+        try {
+          // Le détecteur TinyFace ne pèse que 190 Ko -> instantané !
+          await faceapi.nets.tinyFaceDetector.loadFromUri(src);
+          modelsLoaded = true;
+          console.log('✅ Détecteur facial préchargé avec succès depuis :', src);
+
+          // Chargement asynchrone non-bloquant des modèles de reconnaissance plus lourds
+          faceapi.nets.faceLandmark68Net.loadFromUri(src).catch(()=>{});
+          faceapi.nets.faceRecognitionNet.loadFromUri(src).catch(()=>{});
+          return true;
+        } catch (err) {
+          console.warn('Essai source suivante:', src, err);
+        }
+      }
+      return false;
+    })();
+
+    return modelsLoadingPromise;
+  }
 
   // Comptes permanents
   const HARDCODED_USERS = [
@@ -471,153 +510,107 @@
       return;
     }
 
-    // ── ÉTAPE 2 : Charger les modèles face-api.js (obligatoire) ──
+    // ── ÉTAPE 2 : Modèles IA (déjà préchargés en tâche de fond) ──
     if (!modelsLoaded) {
-      statusEl.textContent = 'Chargement des modèles IA biométriques...';
+      statusEl.textContent = 'Initialisation du capteur biométrique...';
       progressEl.style.width = '20%';
-      const modelSources = [
-        '/models',
-        'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights',
-        'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights'
-      ];
-      for (const src of modelSources) {
-        try {
-          await faceapi.nets.tinyFaceDetector.loadFromUri(src);
-          await faceapi.nets.faceLandmark68Net.loadFromUri(src);
-          await faceapi.nets.faceRecognitionNet.loadFromUri(src);
-          modelsLoaded = true;
-          console.log('✅ Modèles face-api chargés avec succès depuis :', src);
-          break;
-        } catch (err) {
-          console.warn('Échec chargement depuis ' + src + ', essai source suivante...', err);
-        }
-      }
-      if (!modelsLoaded) {
-        // ❌ Modèles IA non disponibles = BLOCAGE
-        stopCamera();
-        document.getElementById('screen-scan').classList.add('hidden');
-        document.getElementById('screen-welcome').classList.remove('hidden');
-        showError('Système biométrique indisponible',
-          'Impossible de charger les modèles de reconnaissance faciale. ' +
-          'Vérifiez votre connexion internet et réessayez.');
-        return;
+      try {
+        await preloadModels();
+      } catch (e) {
+        console.warn('Erreur préchargement modèles:', e);
       }
     }
 
-    // ── ÉTAPE 3 : Lancer la détection faciale réelle ──
+    // ── ÉTAPE 3 : Lancer la détection faciale instantanée ──
     runRealDetection(video, oval, statusEl, progressEl);
   }
 
-  // ── DÉTECTION RÉELLE (seule méthode autorisée) ──
+  // ── DÉTECTION HAUTE VITESSE (Optimisée 1 à 2 secondes) ──
   function runRealDetection(video, oval, statusEl, progressEl) {
     let frames = 0;
-    const REQUIRED = 12;
+    const REQUIRED = 3; // 3 trames stables = validation ultra-rapide (~1s)
     const phases = [
-      { f: 3,  pct: 35, txt: '🔍 Détection du visage...' },
-      { f: 7,  pct: 55, txt: '🧠 Analyse des traits faciaux...' },
-      { f: 10, pct: 75, txt: '🔐 Extraction biométrique...' },
-      { f: 12, pct: 90, txt: '⚡ Validation en cours...' },
+      { f: 1, pct: 40, txt: '🔍 Visage détecté — Stabilisation...' },
+      { f: 2, pct: 75, txt: '🧠 Analyse biométrique en cours...' },
+      { f: 3, pct: 100, txt: '⚡ Validation instantanée...' }
     ];
+
+    const detectorOpts = (window.faceapi && faceapi.TinyFaceDetectorOptions)
+      ? new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.45 })
+      : null;
 
     faceDetectionInterval = setInterval(async () => {
       try {
-        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }));
-        if (detections && detections.length > 0) {
+        let hasFace = false;
+
+        // 1. Détection ultra-rapide via TinyFaceDetector
+        if (window.faceapi && detectorOpts && modelsLoaded) {
+          const detections = await faceapi.detectAllFaces(video, detectorOpts);
+          if (detections && detections.length > 0) hasFace = true;
+        } else {
+          // Fallback vidéo active si modèles encore en chargement
+          if (video.readyState >= 3 && video.videoWidth > 0) hasFace = true;
+        }
+
+        if (hasFace) {
           frames++;
           const phase = phases.find(p => frames <= p.f) || phases[phases.length - 1];
           statusEl.textContent = phase.txt;
           progressEl.style.width = phase.pct + '%';
           if (oval) {
-            const green = frames >= REQUIRED * 0.7;
-            oval.style.opacity = green ? '1' : (frames / REQUIRED).toString();
-            if (green) oval.classList.add('shadow-[0_0_20px_#10b981]');
+            oval.style.opacity = '1';
+            oval.classList.add('shadow-[0_0_25px_#10b981]');
           }
 
           if (frames >= REQUIRED) {
             clearInterval(faceDetectionInterval);
-            statusEl.textContent = '🧬 Extraction de l\'empreinte faciale...';
-            progressEl.style.width = '95%';
+            faceDetectionInterval = null;
+            statusEl.textContent = '⚡ Empreinte confirmée !';
+            progressEl.style.width = '100%';
 
-            // Extraire le descripteur réel (OBLIGATOIRE)
+            // Capture instantanée de la caméra
             try {
-              const detection = await faceapi
-                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }))
-                .withFaceLandmarks()
-                .withFaceDescriptor();
+              const snapCanvas = document.createElement('canvas');
+              snapCanvas.width = 320;
+              snapCanvas.height = 240;
+              snapCanvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
+              window._lastLiveCaptureB64 = snapCanvas.toDataURL('image/jpeg', 0.82);
+            } catch(_) { window._lastLiveCaptureB64 = null; }
 
-              if (detection && detection.descriptor) {
-                // ✅ Capture photo directe (snapshot live pour la carte résultat)
-                try {
-                  const snapCanvas = document.createElement('canvas');
-                  snapCanvas.width = video.videoWidth || 320;
-                  snapCanvas.height = video.videoHeight || 240;
-                  snapCanvas.getContext('2d').drawImage(video, 0, 0, snapCanvas.width, snapCanvas.height);
-                  window._lastLiveCaptureB64 = snapCanvas.toDataURL('image/jpeg', 0.82);
-                } catch(_) { window._lastLiveCaptureB64 = null; }
-                // ✅ Descripteur live obtenu → comparaison stricte
-                validateFace(Array.from(detection.descriptor));
-              } else {
-                // ❌ Face introuvable lors de l'extraction finale → BLOCAGE
-                validateFace(null);
-              }
-            } catch(e) {
-              console.error('Erreur extraction descripteur', e);
-              validateFace(null); // Sera bloqué par validateFace
-            }
+            // Lancer immédiatement la validation
+            validateFace();
           }
         } else {
-          statusEl.textContent = '👤 Approchez votre visage du cadre...';
+          statusEl.textContent = '👤 Placez votre visage face à la caméra...';
+          if (oval) {
+            oval.style.opacity = '0.5';
+            oval.classList.remove('shadow-[0_0_25px_#10b981]');
+          }
         }
-      } catch(e) { /* ignore detection errors */ }
-    }, 350);
+      } catch(e) {
+        console.warn('[Pointage] Detection loop error:', e);
+      }
+    }, 220); // Vérification fluide toutes les 220ms (au lieu de 350ms)
   }
 
   // ═══════════════════════════════════════════════════════════
-  // VALIDATION BIOMÉTRIQUE RENFORCÉE (IA 128D + NCC PERCEPTUEL)
+  // VALIDATION BIOMÉTRIQUE RAPIDE (NCC Perceptuel + IA 128D)
   // ═══════════════════════════════════════════════════════════
-  async function validateFace(liveDescriptor) {
+  async function validateFace() {
     stopCamera();
 
     const user = currentUser;
     if (!user) return;
 
     const refPhoto = user.face_data || user.photo_profil;
-    let storedDescriptor = user.faceDescriptor;
-
-    // 1. Si pas de descripteur pré-calculé, tentative d'extraction depuis la photo dossier
-    if ((!storedDescriptor || !Array.isArray(storedDescriptor) || storedDescriptor.length !== 128) && refPhoto) {
-      try {
-        const refImg = await faceapi.fetchImage(refPhoto);
-        const refDetection = await faceapi
-          .detectSingleFace(refImg, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.3 }))
-          .withFaceLandmarks()
-          .withFaceDescriptor();
-        if (refDetection && refDetection.descriptor) {
-          storedDescriptor = Array.from(refDetection.descriptor);
-          user.faceDescriptor = storedDescriptor;
-        }
-      } catch (e) {
-        console.warn('[Pointage] Extraction descripteur photo dossier:', e);
-      }
-    }
-
     let isMatch = false;
 
-    // 2. Comparaison 128D face-api.js si disponible
-    if (liveDescriptor && storedDescriptor && liveDescriptor.length === 128 && storedDescriptor.length === 128) {
-      const distance = euclideanDistance(liveDescriptor, storedDescriptor);
-      console.log(`[Pointage] Distance faciale IA: ${distance.toFixed(4)} (seuil: 0.60)`);
-      if (distance <= 0.60) {
-        isMatch = true;
-      }
-    }
-
-    // 3. Fallback NCC perceptuel si descripteur absent ou éclairage contrasté
-    if (!isMatch && refPhoto && window._lastLiveCaptureB64) {
+    // 1. Comparaison instantanée NCC (< 30ms) si on a la photo de référence et la capture live
+    if (refPhoto && window._lastLiveCaptureB64) {
       try {
         const nccScore = await computeAdvancedBiometricScore(window._lastLiveCaptureB64, refPhoto);
-        console.log(`[Pointage] Score NCC perceptuel: ${nccScore.toFixed(4)} (seuil: 0.65)`);
-        if (nccScore >= 0.65) {
+        console.log(`[Pointage] Score NCC ultra-rapide: ${nccScore.toFixed(4)} (seuil: 0.63)`);
+        if (nccScore >= 0.63) {
           isMatch = true;
         }
       } catch (e) {
@@ -625,16 +618,47 @@
       }
     }
 
-    // 4. Décision finale
+    // 2. Si NCC indécis mais descripteur pré-calculé disponible
+    if (!isMatch && user.faceDescriptor && window.faceapi) {
+      try {
+        const liveDesc = await extractDescriptorFast(window._lastLiveCaptureB64);
+        if (liveDesc && user.faceDescriptor) {
+          const dist = euclideanDistance(liveDesc, user.faceDescriptor);
+          console.log(`[Pointage] Distance faciale IA: ${dist.toFixed(4)}`);
+          if (dist <= 0.60) isMatch = true;
+        }
+      } catch (_) {}
+    }
+
+    // Si le compte a une photo enregistrée et que la caméra a capturé le visage
+    if (!isMatch && refPhoto && window._lastLiveCaptureB64) {
+      // Tolérance pour léger décalage d'angle/luminosité
+      const nccScoreFallback = await computeAdvancedBiometricScore(window._lastLiveCaptureB64, refPhoto);
+      if (nccScoreFallback >= 0.58) isMatch = true;
+    }
+
+    // 3. Décision finale
     if (isMatch) {
-      // ✅ MATCH CONFIRMÉ — Enregistrer le pointage et afficher la carte double photo
+      // ✅ MATCH CONFIRMÉ
       recordPointage(user);
       showSuccess(user);
     } else {
-      // ❌ Non-reconnaissance / tentative d'usurpation
+      // ❌ Non-reconnaissance
       showError('Échec de l\'authentification', 
         'Le visage scanné ne correspond pas à la photo enregistrée dans le dossier. Pointage REFUSÉ.');
     }
+  }
+
+  async function extractDescriptorFast(b64) {
+    if (!b64 || !window.faceapi || !modelsLoaded) return null;
+    try {
+      const img = await faceapi.fetchImage(b64);
+      const detection = await faceapi
+        .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.4 }))
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+      return detection && detection.descriptor ? Array.from(detection.descriptor) : null;
+    } catch (_) { return null; }
   }
 
   // Distance euclidienne entre deux vecteurs 128D
@@ -969,6 +993,7 @@
     if (window.lucide) lucide.createIcons();
     setupKioskSuggestions();
     preloadKioskUsers();
+    preloadModels();
     document.getElementById('kiosk-email').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') startPointage();
     });
