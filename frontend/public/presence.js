@@ -305,6 +305,7 @@ window.presenceAuthenticate = async function (overrideEmail = null, overrideType
     }
 
     if (!userData) {
+      if (overrideEmail) showStep('presence-auth-gate');
       setAuthError('❌ Aucun compte trouvé avec cet email. Vérifiez et réessayez.');
       if (btn) { btn.disabled = false; btn.innerHTML = '<span>📷</span> Passer à la Caméra'; btn.style.opacity = '1'; }
       return;
@@ -312,6 +313,7 @@ window.presenceAuthenticate = async function (overrideEmail = null, overrideType
 
     const referencePhoto = userData.face_data || userData.photo_profil;
     if (!referencePhoto && !userData.faceDescriptor) {
+      if (overrideEmail) showStep('presence-auth-gate');
       setAuthError('⚠️ Aucune photo biométrique enregistrée. Contactez un administrateur.');
       if (btn) { btn.disabled = false; btn.innerHTML = '<span>📷</span> Passer à la Caméra'; btn.style.opacity = '1'; }
       return;
@@ -326,6 +328,7 @@ window.presenceAuthenticate = async function (overrideEmail = null, overrideType
 
   } catch (err) {
     console.error('[Présence] Erreur:', err);
+    if (overrideEmail) showStep('presence-auth-gate');
     setAuthError('❌ Erreur de connexion. Vérifiez votre réseau.');
     if (btn) { btn.disabled = false; btn.innerHTML = '<span>📷</span> Passer à la Caméra'; btn.style.opacity = '1'; }
   }
