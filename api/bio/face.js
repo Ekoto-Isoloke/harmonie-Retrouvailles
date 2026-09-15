@@ -21,7 +21,8 @@ module.exports = async (req, res) => {
       if (user_id) {
         rows = await sql`SELECT id, nom, prenom, role, ecole, face_data, face_enrolled_at, photo_profil FROM utilisateurs WHERE id = ${user_id}`;
       } else {
-        rows = await sql`SELECT id, nom, prenom, role, ecole, face_data, face_enrolled_at, photo_profil FROM utilisateurs WHERE LOWER(email) = ${email.toLowerCase().trim()}`;
+        const cleanParam = email.toLowerCase().trim();
+        rows = await sql`SELECT id, nom, prenom, role, ecole, face_data, face_enrolled_at, photo_profil FROM utilisateurs WHERE LOWER(email) = ${cleanParam} OR LOWER(telephone) = ${cleanParam} OR id::text = ${cleanParam}`;
       }
       if (rows.length === 0) return res.status(404).json({ message: 'Utilisateur introuvable' });
 

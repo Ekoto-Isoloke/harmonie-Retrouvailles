@@ -95,11 +95,11 @@ function injectPresenceAuthGate() {
         </select>
       </div>
       <div style="margin-bottom:1rem;">
-        <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:0.4rem;">Email professionnel</label>
+        <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:0.4rem;">Email ou Identifiant personnel</label>
         <input
           id="presence-auth-email"
-          type="email"
-          placeholder="votre@email.cd"
+          type="text"
+          placeholder="ex: nom@ecole.cd ou téléphone"
           style="width:100%;padding:0.55rem 0.75rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.9rem;box-sizing:border-box;outline:none;"
           onkeydown="if(event.key==='Enter'){presenceAuthenticate();}"
         />
@@ -166,31 +166,47 @@ function injectPresenceAuthGate() {
 
   `;
 
-  // ── Étape C : Résultat ──
+  // ── Étape C : Résultat (Nom révélé UNIQUEMENT ici avec double photo) ──
   const resultStep = document.createElement('div');
   resultStep.id = 'presence-result-step';
-  resultStep.style.cssText = 'display:none;flex-direction:column;align-items:center;padding:1.5rem;min-height:340px;justify-content:center;animation:presenceResultFadeIn 0.4s ease;';
+  resultStep.style.cssText = 'display:none;flex-direction:column;align-items:center;padding:1.4rem;min-height:360px;justify-content:center;animation:presenceResultFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);';
   resultStep.innerHTML = `
-    <div id="presence-result-greet" style="font-size:1.3rem;font-weight:800;color:#16a34a;margin-bottom:0.5rem;text-align:center;"></div>
-    <img
-      id="presence-result-photo"
-      src=""
-      alt="Photo"
-      style="display:none;width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid #16a34a;margin-bottom:0.8rem;"
-    />
-    <div id="presence-result-name" style="font-size:1.15rem;font-weight:700;color:#1e293b;margin-bottom:0.2rem;text-align:center;"></div>
-    <div id="presence-result-role" style="font-size:0.8rem;color:#64748b;margin-bottom:0.7rem;text-align:center;"></div>
-    <div id="presence-result-badge" style="margin-bottom:0.7rem;"></div>
-    <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.4rem;">
-      <span style="font-size:0.85rem;color:#374151;font-weight:600;">🕐</span>
-      <span id="presence-result-time" style="font-size:1rem;font-weight:700;color:#2563eb;"></span>
+    <div id="presence-result-greet" style="font-size:1.25rem;font-weight:900;color:#16a34a;margin-bottom:0.35rem;text-align:center;"></div>
+    
+    <!-- Double Photo Miroir de Sécurité (Officielle VS Live) -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin-bottom:0.75rem;">
+      <div style="text-align:center;">
+        <div style="position:relative;width:78px;height:78px;border-radius:18px;overflow:hidden;border:2.5px solid #16a34a;box-shadow:0 4px 14px rgba(22,163,74,0.25);background:#0f172a;">
+          <img id="presence-result-photo-official" src="" alt="Officielle" style="width:100%;height:100%;object-fit:cover;" />
+        </div>
+        <span style="font-size:0.65rem;font-weight:800;color:#16a34a;text-transform:uppercase;letter-spacing:0.5px;margin-top:0.25rem;display:block;">Photo Dossier</span>
+      </div>
+      <div style="font-size:1.2rem;color:#16a34a;font-weight:900;">✓</div>
+      <div style="text-align:center;">
+        <div style="position:relative;width:78px;height:78px;border-radius:18px;overflow:hidden;border:2.5px solid #2563eb;box-shadow:0 4px 14px rgba(37,99,235,0.25);background:#0f172a;">
+          <img id="presence-result-photo-live" src="" alt="Direct" style="width:100%;height:100%;object-fit:cover;" />
+        </div>
+        <span style="font-size:0.65rem;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:0.5px;margin-top:0.25rem;display:block;">Photo Direct</span>
+      </div>
     </div>
-    <div id="presence-result-score" style="font-size:0.72rem;color:#94a3b8;margin-bottom:1rem;"></div>
+
+    <!-- NOM COMPLET ET DÉTAILS RÉVÉLÉS À LA FIN -->
+    <div id="presence-result-name" style="font-size:1.25rem;font-weight:900;color:#0f172a;margin-bottom:0.15rem;text-align:center;letter-spacing:-0.3px;"></div>
+    <div id="presence-result-role" style="font-size:0.82rem;font-weight:600;color:#475569;margin-bottom:0.5rem;text-align:center;"></div>
+    <div id="presence-result-badge" style="margin-bottom:0.55rem;"></div>
+    
+    <div style="display:flex;align-items:center;gap:0.4rem;background:#f8fafc;padding:0.4rem 0.9rem;border-radius:99px;border:1px solid #e2e8f0;margin-bottom:0.8rem;">
+      <span style="font-size:0.85rem;">🕒</span>
+      <span id="presence-result-time" style="font-size:0.95rem;font-weight:800;color:#0f172a;"></span>
+      <span style="color:#cbd5e1;">•</span>
+      <span id="presence-result-score" style="font-size:0.8rem;font-weight:800;color:#16a34a;"></span>
+    </div>
+
     <button
       onclick="closePresenceModal()"
-      style="padding:0.55rem 1.4rem;background:#f1f5f9;color:#374151;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.85rem;cursor:pointer;font-weight:600;"
+      style="width:100%;max-width:220px;padding:0.6rem 1.2rem;background:#0f172a;color:#fff;border:none;border-radius:10px;font-size:0.85rem;cursor:pointer;font-weight:700;transition:all 0.2s;"
     >
-      Fermer
+      Terminer & Fermer
     </button>
   `;
 
@@ -262,8 +278,8 @@ window.presenceAuthenticate = async function (overrideEmail = null, overrideType
 
   if (errorEl && !overrideEmail) { errorEl.style.display = 'none'; }
 
-  if (!email || !email.includes('@')) {
-    if (!overrideEmail) setAuthError('⚠️ Veuillez saisir une adresse email valide.');
+  if (!email || email.length < 3) {
+    if (!overrideEmail) setAuthError('⚠️ Veuillez saisir votre email ou identifiant.');
     return;
   }
 
@@ -279,22 +295,31 @@ window.presenceAuthenticate = async function (overrideEmail = null, overrideType
       if (res.ok) {
         const data = await res.json();
         if (data && (data.face_data || data.photo_profil || data.faceDescriptor)) {
-          userData = data;
+          userData = {
+            ...(data.user || {}),
+            email: email,
+            face_data: data.face_data || data.photo_profil,
+            photo_profil: data.photo_profil || data.face_data,
+            faceDescriptor: data.faceDescriptor || null
+          };
         }
       }
     } catch (apiErr) {
       console.warn('[Présence] API Cloud indisponible:', apiErr);
     }
 
-    // 2. Fallback localStorage
+    // 2. Fallback localStorage (hr_users_db_v2 et schoolUsers)
     if (!userData) {
-      const allUsers = JSON.parse(localStorage.getItem('schoolUsers') || '[]');
+      const allUsers = [
+        ...(JSON.parse(localStorage.getItem('hr_users_db_v2') || '[]')),
+        ...(JSON.parse(localStorage.getItem('schoolUsers') || '[]'))
+      ];
       const found = allUsers.find(u => u.email && u.email.toLowerCase() === email);
       if (found) {
         userData = {
           email: found.email,
           face_data: found.face_data || found.photo_profil || found.facePhoto || null,
-          photo_profil: found.photo_profil || null,
+          photo_profil: found.photo_profil || found.face_data || null,
           faceDescriptor: found.faceDescriptor || null,
           nom: found.nom || '',
           prenom: found.prenom || '',
@@ -701,14 +726,18 @@ async function showPresenceResultCard(score) {
   if (scoreEl) scoreEl.textContent = 'Score biométrique : ' + (score * 100).toFixed(0) + '%';
   if (greetEl) greetEl.textContent = isArrivee ? ('Bienvenue, ' + (user.prenom || fullName) + ' !') : ('Au revoir, ' + (user.prenom || fullName) + ' !');
 
-  if (photoEl) {
-    const photo = user.face_data || user.photo_profil || user.capturedPhoto || null;
-    if (photo && photo.length > 100) {
-      photoEl.src = photo;
-      photoEl.style.display = 'block';
-    } else {
-      photoEl.style.display = 'none';
-    }
+  // Photos miroir (Officielle VS Direct)
+  const officialPhotoEl = document.getElementById('presence-result-photo-official');
+  const livePhotoEl = document.getElementById('presence-result-photo-live');
+
+  const officialPhoto = user.face_data || user.photo_profil || user.facePhoto || null;
+  const livePhoto = capturedFaceData || user.capturedPhoto || officialPhoto;
+
+  if (officialPhotoEl && officialPhoto) {
+    officialPhotoEl.src = officialPhoto;
+  }
+  if (livePhotoEl && livePhoto) {
+    livePhotoEl.src = livePhoto;
   }
 
   if (badgeEl) {
