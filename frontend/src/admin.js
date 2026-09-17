@@ -252,18 +252,42 @@ document.addEventListener('DOMContentLoaded', () => {
     initInstitutionalSwitcher();
     initLiveActivityFeed();
 
+    window._adminSwitchInst = function(ecole) {
+        if (!ecole) return;
+        db.ecoleActive = ecole;
+        saveDb();
+        updateHeaderSwitcher();
+        
+        // Mettre à jour le badge d'institution dans le header / sidebar
+        const instEl = document.getElementById('admin-inst-badge');
+        if (instEl) {
+            instEl.textContent = ecole === 'Harmonie' ? '🏫 C.S. Harmonie (Primaire)' : '🏫 G.S. Retrouvailles (Secondaire)';
+        }
+
+        renderView();
+    };
+    window.switchInstitution = window._adminSwitchInst;
+
+    function updateHeaderSwitcher() {
+        const btnH = document.getElementById('switch-harmonie');
+        const btnR = document.getElementById('switch-retrouvailles');
+        if (btnH && btnR) {
+            if (db.ecoleActive === 'Harmonie') {
+                btnH.className = "px-3 py-1.5 rounded-md bg-emerald-500/25 border border-emerald-500/50 text-emerald-300 font-black text-xs shadow-sm transition-all cursor-pointer";
+                btnR.className = "px-3 py-1.5 rounded-md text-gray-400 hover:text-white transition-all text-xs font-semibold cursor-pointer";
+            } else {
+                btnR.className = "px-3 py-1.5 rounded-md bg-purple-500/25 border border-purple-500/50 text-purple-300 font-black text-xs shadow-sm transition-all cursor-pointer";
+                btnH.className = "px-3 py-1.5 rounded-md text-gray-400 hover:text-white transition-all text-xs font-semibold cursor-pointer";
+            }
+        }
+    }
+
     function initInstitutionalSwitcher() {
         const btnH = document.getElementById('switch-harmonie');
         const btnR = document.getElementById('switch-retrouvailles');
-        const updateHeader = () => {
-            if (btnH && btnR) {
-                btnH.className = db.ecoleActive === 'Harmonie' ? "active-inst" : "inactive-inst";
-                btnR.className = db.ecoleActive === 'Retrouvailles' ? "active-inst" : "inactive-inst";
-            }
-        };
-        if (btnH) btnH.onclick = () => { db.ecoleActive = 'Harmonie'; saveDb(); updateHeader(); renderView(); };
-        if (btnR) btnR.onclick = () => { db.ecoleActive = 'Retrouvailles'; saveDb(); updateHeader(); renderView(); };
-        updateHeader();
+        if (btnH) btnH.onclick = (e) => { e && e.preventDefault(); window.switchInstitution('Harmonie'); };
+        if (btnR) btnR.onclick = (e) => { e && e.preventDefault(); window.switchInstitution('Retrouvailles'); };
+        updateHeaderSwitcher();
     }
 
     // ==========================================
@@ -503,20 +527,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // RENDER: DIRECTION GÉNÉRALE COCKPIT
     // ==========================================
     function renderDirectionGeneraleCockpit() {
-        const harmonie  = db.institutions['Harmonie'];
-        const retro     = db.institutions['Retrouvailles'];
-        const allPtH    = db.rh.pointages.filter(p => p.ecole === 'Harmonie');
-        const allPtR    = db.rh.pointages.filter(p => p.ecole === 'Retrouvailles');
-        const pctH      = allPtH.length > 0 ? Math.round((allPtH.filter(p => p.statut === 'Présent').length / allPtH.length) * 100) : 0;
-        const pctR      = allPtR.length > 0 ? Math.round((allPtR.filter(p => p.statut === 'Présent').length / allPtR.length) * 100) : 0;
-        const pctTotal  = (allPtH.length + allPtR.length) > 0
-            ? Math.round(((allPtH.filter(p => p.statut === 'Présent').length + allPtR.filter(p => p.statut === 'Présent').length) / (allPtH.length + allPtR.length)) * 100)
-            : 0;
-        const totalElev = harmonie.pedagogie.eleves.length + retro.pedagogie.eleves.length;
-        const totalClasses = harmonie.pedagogie.classes.length + retro.pedagogie.classes.length;
+        const isHarmonie = db.ecoleActive === 'Harmonie';
+        const activeInstName = isHarmonie ? 'C.S. Harmonie' : 'G.S. Retrouvailles';
+        const activeInstType = isHarmonie ? 'Primaire & Maternelle' : 'Secondaire & Humanités';
+        const inst = isHarmonie ? db.institutions['Harmonie'] : db.institutions['Retrouvailles'];
+        const allPt = db.rh.pointages.filter(p => p.ecole === db.ecoleActive);
+        const pct = allPt.length > 0 ? Math.round((allPt.filter(p => p.statut === 'Présent').length / allPt.length) * 100) : 0;
+        const totalElev = inst.pedagogie.eleves.length;
+        const totalClasses = inst.pedagogie.classes.length;
         const localHrUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
-        const totalComptes = localHrUsers.length || db.rh.comptes.length;
-        const today     = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
+        const totalComptes = localHrUsers.filter(u => u.ecole === db.ecoleActive || u.ecole === 'Harmonie-Retrouvailles').length || db.rh.comptes.filter(c => c.ecole === db.ecoleActive).length;
+        const today = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
 
         ui.content.innerHTML = `
             <div class="mb-8 flex flex-col md:flex-row justify-between items-start gap-4">
@@ -527,14 +548,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div>
                             <h2 class="text-2xl font-black text-white uppercase tracking-tight">Cockpit Direction Générale</h2>
-                            <p class="text-[11px] text-amber-300/80 uppercase tracking-widest font-bold">Supervision Exécutive — Promoteur & Famille</p>
+                            <p class="text-[11px] text-amber-300/80 uppercase tracking-widest font-bold">Supervision Exécutive — ${activeInstName} (${activeInstType})</p>
                         </div>
                     </div>
-                    <p class="text-xs text-gray-400 uppercase tracking-widest">${today}</p>
+                    <p class="text-xs text-gray-400 uppercase tracking-widest">${activeInstName} — ${today}</p>
                 </div>
-                <div class="flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                    <span class="text-xs font-black text-amber-400 uppercase tracking-widest">Vue Consolidée — 2 Établissements</span>
+                <div class="flex items-center gap-2 px-4 py-2.5 ${isHarmonie ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-purple-500/10 border border-purple-500/30'} rounded-xl">
+                    <span class="w-2 h-2 rounded-full ${isHarmonie ? 'bg-emerald-400' : 'bg-purple-400'} animate-pulse"></span>
+                    <span class="text-xs font-black ${isHarmonie ? 'text-emerald-400' : 'text-purple-400'} uppercase tracking-widest">Établissement Actif : ${activeInstName}</span>
                 </div>
             </div>
 
@@ -542,22 +563,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="glass-panel p-5 rounded-2xl border border-blue-500/30 bg-blue-500/5 flex flex-col gap-2">
                     <div class="flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i><span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Total Élèves</span></div>
                     <h3 class="text-2xl font-black text-white">${totalElev}</h3>
-                    <span class="text-[10px] text-gray-400">Inscrits dans le groupe</span>
+                    <span class="text-[10px] text-gray-400">Inscrits à ${activeInstName}</span>
                 </div>
                 <div class="glass-panel p-5 rounded-2xl border border-cyan-500/30 bg-cyan-500/5 flex flex-col gap-2">
-                    <div class="flex items-center gap-2"><i data-lucide="user-check" class="w-5 h-5 text-cyan-400"></i><span class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Présence Groupe</span></div>
-                    <h3 class="text-2xl font-black ${pctTotal >= 75 ? 'text-emerald-400' : pctTotal >= 50 ? 'text-amber-400' : 'text-rose-400'}">${pctTotal}%</h3>
-                    <span class="text-[10px] text-gray-400">Taux moyen consolidé</span>
+                    <div class="flex items-center gap-2"><i data-lucide="user-check" class="w-5 h-5 text-cyan-400"></i><span class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Taux Présence</span></div>
+                    <h3 class="text-2xl font-black ${pct >= 75 ? 'text-emerald-400' : pct >= 50 ? 'text-amber-400' : 'text-rose-400'}">${pct}%</h3>
+                    <span class="text-[10px] text-gray-400">Assiduité ${activeInstName}</span>
                 </div>
                 <div class="glass-panel p-5 rounded-2xl border border-purple-500/20 bg-purple-500/5 flex flex-col gap-2">
                     <div class="flex items-center gap-2"><i data-lucide="layout-grid" class="w-5 h-5 text-purple-400"></i><span class="text-[10px] font-black text-purple-400 uppercase tracking-widest">Classes Actives</span></div>
                     <h3 class="text-2xl font-black text-white">${totalClasses}</h3>
-                    <span class="text-[10px] text-gray-400">Harmonie + Retrouvailles</span>
+                    <span class="text-[10px] text-gray-400">${activeInstName}</span>
                 </div>
                 <div class="glass-panel p-5 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex flex-col gap-2">
                     <div class="flex items-center gap-2"><i data-lucide="briefcase" class="w-5 h-5 text-amber-400"></i><span class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Personnel</span></div>
                     <h3 class="text-2xl font-black text-white">${totalComptes}</h3>
-                    <span class="text-[10px] text-gray-400">Comptes actifs groupe</span>
+                    <span class="text-[10px] text-gray-400">Affectés à ${activeInstName}</span>
                 </div>
             </div>
 
@@ -627,10 +648,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div class="glass-panel p-6 rounded-3xl border border-white/10">
                 <h3 class="font-black text-sm uppercase tracking-widest text-gray-300 mb-4 flex items-center gap-2">
-                    <i data-lucide="activity" class="w-4 h-4 text-blue-400"></i> Journal d'Activités Groupe
+                    <i data-lucide="activity" class="w-4 h-4 text-blue-400"></i> Journal d'Activités — ${activeInstName}
                 </h3>
                 <div class="space-y-3 max-h-64 overflow-y-auto pr-1">
-                    ${[...db.rh.journalDirection].sort((a,b) => b.date > a.date ? 1 : -1).slice(0, 8).map(j => `
+                    ${[...db.rh.journalDirection].filter(j => !j.ecole || j.ecole === db.ecoleActive).sort((a,b) => b.date > a.date ? 1 : -1).slice(0, 8).map(j => `
                         <div class="flex items-start gap-3 p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition">
                             <div class="w-7 h-7 rounded-full ${j.ecole === 'Retrouvailles' ? 'bg-purple-500/20 text-purple-400' : 'bg-emerald-500/20 text-emerald-400'} flex items-center justify-center text-[10px] font-black shrink-0">${j.ecole === 'Retrouvailles' ? '🎓' : '🏫'}</div>
                             <div class="min-w-0 flex-1">
@@ -2301,9 +2322,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let options = [];
             if (ecole === 'Harmonie') {
-                options = ['Direction', 'DP', 'Sur école', 'Enseignant', 'Comptable'];
+                options = ['Direction', 'DP', 'Sur école', 'Enseignant', 'Comptable', 'Réceptionniste', 'Technicien de l\'école', 'Nettoyeuse'];
             } else {
-                options = ['Direction', 'Préfet', 'D.E', 'D.D', 'Enseignant', 'Comptable'];
+                options = ['Direction', 'Préfet', 'D.E', 'D.D', 'Enseignant', 'Comptable', 'Réceptionniste', 'Technicien de l\'école', 'Nettoyeuse'];
             }
             
             roleSelect.innerHTML = options.map(o => `<option value="${o}">${o}</option>`).join('');
@@ -3443,6 +3464,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <option value="Préfet" ${u.role === 'Préfet' ? 'selected' : ''}>Préfet - Retrouvailles</option>
                                         <option value="Enseignant" ${u.role === 'Enseignant' ? 'selected' : ''}>Enseignant / Professeur</option>
                                         <option value="Comptable" ${u.role === 'Comptable' ? 'selected' : ''}>Comptable</option>
+                                        <option value="Réceptionniste" ${u.role === 'Réceptionniste' ? 'selected' : ''}>🛎️ Réceptionniste</option>
+                                        <option value="Technicien de l'école" ${u.role === "Technicien de l'école" ? 'selected' : ''}>🔧 Technicien de l'école</option>
+                                        <option value="Nettoyeuse" ${u.role === 'Nettoyeuse' ? 'selected' : ''}>🧹 Nettoyeuse</option>
                                         <option value="Parent" ${u.role === 'Parent' ? 'selected' : ''}>Parent</option>
                                     </select>
                                 </div>
@@ -3564,11 +3588,112 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
+        // Gestion photo et webcam
+        let _currentPhotoBase64 = null;
+        let _webcamMediaStream = null;
+
+        window.handlePhotoUpload = function(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                _currentPhotoBase64 = e.target.result;
+                const img = document.getElementById('photo-img');
+                const ph = document.getElementById('photo-placeholder');
+                const btnRem = document.getElementById('btn-remove-photo');
+                if (img) { img.src = _currentPhotoBase64; img.classList.remove('hidden'); }
+                if (ph) ph.classList.add('hidden');
+                if (btnRem) btnRem.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.startWebcamCapture = async function() {
+            const container = document.getElementById('webcam-container');
+            const video = document.getElementById('webcam-video');
+            if (!container || !video) return;
+            try {
+                _webcamMediaStream = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 400, facingMode: 'user' } });
+                video.srcObject = _webcamMediaStream;
+                container.classList.remove('hidden');
+                if (window.lucide) lucide.createIcons();
+            } catch(err) {
+                alert("Impossible d'accéder à la webcam : " + (err.message || 'Vérifiez les permissions de votre navigateur.'));
+            }
+        };
+
+        window.captureWebcamPhoto = function() {
+            const video = document.getElementById('webcam-video');
+            const canvas = document.getElementById('webcam-canvas');
+            if (!video || !canvas) return;
+            canvas.width = video.videoWidth || 320;
+            canvas.height = video.videoHeight || 320;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            _currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+            
+            const img = document.getElementById('photo-img');
+            const ph = document.getElementById('photo-placeholder');
+            const btnRem = document.getElementById('btn-remove-photo');
+            if (img) { img.src = _currentPhotoBase64; img.classList.remove('hidden'); }
+            if (ph) ph.classList.add('hidden');
+            if (btnRem) btnRem.classList.remove('hidden');
+            
+            window.stopWebcamCapture();
+        };
+
+        window.stopWebcamCapture = function() {
+            if (_webcamMediaStream) {
+                _webcamMediaStream.getTracks().forEach(t => t.stop());
+                _webcamMediaStream = null;
+            }
+            const container = document.getElementById('webcam-container');
+            if (container) container.classList.add('hidden');
+        };
+
+        window.removeSelectedPhoto = function() {
+            _currentPhotoBase64 = null;
+            const img = document.getElementById('photo-img');
+            const ph = document.getElementById('photo-placeholder');
+            const btnRem = document.getElementById('btn-remove-photo');
+            const input = document.getElementById('photo-file-input');
+            if (img) { img.src = ''; img.classList.add('hidden'); }
+            if (ph) ph.classList.remove('hidden');
+            if (btnRem) btnRem.classList.add('hidden');
+            if (input) input.value = '';
+        };
+
+        window.onRoleChangeCreateUser = function() {
+            const role = document.getElementById('new-role')?.value;
+            const isSpecial = ['Réceptionniste', 'Technicien de l\'école', 'Nettoyeuse'].includes(role);
+            const specialFields = document.getElementById('special-support-fields');
+            const pwdConfirmWrapper = document.getElementById('new-password-confirm-wrapper');
+            const emailWrapper = document.getElementById('new-email-wrapper');
+            const emailInput = document.getElementById('new-email');
+
+            if (specialFields) {
+                specialFields.classList.toggle('hidden', !isSpecial);
+            }
+            if (pwdConfirmWrapper) {
+                pwdConfirmWrapper.classList.toggle('hidden', !isSpecial);
+            }
+            if (emailWrapper && emailInput) {
+                if (isSpecial) {
+                    emailWrapper.querySelector('label').textContent = "Email (Optionnel)";
+                    emailInput.required = false;
+                } else {
+                    emailWrapper.querySelector('label').textContent = "Email *";
+                    emailInput.required = true;
+                }
+            }
+        };
+
         // Action: Modal création nouvel utilisateur manuel
         window.openCreateUserModal = function() {
+            _currentPhotoBase64 = null;
             const modalHtml = `
-                <div id="user-create-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md fade-in">
-                    <div class="glass-panel border border-white/15 bg-[#0a192f]/95 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative text-white">
+                <div id="user-create-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md fade-in overflow-y-auto">
+                    <div class="glass-panel border border-white/15 bg-[#0a192f]/98 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative text-white my-auto max-h-[92vh] overflow-y-auto">
                         <div class="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">
@@ -3576,10 +3701,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                                 <div>
                                     <h3 class="font-black text-lg text-white">Créer un Nouveau Compte</h3>
-                                    <p class="text-xs text-gray-400">Ajout d'un membre du personnel par le Super-Admin</p>
+                                    <p class="text-xs text-gray-400">Personnel enseignant, administratif ou de soutien</p>
                                 </div>
                             </div>
-                            <button onclick="document.getElementById('user-create-modal').remove()" class="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition">
+                            <button onclick="window.stopWebcamCapture(); document.getElementById('user-create-modal').remove()" class="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition">
                                 <i data-lucide="x" class="w-5 h-5"></i>
                             </button>
                         </div>
@@ -3587,55 +3712,133 @@ document.addEventListener('DOMContentLoaded', () => {
                         <form id="form-create-user" onsubmit="event.preventDefault(); window.saveCreatedUser();" class="space-y-4 text-left">
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Prénom *</label>
-                                    <input type="text" id="new-prenom" placeholder="Ex: Jacques" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" required />
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Nom *</label>
-                                    <input type="text" id="new-nom" placeholder="Ex: ILUNGA" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" required />
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Email *</label>
-                                    <input type="email" id="new-email" placeholder="nom@retrouvailles.cd" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" required />
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Téléphone</label>
-                                    <input type="text" id="new-phone" placeholder="+243..." class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" />
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Rôle *</label>
-                                    <select id="new-role" class="w-full bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none">
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Rôle / Fonction *</label>
+                                    <select id="new-role" onchange="window.onRoleChangeCreateUser()" class="w-full bg-[#0d1e36] border border-emerald-500/40 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none">
                                         <option value="Enseignant" selected>Enseignant / Professeur</option>
                                         <option value="Direction Générale">Direction Générale</option>
                                         <option value="Directeur (D.P)">Directeur (D.P) - Primaire</option>
                                         <option value="Préfet">Préfet - Humanités</option>
                                         <option value="Comptable">Comptable</option>
+                                        <option value="Réceptionniste">🛎️ Réceptionniste</option>
+                                        <option value="Technicien de l'école">🔧 Technicien de l'école</option>
+                                        <option value="Nettoyeuse">🧹 Nettoyeuse</option>
                                         <option value="Parent">Parent</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Établissement *</label>
                                     <select id="new-ecole" class="w-full bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none">
-                                        <option value="Harmonie">C.S. Harmonie</option>
-                                        <option value="Retrouvailles" selected>G.S. Retrouvailles</option>
-                                        <option value="Harmonie-Retrouvailles">Toutes</option>
+                                        <option value="Harmonie" ${db.ecoleActive === 'Harmonie' ? 'selected' : ''}>C.S. Harmonie (Primaire)</option>
+                                        <option value="Retrouvailles" ${db.ecoleActive === 'Retrouvailles' ? 'selected' : ''}>G.S. Retrouvailles (Secondaire)</option>
+                                        <option value="Harmonie-Retrouvailles">Harmonie & Retrouvailles (Toutes)</option>
                                     </select>
                                 </div>
                             </div>
 
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Prénom *</label>
+                                    <input type="text" id="new-prenom" placeholder="Ex: Paul" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" required />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Nom *</label>
+                                    <input type="text" id="new-nom" placeholder="Ex: KASONGO" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" required />
+                                </div>
+                            </div>
+
+                            <!-- Champs Spécifiques Réceptionniste, Technicien, Nettoyeuse (Activés par défaut si sélectionné) -->
+                            <div id="special-support-fields" class="hidden p-3.5 bg-white/5 border border-cyan-500/30 rounded-2xl space-y-3">
+                                <div class="flex items-center gap-2 text-cyan-300 text-xs font-bold uppercase tracking-wider">
+                                    <i data-lucide="badge-info" class="w-4 h-4"></i> Informations Profil Personnel
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Sexe</label>
+                                        <select id="new-sexe" class="w-full bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none">
+                                            <option value="M">Homme (M)</option>
+                                            <option value="F">Femme (F)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Niveau d'étude</label>
+                                        <select id="new-niveau-etude" class="w-full bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none">
+                                            <option value="Diplôme d'État (D6)">Diplôme d'État (D6)</option>
+                                            <option value="Gradué / Bac+3">Gradué / Bac+3</option>
+                                            <option value="Licencié / Bac+5">Licencié / Bac+5</option>
+                                            <option value="Certificat Secondaire">Certificat Secondaire</option>
+                                            <option value="Certificat Primaire">Certificat Primaire</option>
+                                            <option value="Formation Professionnelle">Formation Professionnelle</option>
+                                            <option value="Autre">Autre</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Adresse de résidence</label>
+                                    <input type="text" id="new-adresse" placeholder="Ex: Av. Kasa-Vubu N° 12, Q. Matonge" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none" />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div id="new-email-wrapper">
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Email *</label>
+                                    <input type="email" id="new-email" placeholder="nom@retrouvailles.cd" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" required />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Téléphone *</label>
+                                    <input type="text" id="new-phone" placeholder="+243..." class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none" required />
+                                </div>
+                            </div>
+
+                            <!-- Mots de passe avec confirmation -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Créer Mot de passe *</label>
+                                    <input type="text" id="new-password" value="pass2026" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-emerald-400 focus:outline-none" required />
+                                </div>
+                                <div id="new-password-confirm-wrapper" class="hidden">
+                                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Confirmer Mot de passe *</label>
+                                    <input type="text" id="new-password-confirm" value="pass2026" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-cyan-400 focus:outline-none" />
+                                </div>
+                            </div>
+
+                            <!-- Photo / Webcam section -->
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Mot de passe provisoire *</label>
-                                <input type="text" id="new-password" value="pass2026" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-emerald-400 focus:outline-none" required />
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Photo de l'Agent (Upload ou Prise Directe)</label>
+                                <div class="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl">
+                                    <div id="photo-preview-box" class="w-14 h-14 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden shrink-0">
+                                        <span id="photo-placeholder" class="text-2xl">👤</span>
+                                        <img id="photo-img" class="w-full h-full object-cover hidden" />
+                                    </div>
+                                    <div class="flex-1 space-y-1.5">
+                                        <div class="flex flex-wrap gap-2">
+                                            <label class="cursor-pointer px-2.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                                                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Uploader Photo
+                                                <input type="file" id="photo-file-input" accept="image/*" class="hidden" onchange="window.handlePhotoUpload(event)" />
+                                            </label>
+                                            <button type="button" onclick="window.startWebcamCapture()" class="px-2.5 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-300 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                                                <i data-lucide="camera" class="w-3.5 h-3.5"></i> Prendre Photo
+                                            </button>
+                                            <button type="button" id="btn-remove-photo" onclick="window.removeSelectedPhoto()" class="hidden px-2 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg text-xs font-bold transition">✕</button>
+                                        </div>
+                                        <p class="text-[10px] text-gray-400">Prise de vue du visage pour badge officiel & reconnaissance</p>
+                                    </div>
+                                </div>
+                                <div id="webcam-container" class="hidden mt-3 p-3 bg-black/60 border border-cyan-500/40 rounded-2xl text-center space-y-2">
+                                    <video id="webcam-video" autoplay playsinline class="w-full max-h-48 rounded-xl object-cover mx-auto bg-black border border-white/10"></video>
+                                    <canvas id="webcam-canvas" class="hidden"></canvas>
+                                    <div class="flex justify-center gap-2">
+                                        <button type="button" onclick="window.captureWebcamPhoto()" class="px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-black text-xs rounded-xl flex items-center gap-1.5 transition">
+                                            <i data-lucide="aperture" class="w-3.5 h-3.5"></i> Capturer
+                                        </button>
+                                        <button type="button" onclick="window.stopWebcamCapture()" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-gray-300 font-bold text-xs rounded-xl transition">
+                                            Annuler
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="pt-4 flex items-center justify-end gap-3 border-t border-white/10">
-                                <button type="button" onclick="document.getElementById('user-create-modal').remove()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold transition">
+                                <button type="button" onclick="window.stopWebcamCapture(); document.getElementById('user-create-modal').remove()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold transition">
                                     Annuler
                                 </button>
                                 <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition">
@@ -3648,29 +3851,84 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             document.body.insertAdjacentHTML('beforeend', modalHtml);
             if (window.lucide) lucide.createIcons();
+            setTimeout(window.onRoleChangeCreateUser, 50);
         };
 
         // Sauvegarder nouvel utilisateur
         window.saveCreatedUser = function() {
-            const email = document.getElementById('new-email').value.trim();
-            if (db.some(u => u.email && u.email.toLowerCase() === email.toLowerCase())) {
-                alert("Cet email est déjà attribué à un autre compte.");
+            const nom = (document.getElementById('new-nom')?.value || '').trim();
+            const prenom = (document.getElementById('new-prenom')?.value || '').trim();
+            const role = document.getElementById('new-role')?.value || 'Enseignant';
+            const ecole = document.getElementById('new-ecole')?.value || 'Retrouvailles';
+            const phone = (document.getElementById('new-phone')?.value || '').trim();
+            const password = (document.getElementById('new-password')?.value || '').trim();
+            const passwordConfirm = document.getElementById('new-password-confirm')?.value?.trim();
+            const isSpecial = ['Réceptionniste', 'Technicien de l\'école', 'Nettoyeuse'].includes(role);
+            
+            if (isSpecial && passwordConfirm && password !== passwordConfirm) {
+                alert("⚠️ Erreur : Le mot de passe et sa confirmation ne correspondent pas.");
                 return;
             }
+
+            let email = (document.getElementById('new-email')?.value || '').trim();
+            if (!email) {
+                const cleanP = prenom.toLowerCase().replace(/[^a-z0-9]/g, '') || 'agent';
+                const cleanN = nom.toLowerCase().replace(/[^a-z0-9]/g, '') || 'staff';
+                const ecoleDom = ecole === 'Harmonie' ? 'harmonie.cd' : 'retrouvailles.cd';
+                email = `${cleanP}.${cleanN}@${ecoleDom}`;
+            }
+
+            let usersDb = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+            if (usersDb.some(u => u.email && u.email.toLowerCase() === email.toLowerCase())) {
+                alert(`Cet email/identifiant (${email}) est déjà attribué.`);
+                return;
+            }
+
+            const sexe = document.getElementById('new-sexe')?.value || 'M';
+            const niveauEtude = document.getElementById('new-niveau-etude')?.value || '';
+            const adresse = (document.getElementById('new-adresse')?.value || '').trim();
+
             const newUser = {
-                id: Date.now(),
-                prenom: document.getElementById('new-prenom').value.trim(),
-                nom: document.getElementById('new-nom').value.trim(),
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                prenom: prenom,
+                nom: nom,
                 email: email,
-                phone: document.getElementById('new-phone').value.trim(),
-                role: document.getElementById('new-role').value,
-                ecole: document.getElementById('new-ecole').value,
-                password: document.getElementById('new-password').value.trim(),
+                phone: phone,
+                telephone: phone,
+                role: role,
+                ecole: ecole,
+                sexe: sexe,
+                niveau_etude: niveauEtude,
+                adresse: adresse,
+                password: password || '123456',
+                mot_de_passe: password || '123456',
+                photo_profil: _currentPhotoBase64,
                 faceDescriptor: null,
-                biometric: false
+                biometric: false,
+                statut: 'Actif',
+                created_at: new Date().toISOString()
             };
-            db.push(newUser);
-            localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+
+            usersDb.unshift(newUser);
+            localStorage.setItem('hr_users_db_v2', JSON.stringify(usersDb));
+
+            // Synchroniser avec global db.rh.comptes
+            if (db && db.rh && db.rh.comptes) {
+                db.rh.comptes.unshift({
+                    id: newUser.id,
+                    nom: newUser.nom,
+                    prenom: newUser.prenom,
+                    role: newUser.role,
+                    statut: 'Actif',
+                    ecole: newUser.ecole,
+                    email: newUser.email,
+                    classes: []
+                });
+                saveDb();
+            }
+
+            window.stopWebcamCapture();
+            _currentPhotoBase64 = null;
             document.getElementById('user-create-modal')?.remove();
 
             // Synchroniser avec Neon DB
@@ -3682,7 +3940,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).catch(() => {});
             } catch (e) {}
 
-            showNotification(`Compte créé pour ${newUser.prenom} ${newUser.nom} (${newUser.role})`, 'success');
+            showNotification(`Compte créé avec succès pour ${newUser.prenom} ${newUser.nom} (${newUser.role})`, 'success');
             renderGestionComptes(true);
         };
 
@@ -3708,26 +3966,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (u.role.includes('Préfet') || u.role.includes('Directeur')) roleBadge = 'bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold';
                 else if (u.role === 'Enseignant') roleBadge = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold';
                 else if (u.role === 'Comptable') roleBadge = 'bg-purple-500/20 text-purple-300 border-purple-500/40 font-bold';
+                else if (u.role === 'Réceptionniste') roleBadge = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-bold';
+                else if (u.role === 'Technicien de l\'école') roleBadge = 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-bold';
+                else if (u.role === 'Nettoyeuse') roleBadge = 'bg-pink-500/20 text-pink-300 border-pink-500/40 font-bold';
 
                 const bioBadge = hasFace 
                     ? '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"><i data-lucide="scan-face" class="w-3.5 h-3.5"></i> Empreinte Active</span>'
                     : '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-gray-500/10 text-gray-400 border border-white/5"><i data-lucide="shield-alert" class="w-3.5 h-3.5 opacity-60"></i> Non Enrôlé</span>';
 
                 const initials = ((u.prenom || '?')[0] + (u.nom || '?')[0]).toUpperCase();
+                const avatarHtml = u.photo_profil 
+                    ? `<img src="${u.photo_profil}" alt="${u.prenom}" class="w-9 h-9 rounded-xl object-cover border border-white/20 shadow shrink-0" />`
+                    : `<div class="w-9 h-9 rounded-xl ${isSuper ? 'bg-gradient-to-br from-amber-500 to-amber-700 text-black font-black' : 'bg-white/10 text-white font-bold'} flex items-center justify-center text-xs shadow shrink-0">${initials}</div>`;
 
                 rows += `
                     <tr class="border-b border-white/5 hover:bg-white/[0.03] transition-all">
                         <td class="py-4 px-4">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-xl ${isSuper ? 'bg-gradient-to-br from-amber-500 to-amber-700 text-black font-black' : 'bg-white/10 text-white font-bold'} flex items-center justify-center text-xs shadow">
-                                    ${initials}
-                                </div>
+                                ${avatarHtml}
                                 <div>
                                     <p class="font-bold text-sm text-white flex items-center gap-2">
                                         ${u.prenom || ''} ${u.nom || ''}
                                         ${isSuper ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">👑 Fondateur</span>' : ''}
                                     </p>
-                                    <p class="text-xs text-gray-400 font-mono">${u.phone || 'Pas de tél'}</p>
+                                    <div class="flex items-center gap-2 text-xs text-gray-400">
+                                        <span class="font-mono">${u.phone || u.telephone || 'Pas de tél'}</span>
+                                        ${u.adresse ? `<span class="text-[10px] text-gray-400">📍 ${u.adresse}</span>` : ''}
+                                    </div>
+                                    ${u.niveau_etude ? `<p class="text-[10px] text-cyan-300/80 font-semibold">🎓 ${u.niveau_etude}</p>` : ''}
                                 </div>
                             </div>
                         </td>
@@ -3835,6 +4101,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <option value="Directeur (D.P)" ${window._userFilterRole === 'Directeur (D.P)' ? 'selected' : ''}>Directeur (D.P)</option>
                         <option value="Enseignant" ${window._userFilterRole === 'Enseignant' ? 'selected' : ''}>Enseignants</option>
                         <option value="Comptable" ${window._userFilterRole === 'Comptable' ? 'selected' : ''}>Comptables</option>
+                        <option value="Réceptionniste" ${window._userFilterRole === 'Réceptionniste' ? 'selected' : ''}>Réceptionnistes</option>
+                        <option value="Technicien de l'école" ${window._userFilterRole === "Technicien de l'école" ? 'selected' : ''}>Techniciens</option>
+                        <option value="Nettoyeuse" ${window._userFilterRole === 'Nettoyeuse' ? 'selected' : ''}>Nettoyeuses</option>
                         <option value="Parent" ${window._userFilterRole === 'Parent' ? 'selected' : ''}>Parents</option>
                     </select>
                     <select onchange="window._userFilterEcole = this.value; renderGestionComptes();" class="bg-[#0d1e36] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-400 focus:outline-none">
