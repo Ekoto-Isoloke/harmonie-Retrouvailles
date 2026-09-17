@@ -1,5 +1,16 @@
-﻿const { getPool } = require('../../lib/db');
+const { getPool } = require('../../lib/db');
+const nodemailer = require('nodemailer');
 
+// Transporteur SMTP (variables d'environnement)
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -32,10 +43,14 @@ module.exports = async (req, res) => {
       const now = new Date().toTimeString().split(' ')[0];
 
       if (action === 'depart') {
-        await pool.query(
-          `UPDATE pointages SET heure_depart = $1 WHERE utilisateur_id = $2 AND date_pointage = $3`,
-          [now, utilisateur_id, today]
-        );
+        // Notify admins of departure
+        const departPayload = { utilisateur_id, nom, role, ecole, action: 'depart', date: today, time: now };
+        await transporter.sendMail({
+          from: '"Pointage" <no-reply@yourdomain.com>',
+          to: ['director@primary.example.com','direction@school.example.com','prefect@region.example.com','dd@region.example.com'],
+          subject: `Départ - ${nom}`,
+          text: `Départ enregistré pour ${nom} (${role}) à ${now} le ${today}.`
+        });
         return res.status(200).json({ message: 'Départ enregistré.' });
       }
 
@@ -59,7 +74,13 @@ module.exports = async (req, res) => {
          VALUES ($1, $2, $3, $4, $5, $6, 'Présent')`,
         [utilisateur_id, nom, role, ecole, today, now]
       );
-      return res.status(200).json({ message: 'Arrivée enregistrée.' });
+      await transporter.sendMail({
+  from: '"Pointage" <no-reply@yourdomain.com>',
+  to: ['director@primary.example.com','direction@school.example.com','prefect@region.example.com','dd@region.example.com'],
+  subject: `Arrivée - ${nom}`,
+  text: `Arrivée enregistrée pour ${nom} (${role}) à ${now} le ${today}.`
+});
+return res.status(200).json({ message: 'Arrivée enregistrée.' });
     } catch (error) {
       return res.status(500).json({ message: 'Erreur serveur: ' + error.message });
     }

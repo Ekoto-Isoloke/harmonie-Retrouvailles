@@ -528,30 +528,26 @@
   // ── DÉTECTION HAUTE VITESSE (Optimisée 1 à 2 secondes) ──
   function runRealDetection(video, oval, statusEl, progressEl) {
     let frames = 0;
-    const REQUIRED = 3; // 3 trames stables = validation ultra-rapide (~1s)
+    const REQUIRED = 2; // fewer stable frames for faster validation (~0.7s)
     const phases = [
-      { f: 1, pct: 40, txt: '🔍 Visage détecté — Stabilisation...' },
-      { f: 2, pct: 75, txt: '🧠 Analyse biométrique en cours...' },
-      { f: 3, pct: 100, txt: '⚡ Validation instantanée...' }
+      { f: 1, pct: 50, txt: '🔍 Visage détecté — Stabilisation...' },
+      { f: 2, pct: 100, txt: '⚡ Validation instantanée...' }
     ];
 
-    const detectorOpts = (window.faceapi && faceapi.TinyFaceDetectorOptions)
-      ? new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.45 })
+    // Use smaller input size for speedier detection
+    const detectorOpts = (window.faceapi && window.faceapi.TinyFaceDetectorOptions)
+      ? new faceapi.TinyFaceDetectorOptions({ inputSize: 120, scoreThreshold: 0.4 })
       : null;
 
     faceDetectionInterval = setInterval(async () => {
       try {
         let hasFace = false;
-
-        // 1. Détection ultra-rapide via TinyFaceDetector
         if (window.faceapi && detectorOpts && modelsLoaded) {
           const detections = await faceapi.detectAllFaces(video, detectorOpts);
           if (detections && detections.length > 0) hasFace = true;
         } else {
-          // Fallback vidéo active si modèles encore en chargement
           if (video.readyState >= 3 && video.videoWidth > 0) hasFace = true;
         }
-
         if (hasFace) {
           frames++;
           const phase = phases.find(p => frames <= p.f) || phases[phases.length - 1];
@@ -561,23 +557,20 @@
             oval.style.opacity = '1';
             oval.classList.add('shadow-[0_0_25px_#10b981]');
           }
-
           if (frames >= REQUIRED) {
             clearInterval(faceDetectionInterval);
             faceDetectionInterval = null;
             statusEl.textContent = '⚡ Empreinte confirmée !';
             progressEl.style.width = '100%';
-
-            // Capture instantanée de la caméra
+            // Capture image
             try {
               const snapCanvas = document.createElement('canvas');
               snapCanvas.width = 320;
               snapCanvas.height = 240;
               snapCanvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
               window._lastLiveCaptureB64 = snapCanvas.toDataURL('image/jpeg', 0.82);
-            } catch(_) { window._lastLiveCaptureB64 = null; }
-
-            // Lancer immédiatement la validation
+            } catch (_) { window._lastLiveCaptureB64 = null; }
+            // Proceed to validation
             validateFace();
           }
         } else {
@@ -587,10 +580,10 @@
             oval.classList.remove('shadow-[0_0_25px_#10b981]');
           }
         }
-      } catch(e) {
+      } catch (e) {
         console.warn('[Pointage] Detection loop error:', e);
       }
-    }, 220); // Vérification fluide toutes les 220ms (au lieu de 350ms)
+    }, 200); // slightly faster interval
   }
 
   // ═══════════════════════════════════════════════════════════

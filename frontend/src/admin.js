@@ -561,7 +561,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+            <div class="grid grid-cols-1 gap-5 mb-6">
+                ${db.ecoleActive === 'Harmonie' ? `
                 <div class="glass-panel rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/5 to-transparent overflow-hidden">
                     <div class="flex items-center gap-3 px-6 py-4 border-b border-white/10">
                         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-xl">🏫</div>
@@ -579,7 +580,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="px-6 pb-5 flex gap-2">
                         <a href="/prefet-dashboard.html?view=harmonie" class="flex-1 py-2.5 bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser</a>
                     </div>
-                </div>
+                </div>` : ''}
+                ${db.ecoleActive === 'Retrouvailles' ? `
                 <div class="glass-panel rounded-3xl border border-purple-500/30 bg-gradient-to-b from-purple-500/5 to-transparent overflow-hidden">
                     <div class="flex items-center gap-3 px-6 py-4 border-b border-white/10">
                         <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-xl">🎓</div>
@@ -597,7 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="px-6 pb-5 flex gap-2">
                         <a href="/prefet-dashboard.html?view=retrouvailles" class="flex-1 py-2.5 bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser</a>
                     </div>
-                </div>
+                </div>` : ''}
             </div>
 
             <div class="glass-panel p-6 rounded-3xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent mb-6">
