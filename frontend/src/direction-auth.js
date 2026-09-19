@@ -63,6 +63,9 @@ const initDirectionModal = () => {
     { value: 'Sur École', label: 'Sur École' },
     { value: 'D.D', label: 'Directeur de Discipline (D.D)' },
     { value: 'Enseignant', label: 'Enseignant' },
+    { value: 'Réceptionniste', label: '🛎️ Réceptionniste' },
+    { value: 'Technicien de l\'école', label: '🔧 Technicien de l\'école' },
+    { value: 'Nettoyeuse', label: '🧹 Nettoyeuse' },
   ];
 
   const ROLES_RETROUVAILLES = [
@@ -70,6 +73,9 @@ const initDirectionModal = () => {
     { value: 'D.E', label: 'Directeur des Études (D.E)' },
     { value: 'D.D', label: 'Directeur de Discipline (D.D)' },
     { value: 'Enseignant', label: 'Enseignant' },
+    { value: 'Réceptionniste', label: '🛎️ Réceptionniste' },
+    { value: 'Technicien de l\'école', label: '🔧 Technicien de l\'école' },
+    { value: 'Nettoyeuse', label: '🧹 Nettoyeuse' },
   ];
 
   /**

@@ -443,6 +443,9 @@
                     <option value="D.E">Directeur des Études (D.E)</option>
                     <option value="D.D">Directeur de Discipline (D.D)</option>
                     <option value="Enseignant">Enseignant</option>
+                    <option value="Réceptionniste">🛎️ Réceptionniste</option>
+                    <option value="Technicien de l'école">🔧 Technicien de l'école</option>
+                    <option value="Nettoyeuse">🧹 Nettoyeuse</option>
                   </select>
                 </div>
               </div>
@@ -458,11 +461,18 @@
             </div>
 
             <!-- 3. Informations Personnelles -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="sm:col-span-1">
                 <label class="block text-[11px] text-gray-400 mb-1">Nom & Prénom Complet *</label>
                 <input type="text" id="reg-fullname" value="" required placeholder="Nom & Prénom complet"
                   class="field-input-plain">
+              </div>
+              <div>
+                <label class="block text-[11px] text-gray-400 mb-1">Sexe *</label>
+                <select id="reg-sexe" class="field-input-plain">
+                  <option value="M" selected>Masculin (M)</option>
+                  <option value="F">Féminin (F)</option>
+                </select>
               </div>
               <div>
                 <label class="block text-[11px] text-gray-400 mb-1">Téléphone *</label>
@@ -478,16 +488,17 @@
             </div>
 
             <!-- 4. Informations Académiques -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="block-academic-container">
               <div>
                 <label class="block text-[11px] text-gray-400 mb-1">Niveau d'Étude *</label>
                 <select id="reg-degree" class="field-input-plain">
                   <option value="Diplômé d'État (D.E)" selected>Diplômé(e) d'État (D.E)</option>
                   <option value="Gradué (G3)">Gradué (G3)</option>
                   <option value="Licencié (L2 / Master)">Licencié / Master</option>
+                  <option value="Secondaire / Autre">Secondaire / Autre</option>
                 </select>
               </div>
-              <div>
+              <div id="block-reg-option">
                 <label class="block text-[11px] text-gray-400 mb-1">Option / Section EPST *</label>
                 <select id="reg-option" class="field-input-plain">
                   <option value="Biologie-Chimie" selected>Biologie-Chimie</option>
@@ -902,6 +913,9 @@
         <option value="Sur École">Sur École</option>
         <option value="D.D">Directeur de Discipline (D.D)</option>
         <option value="Enseignant">Enseignant</option>
+        <option value="Réceptionniste">🛎️ Réceptionniste</option>
+        <option value="Technicien de l'école">🔧 Technicien de l'école</option>
+        <option value="Nettoyeuse">🧹 Nettoyeuse</option>
       `;
         }
 
@@ -930,6 +944,9 @@
         <option value="D.E">Directeur des Études (D.E)</option>
         <option value="D.D">Directeur de Discipline (D.D)</option>
         <option value="Enseignant">Enseignant</option>
+        <option value="Réceptionniste">🛎️ Réceptionniste</option>
+        <option value="Technicien de l'école">🔧 Technicien de l'école</option>
+        <option value="Nettoyeuse">🧹 Nettoyeuse</option>
       `;
         }
 
@@ -985,20 +1002,29 @@
     function onRoleChanged() {
       const role = document.getElementById('reg-role')?.value || '';
       const isDir = isDirectionRole(role);
+      const isSupport = ['Réceptionniste', 'Technicien de l\'école', 'Nettoyeuse'].includes(role);
       const blockCourses = document.getElementById('block-teacher-courses');
       const blockDir = document.getElementById('block-direction-autre-poste');
+      const blockAcademicOption = document.getElementById('reg-option')?.closest('div');
       const coursesInput = document.getElementById('reg-courses');
       const roleBadge = document.getElementById('direction-primary-role-badge');
 
       if (roleBadge) roleBadge.textContent = role;
 
-      if (isDir) {
+      if (isSupport) {
+        if (blockCourses) blockCourses.classList.add('hidden');
+        if (blockDir) blockDir.classList.add('hidden');
+        if (blockAcademicOption) blockAcademicOption.classList.add('hidden');
+        if (coursesInput) coursesInput.removeAttribute('required');
+      } else if (isDir) {
         if (blockCourses) blockCourses.classList.add('hidden');
         if (blockDir) blockDir.classList.remove('hidden');
+        if (blockAcademicOption) blockAcademicOption.classList.remove('hidden');
         if (coursesInput) coursesInput.removeAttribute('required');
       } else {
         if (blockCourses) blockCourses.classList.remove('hidden');
         if (blockDir) blockDir.classList.add('hidden');
+        if (blockAcademicOption) blockAcademicOption.classList.remove('hidden');
         if (coursesInput) coursesInput.setAttribute('required', 'required');
       }
       if (window.lucide) lucide.createIcons();
@@ -1301,7 +1327,10 @@
         'Professeur': '/teacher-dashboard.html',
         'Instituteur': '/teacher-dashboard.html',
         'Comptable': '/compta-dashboard.html',
-        'Parent': '/parent-dashboard.html'
+        'Parent': '/parent-dashboard.html',
+        'Réceptionniste': '/rh-dashboard.html',
+        'Technicien de l\'école': '/rh-dashboard.html',
+        'Nettoyeuse': '/rh-dashboard.html'
       };
       return routes[role] || '/teacher-dashboard.html';
     }
@@ -1432,12 +1461,16 @@
       const prenom = parts[0] || 'Prénom';
       const nom = parts.slice(1).join(' ') || 'Nom';
 
-      // Gestion spéciale de la Direction : Poste unique ou Cumul de poste
+      // Gestion spéciale de la Direction & Rôles de soutien :
       const isDir = ['Directeur (D.P)', 'D.P', 'Préfet', 'D.E', 'D.D'].includes(role);
+      const isSupport = ['Réceptionniste', 'Technicien de l\'école', 'Nettoyeuse'].includes(role);
       let autrePosteVal = 'Non';
       let finalCourses = 'Enseignement Général';
 
-      if (isDir) {
+      if (isSupport) {
+        autrePosteVal = 'Non';
+        finalCourses = role;
+      } else if (isDir) {
         if (window._hasAutrePosteToggle) {
           const selectedLabels = [];
           if (window._autrePosteOptions?.enseignant) selectedLabels.push('Enseignant Titulaire');
@@ -1458,12 +1491,15 @@
         id: Date.now(), nom, prenom, email, password: pwd, role,
         ecole: institution || 'Retrouvailles',
         phone, address,
+        sexe: document.getElementById('reg-sexe')?.value || 'M',
+        niveau_etude: document.getElementById('reg-degree')?.value || 'Diplômé d\'État (D.E)',
         courses: finalCourses,
         autre_poste: autrePosteVal,
         autrePoste: autrePosteVal,
         cumul_fonctions: isDir && window._hasAutrePosteToggle,
         biometric: true,
         photo_profil: window._enrolledFacePhoto || null,
+        photo: window._enrolledFacePhoto || null,
         face_data: window._enrolledFacePhoto || null,
         credentialId: bioCredentialId, // Passkey WebAuthn
         faceDescriptor: window._enrolledFaceDescriptor || null // Empreinte faciale 128-dim pour comparaison
