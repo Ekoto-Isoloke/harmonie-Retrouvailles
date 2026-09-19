@@ -64,9 +64,20 @@ let db;
 try {
     let s = localStorage.getItem('admin_db');
     db = s ? JSON.parse(s) : defaultData;
-    if (!db.version || db.version < DB_VERSION) { db = defaultData; localStorage.setItem('admin_db', JSON.stringify(db)); }
+    const savedEcole = (s ? JSON.parse(s).ecoleActive : null) || localStorage.getItem('hr_current_ecole') || defaultData.ecoleActive;
+    if (!db.version || db.version < DB_VERSION) { 
+        db = defaultData; 
+        db.ecoleActive = savedEcole;
+        localStorage.setItem('admin_db', JSON.stringify(db)); 
+    } else if (savedEcole) {
+        db.ecoleActive = savedEcole;
+    }
 } catch (e) { db = defaultData; }
-const saveDb = () => localStorage.setItem('admin_db', JSON.stringify(db));
+window.adminDb = db;
+const saveDb = () => {
+    window.adminDb = db;
+    localStorage.setItem('admin_db', JSON.stringify(db));
+};
 
 // Purge automatique des anciens comptes fictifs de test (ex: kasombo@retrouvailles.cd, matungulu@retrouvailles.cd)
 try {
@@ -256,6 +267,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!ecole) return;
         db.ecoleActive = ecole;
         saveDb();
+        try {
+            localStorage.setItem('hr_current_ecole', ecole);
+        } catch(e) {}
+
+        // Mettre à jour les filtres des vues filles pour isolation stricte
+        window._userFilterEcole = ecole;
+        window.selectedEcoleRapport = ecole;
+
         updateHeaderSwitcher();
         
         // Mettre à jour le badge d'institution dans le header / sidebar
@@ -271,13 +290,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateHeaderSwitcher() {
         const btnH = document.getElementById('switch-harmonie');
         const btnR = document.getElementById('switch-retrouvailles');
+        const activeEcole = db.ecoleActive || 'Harmonie';
         if (btnH && btnR) {
-            if (db.ecoleActive === 'Harmonie') {
-                btnH.className = "px-3 py-1.5 rounded-md bg-emerald-500/25 border border-emerald-500/50 text-emerald-300 font-black text-xs shadow-sm transition-all cursor-pointer";
-                btnR.className = "px-3 py-1.5 rounded-md text-gray-400 hover:text-white transition-all text-xs font-semibold cursor-pointer";
+            if (activeEcole === 'Harmonie') {
+                btnH.className = "px-3.5 py-1.5 rounded-lg bg-emerald-500 text-black font-black text-xs shadow-lg shadow-emerald-500/30 transition-all cursor-pointer border border-emerald-400";
+                btnR.className = "px-3.5 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all text-xs font-bold cursor-pointer border border-transparent";
             } else {
-                btnR.className = "px-3 py-1.5 rounded-md bg-purple-500/25 border border-purple-500/50 text-purple-300 font-black text-xs shadow-sm transition-all cursor-pointer";
-                btnH.className = "px-3 py-1.5 rounded-md text-gray-400 hover:text-white transition-all text-xs font-semibold cursor-pointer";
+                btnR.className = "px-3.5 py-1.5 rounded-lg bg-purple-600 text-white font-black text-xs shadow-lg shadow-purple-600/30 transition-all cursor-pointer border border-purple-400";
+                btnH.className = "px-3.5 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all text-xs font-bold cursor-pointer border border-transparent";
             }
         }
     }
@@ -285,8 +305,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function initInstitutionalSwitcher() {
         const btnH = document.getElementById('switch-harmonie');
         const btnR = document.getElementById('switch-retrouvailles');
-        if (btnH) btnH.onclick = (e) => { e && e.preventDefault(); window.switchInstitution('Harmonie'); };
-        if (btnR) btnR.onclick = (e) => { e && e.preventDefault(); window.switchInstitution('Retrouvailles'); };
+        if (btnH) {
+            btnH.onclick = (e) => { 
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                window._adminSwitchInst('Harmonie'); 
+            };
+        }
+        if (btnR) {
+            btnR.onclick = (e) => { 
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                window._adminSwitchInst('Retrouvailles'); 
+            };
+        }
         updateHeaderSwitcher();
     }
 
@@ -590,16 +620,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div><h3 class="font-black text-white text-base">C.S. Harmonie</h3><p class="text-[10px] text-emerald-400 uppercase tracking-widest font-bold">Primaire & Maternelle</p></div>
                         <div class="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 border border-emerald-500/30 rounded-lg">
                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span class="text-[10px] font-black text-emerald-300 uppercase">En ligne</span>
+                            <span class="text-[10px] font-black text-emerald-300 uppercase">Établissement Actif</span>
                         </div>
                     </div>
                     <div class="p-6 grid grid-cols-3 gap-4">
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Présence</p><p class="text-lg font-black ${pctH >= 75 ? 'text-emerald-400' : pctH >= 50 ? 'text-amber-400' : 'text-rose-400'}">${pctH}%</p></div>
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Élèves</p><p class="text-lg font-black text-blue-400">${harmonie.pedagogie.eleves.length}</p></div>
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Classes</p><p class="text-lg font-black text-purple-400">${harmonie.pedagogie.classes.length}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Présence</p><p class="text-lg font-black ${pct >= 75 ? 'text-emerald-400' : pct >= 50 ? 'text-amber-400' : 'text-rose-400'}">${pct}%</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Élèves</p><p class="text-lg font-black text-blue-400">${totalElev}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Classes</p><p class="text-lg font-black text-purple-400">${totalClasses}</p></div>
                     </div>
                     <div class="px-6 pb-5 flex gap-2">
-                        <a href="/prefet-dashboard.html?view=harmonie" class="flex-1 py-2.5 bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser</a>
+                        <a href="/prefet-dashboard.html?view=harmonie" class="flex-1 py-2.5 bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser C.S. Harmonie</a>
                     </div>
                 </div>` : ''}
                 ${db.ecoleActive === 'Retrouvailles' ? `
@@ -609,16 +639,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div><h3 class="font-black text-white text-base">G.S. Retrouvailles</h3><p class="text-[10px] text-purple-400 uppercase tracking-widest font-bold">Humanités & Secondaire</p></div>
                         <div class="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/15 border border-purple-500/30 rounded-lg">
                             <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
-                            <span class="text-[10px] font-black text-purple-300 uppercase">En ligne</span>
+                            <span class="text-[10px] font-black text-purple-300 uppercase">Établissement Actif</span>
                         </div>
                     </div>
                     <div class="p-6 grid grid-cols-3 gap-4">
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Présence</p><p class="text-lg font-black ${pctR >= 75 ? 'text-emerald-400' : pctR >= 50 ? 'text-amber-400' : 'text-rose-400'}">${pctR}%</p></div>
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Élèves</p><p class="text-lg font-black text-blue-400">${retro.pedagogie.eleves.length}</p></div>
-                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Classes</p><p class="text-lg font-black text-purple-400">${retro.pedagogie.classes.length}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Présence</p><p class="text-lg font-black ${pct >= 75 ? 'text-emerald-400' : pct >= 50 ? 'text-amber-400' : 'text-rose-400'}">${pct}%</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Élèves</p><p class="text-lg font-black text-blue-400">${totalElev}</p></div>
+                        <div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Classes</p><p class="text-lg font-black text-purple-400">${totalClasses}</p></div>
                     </div>
                     <div class="px-6 pb-5 flex gap-2">
-                        <a href="/prefet-dashboard.html?view=retrouvailles" class="flex-1 py-2.5 bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser</a>
+                        <a href="/prefet-dashboard.html?view=retrouvailles" class="flex-1 py-2.5 bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-black uppercase tracking-wider rounded-xl text-center transition">🔍 Superviser G.S. Retrouvailles</a>
                     </div>
                 </div>` : ''}
             </div>
@@ -680,8 +710,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const inst = db.institutions[db.ecoleActive];
-        const allPointages = db.rh.pointages.filter(p => p.ecole === db.ecoleActive);
-        const presenceRate = allPointages.length > 0 ? Math.round((allPointages.filter(p => p.statut === 'Présent').length / allPointages.length) * 100) : 0;
+        const livePts = getLivePointages(db.ecoleActive);
+        const allPointages = (livePts && livePts.length > 0) ? livePts : db.rh.pointages.filter(p => p.ecole === db.ecoleActive);
+        const presenceRate = allPointages.length > 0 ? Math.round((allPointages.filter(p => p.statut === 'Présent' || p.statut === 'Terminé').length / allPointages.length) * 100) : 0;
         const solde = inst.finance.revenus - inst.finance.depenses;
         const today = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric'});
         const isGS = db.ecoleActive === 'Retrouvailles';
@@ -695,7 +726,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="mb-8 flex justify-between items-start">
                 <div>
                     <h2 class="text-3xl font-black dark:text-white uppercase tracking-tight">Tableau de Bord ERP</h2>
-                    <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">${db.ecoleActive} — ${today}</p>
+                    <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest font-bold">${db.ecoleActive === 'Harmonie' ? '🏫 C.S. Harmonie (Maternelle & Primaire)' : '🎓 G.S. Retrouvailles (EB & Humanités)'} — ${today}</p>
                 </div>
                 <div class="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -3372,11 +3403,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }).catch(() => {});
         }
 
-        let db = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+        let usersList = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
         
         // Assurer la présence permanente du Super-Admin s'il n'existe pas encore
-        if (!db.some(u => u.email && (u.email.toLowerCase() === 'chadrackisoloke@gmail.com' || u.email.toLowerCase() === 'admin@retrouvailes.cd'))) {
-            db.unshift({
+        if (!usersList.some(u => u.email && (u.email.toLowerCase() === 'chadrackisoloke@gmail.com' || u.email.toLowerCase() === 'admin@retrouvailes.cd'))) {
+            usersList.unshift({
                 id: 99,
                 email: 'chadrackisoloke@gmail.com',
                 password: 'chada123',
@@ -3387,18 +3418,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 phone: '+243827613009',
                 faceDescriptor: null
             });
-            localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+            localStorage.setItem('hr_users_db_v2', JSON.stringify(usersList));
         }
 
-        // Filtres actuels
+        // Filtres actuels — synchronisés strictement avec l'établissement actif pour éviter toute fuite
         window._userFilterRole = window._userFilterRole || 'Tous';
-        window._userFilterEcole = window._userFilterEcole || 'Tous';
+        window._userFilterEcole = window._userFilterEcole || (db?.ecoleActive || 'Harmonie');
         window._userSearchQuery = window._userSearchQuery || '';
 
-        // Appliquer les filtres
-        let filteredUsers = db.filter(u => {
+        // Appliquer les filtres de façon stricte
+        const targetEcole = window._userFilterEcole || db.ecoleActive || 'Harmonie';
+        let filteredUsers = usersList.filter(u => {
             const matchRole = window._userFilterRole === 'Tous' || u.role === window._userFilterRole;
-            const matchEcole = window._userFilterEcole === 'Tous' || (u.ecole && u.ecole.includes(window._userFilterEcole)) || u.ecole === 'Harmonie-Retrouvailles';
+            const matchEcole = targetEcole === 'Tous' 
+                ? true 
+                : (u.ecole === targetEcole || (u.ecole && u.ecole.toLowerCase() === targetEcole.toLowerCase()) || (u.role === 'Super-Admin' || u.role === 'Direction Générale'));
             const query = window._userSearchQuery.toLowerCase();
             const matchQuery = !query || 
                 (u.nom && u.nom.toLowerCase().includes(query)) ||
@@ -3408,15 +3442,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return matchRole && matchEcole && matchQuery;
         });
 
-        // Métriques
-        const totalUsers = db.length;
-        const totalEnseignants = db.filter(u => u.role === 'Enseignant' || u.role === 'Professeur' || u.role === 'Instituteur').length;
-        const totalBioEnrolled = db.filter(u => u.faceDescriptor && Array.isArray(u.faceDescriptor) && u.faceDescriptor.length === 128).length;
-        const totalDirection = db.filter(u => ['Super-Admin', 'Direction', 'Préfet', 'Directeur (D.P)', 'D.P', 'D.E'].includes(u.role)).length;
+        // Métriques pour l'école sélectionnée
+        const totalUsers = filteredUsers.length;
+        const totalEnseignants = filteredUsers.filter(u => u.role === 'Enseignant' || u.role === 'Professeur' || u.role === 'Instituteur').length;
+        const totalBioEnrolled = filteredUsers.filter(u => u.faceDescriptor && Array.isArray(u.faceDescriptor) && u.faceDescriptor.length === 128).length;
+        const totalDirection = filteredUsers.filter(u => ['Super-Admin', 'Direction Générale', 'Direction', 'Préfet', 'Directeur (D.P)', 'D.P', 'D.E', 'D.D'].includes(u.role)).length;
 
         // Action: Modal d'édition d'utilisateur
         window.openEditUserModal = function(id) {
-            const u = db.find(x => x.id == id);
+            const allUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+            const u = allUsers.find(x => x.id == id);
             if (!u) return;
 
             const modalHtml = `
@@ -3505,7 +3540,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Action: Sauvegarder les modifications
         window.saveEditedUser = function(id) {
-            const u = db.find(x => x.id == id);
+            let allUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+            const u = allUsers.find(x => x.id == id);
             if (!u) return;
             u.prenom = document.getElementById('edit-prenom').value.trim();
             u.nom = document.getElementById('edit-nom').value.trim();
@@ -3514,7 +3550,7 @@ document.addEventListener('DOMContentLoaded', () => {
             u.ecole = document.getElementById('edit-ecole').value;
             u.password = document.getElementById('edit-password').value.trim();
 
-            localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+            localStorage.setItem('hr_users_db_v2', JSON.stringify(allUsers));
             document.getElementById('user-edit-modal')?.remove();
 
             // Synchroniser avec Neon DB
@@ -3532,12 +3568,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Action: Réinitialiser l'empreinte faciale
         window.resetUserBiometrics = function(id) {
-            const u = db.find(x => x.id == id);
+            let allUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+            const u = allUsers.find(x => x.id == id);
             if (!u) return;
             if (confirm(`Voulez-vous réinitialiser l'empreinte faciale de ${u.prenom} ${u.nom} ? L'utilisateur devra ré-enregistrer son visage lors de sa prochaine connexion.`)) {
                 u.faceDescriptor = null;
                 u.biometric = false;
-                localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+                localStorage.setItem('hr_users_db_v2', JSON.stringify(allUsers));
                 showNotification(`Empreinte réinitialisée pour ${u.prenom} ${u.nom}.`, 'info');
                 renderGestionComptes(true);
             }
@@ -3545,15 +3582,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Action: Supprimer un compte
         window.deleteUserAccount = function(id) {
-            const u = db.find(x => x.id == id);
+            let allUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+            const u = allUsers.find(x => x.id == id);
             if (!u) return;
             if (u.email.toLowerCase() === 'chadrackisoloke@gmail.com' || u.email.toLowerCase() === 'admin@retrouvailes.cd') {
                 alert("⛔ Action interdite : Vous ne pouvez pas supprimer le compte Super-Administrateur principal.");
                 return;
             }
             if (confirm(`⚠️ Confirmation de suppression : Êtes-vous sûr de vouloir supprimer définitivement le compte de ${u.prenom} ${u.nom} (${u.email}) ?`)) {
-                db = db.filter(x => x.id != id);
-                localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
+                allUsers = allUsers.filter(x => x.id != id);
+                localStorage.setItem('hr_users_db_v2', JSON.stringify(allUsers));
 
                 // Supprimer sur Neon DB
                 try {
@@ -3568,7 +3606,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Action: Nettoyer tous les comptes fictifs / tests
         window.cleanupDummyAccounts = function() {
             if (confirm("🧹 NETTOYAGE COMPLET : Voulez-vous supprimer tous les comptes de test/fictifs pour laisser uniquement le Super-Admin et préparer le système aux vraies données des enseignants ?")) {
-                const superAdmin = db.find(u => u.email.toLowerCase() === 'chadrackisoloke@gmail.com' || u.role === 'Super-Admin') || {
+                let allUsers = JSON.parse(localStorage.getItem('hr_users_db_v2')) || [];
+                const superAdmin = allUsers.find(u => u.email.toLowerCase() === 'chadrackisoloke@gmail.com' || u.role === 'Super-Admin') || {
                     id: 99,
                     email: 'chadrackisoloke@gmail.com',
                     password: 'chada123',
@@ -3580,9 +3619,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 
                 // Conserver uniquement le Super-Admin
-                db = [superAdmin];
-                localStorage.setItem('hr_users_db_v2', JSON.stringify(db));
-                localStorage.setItem('hr_cloud_accounts', JSON.stringify(db));
+                allUsers = [superAdmin];
+                localStorage.setItem('hr_users_db_v2', JSON.stringify(allUsers));
+                localStorage.setItem('hr_cloud_accounts', JSON.stringify(allUsers));
                 showNotification("Base nettoyée avec succès ! Seul votre compte Super-Admin a été conservé.", "success");
                 renderGestionComptes();
             }
@@ -4148,6 +4187,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const todayPointages = rawPointages.filter(p => {
             const pDate = p.date ? p.date.split('T')[0] : (p.arrivee ? todayIso : '');
+            return !pDate || pDate === todayIso;
         });
 
         function checkLate(timeStr) {

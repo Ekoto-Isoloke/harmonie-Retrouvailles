@@ -372,22 +372,40 @@
                 </div>
 
                 <!-- Institution Switcher -->
-                <div class="bg-white/10 dark:bg-gray-700 rounded-lg p-1 flex text-xs font-bold gap-1 items-center">
+                <div class="bg-black/30 dark:bg-gray-800/80 rounded-xl p-1.5 flex text-xs font-bold gap-1.5 items-center border border-white/10 shadow-inner">
                     <button
                         onclick="window.switchInstitution('Harmonie')"
-                        class="px-3 py-1.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black shadow-sm transition-all cursor-pointer"
+                        class="px-3.5 py-1.5 rounded-lg bg-emerald-500 text-black font-black text-xs shadow-lg shadow-emerald-500/30 transition-all cursor-pointer border border-emerald-400"
                         id="switch-harmonie">C.S. Harmonie</button>
                     <button
                         onclick="window.switchInstitution('Retrouvailles')"
-                        class="px-3 py-1.5 rounded-md text-gray-400 hover:text-white transition-all font-semibold cursor-pointer"
+                        class="px-3.5 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all text-xs font-bold cursor-pointer border border-transparent"
                         id="switch-retrouvailles">G.S. Retrouvailles</button>
                 </div>
                 <script>
+                    (function() {
+                        try {
+                            var d = JSON.parse(localStorage.getItem('admin_db') || '{}');
+                            var active = d.ecoleActive || localStorage.getItem('hr_current_ecole') || 'Harmonie';
+                            var bH = document.getElementById('switch-harmonie');
+                            var bR = document.getElementById('switch-retrouvailles');
+                            if (bH && bR) {
+                                if (active === 'Retrouvailles') {
+                                    bR.className = "px-3.5 py-1.5 rounded-lg bg-purple-600 text-white font-black text-xs shadow-lg shadow-purple-600/30 transition-all cursor-pointer border border-purple-400";
+                                    bH.className = "px-3.5 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all text-xs font-bold cursor-pointer border border-transparent";
+                                } else {
+                                    bH.className = "px-3.5 py-1.5 rounded-lg bg-emerald-500 text-black font-black text-xs shadow-lg shadow-emerald-500/30 transition-all cursor-pointer border border-emerald-400";
+                                    bR.className = "px-3.5 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all text-xs font-bold cursor-pointer border border-transparent";
+                                }
+                            }
+                        } catch(e) {}
+                    })();
                     window.switchInstitution = function(ecole) {
                         try {
                             var d = JSON.parse(localStorage.getItem('admin_db') || '{}');
                             d.ecoleActive = ecole;
                             localStorage.setItem('admin_db', JSON.stringify(d));
+                            localStorage.setItem('hr_current_ecole', ecole);
                         } catch(e) {}
                         if (window._adminSwitchInst) {
                             window._adminSwitchInst(ecole);
