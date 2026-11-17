@@ -41,6 +41,11 @@ module.exports = async (req, res) => {
     }
 
     if (user.statut && user.statut !== 'Actif') {
+      if (user.statut === 'en_attente') {
+        return res.status(403).json({ message: '⏳ Votre compte est en attente de validation par l\'administrateur. Veuillez patienter.' });
+      } else if (user.statut === 'rejete' || user.statut === 'Rejeté') {
+        return res.status(403).json({ message: '⛔ Votre compte a été rejeté par l\'administration. Contactez la Direction.' });
+      }
       return res.status(403).json({ message: 'Ce compte est inactif ou en attente de validation.' });
     }
 

@@ -49,6 +49,10 @@
       "destination": "/api/visio.js"
     },
     {
+      "source": "/api/admin/comptes",
+      "destination": "/api/admin/comptes.js"
+    },
+    {
       "source": "/api/bibliotheque",
       "destination": "/api/bibliotheque.js"
     }

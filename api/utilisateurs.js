@@ -105,7 +105,7 @@ module.exports = async (req, res) => {
       // Insertion ou mise à jour de l'utilisateur
       const inserted = await sql`
         INSERT INTO utilisateurs (nom, prenom, email, password, mot_de_passe, role, ecole, telephone, statut, autre_poste, courses, photo_profil, face_data, face_enrolled_at, niveau_etude, adresse, sexe)
-        VALUES (${cleanNom}, ${cleanPrenom}, ${cleanEmail}, ${rawPwd}, ${rawPwd}, ${cleanRole}, ${cleanEcole}, ${cleanPhone}, 'Actif', ${cleanAutrePoste}, ${cleanCourses}, ${cleanPhotoProfil}, ${cleanFaceData}, ${cleanFaceData ? sql`NOW()` : null}, ${cleanNiveauEtude}, ${cleanAdresse}, ${cleanSexe})
+        VALUES (${cleanNom}, ${cleanPrenom}, ${cleanEmail}, ${rawPwd}, ${rawPwd}, ${cleanRole}, ${cleanEcole}, ${cleanPhone}, 'en_attente', ${cleanAutrePoste}, ${cleanCourses}, ${cleanPhotoProfil}, ${cleanFaceData}, ${cleanFaceData ? sql`NOW()` : null}, ${cleanNiveauEtude}, ${cleanAdresse}, ${cleanSexe})
         ON CONFLICT (email) DO UPDATE SET
           nom = ${cleanNom},
           prenom = ${cleanPrenom},
@@ -127,14 +127,14 @@ module.exports = async (req, res) => {
 
       // Enregistrement de l'événement dans le Live Feed pour avertir l'administrateur
       const cumulInfo = cleanAutrePoste && cleanAutrePoste !== 'Non (Poste unique)' ? ` [Cumul de poste : ${cleanAutrePoste}]` : '';
-      const desc = `Le compte ${cleanRole} de ${cleanPrenom} ${cleanNom} (${cleanEcole})${cumulInfo} a été créé et activé.`;
+      const desc = `Le compte ${cleanRole} de ${cleanPrenom} ${cleanNom} (${cleanEcole})${cumulInfo} a été créé et est EN ATTENTE DE VALIDATION par l'administrateur.`;
       await sql`
         INSERT INTO activites_log (type, titre, description, auteur, role, ecole)
         VALUES ('NOUVEAU_COMPTE', ${'Nouveau compte ' + cleanRole}, ${desc}, ${cleanPrenom + ' ' + cleanNom}, ${cleanRole}, ${cleanEcole})
       `;
 
       return res.status(201).json({
-        message: 'Compte enregistré avec succès et signalé à la direction.',
+        message: 'Votre compte a été créé et est en attente de validation par l\'administrateur.',
         user: inserted[0]
       });
     }

@@ -27,7 +27,7 @@ if (isDummy || (!isSuperAdminUser && !existsInDb)) {
 }
 
 // STRICT RBAC: Bloquer les comptes parents de l'Espace RH/Pointage
-const allowedRhRoles = ['Enseignant', 'Professeur', 'Instituteur', 'Institutrice', 'Agent', 'RH', 'Comptable', 'Préfet', 'D.E', 'D.D', 'Sur École', 'Super-Admin', 'Direction', 'Direction Générale'];
+const allowedRhRoles = ['Enseignant', 'Professeur', 'Instituteur', 'Institutrice', 'Agent', 'RH', 'Comptable', 'Préfet', 'D.E', 'D.D', 'Sur École', 'Super-Admin', 'Direction', 'Direction Générale', 'Réceptionniste', "Technicien de l'école", 'Nettoyeuse', 'Directeur (D.P)', 'D.P'];
 if (!allowedRhRoles.includes(user.role) || user.role === 'Parent') {
   alert("⛔ ACCÈS REFUSÉ — SÉCURITÉ EPST\n\nCet espace est strictement réservé au personnel administratif et enseignant de l'établissement.");
   if (user.role === 'Parent') window.location.href = '/parent-dashboard.html';
